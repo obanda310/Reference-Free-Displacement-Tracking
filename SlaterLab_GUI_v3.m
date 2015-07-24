@@ -356,10 +356,11 @@ function SlaterLab_GUI_v3
         data.time = zeros(length(data.raw)-4,1);
         data.extension = zeros(length(data.raw)-4,1);
         data.gelLoad = zeros(length(data.raw)-4,1);
+        tareLoad = str2double(data.raw{5,3});
         for c = 5:length(data.raw)
             data.time(c-4,1) = str2double(data.raw{c,1});
             data.extension(c-4,1) = str2double(data.raw{c,2});
-            data.gelLoad(c-4,1) = str2double(data.raw{c,3});
+            data.gelLoad(c-4,1) = str2double(data.raw{c,3}) - tareLoad;
         end
         
         set(h,'CurrentAxes',hForceTime)
@@ -502,10 +503,11 @@ function SlaterLab_GUI_v3
         data.time = zeros(length(data.raw)-4,1);
         data.extension = zeros(length(data.raw)-4,1);
         data.gelLoad = zeros(length(data.raw)-4,1);
+        tareLoad = str2double(data.raw{5,3});
         for c = 5:length(data.raw)
             data.time(c-4,1) = str2double(data.raw{c,1});
             data.extension(c-4,1) = str2double(data.raw{c,2});
-            data.gelLoad(c-4,1) = str2double(data.raw{c,3});
+            data.gelLoad(c-4,1) = str2double(data.raw{c,3}) - tareLoad;
         end
         
         set(h,'CurrentAxes',hForceTime)
