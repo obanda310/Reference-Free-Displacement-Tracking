@@ -69,14 +69,14 @@ end
 %--------------------------------------------------------------------------
   for i = 1:numTraj
         for j = 1:totalNumFrames
-        book1(1,j,i) = book2(j,4,i);
-        book1(2,j,i) = book2(j,5,i);
-        book1(3,j,i) = x_0(i,j);
-        book1(4,j,i) = y_0(i,j);
-        book1(5,j,i) = x_diff(i,j);
-        book1(6,j,i) = y_diff(i,j);
-        book1(7,j,i) = round(book1(5,j,i),1);
-        book1(8,j,i) = round(book1(6,j,i),1);
+            book1(1,j,i) = book2(j,4,i);
+            book1(2,j,i) = book2(j,5,i);
+            book1(3,j,i) = x_0(i,j);
+            book1(4,j,i) = y_0(i,j);
+            book1(5,j,i) = x_diff(i,j);
+            book1(6,j,i) = y_diff(i,j);
+            book1(7,j,i) = round(book1(5,j,i),1);
+            book1(8,j,i) = round(book1(6,j,i),1);
         end
   end
 
@@ -234,10 +234,10 @@ end
 for i = 1:numTraj
     for f = 1:totalNumFrames
         if abs(book1(5,f,i)) < trackErrorThreshold
-            book1(15,f,i) = book1(1,f,i);
+            book1(15,f,i) = book1(3,f,i);
             book1(17,f,i) = book1(5,f,i);
         else
-            book1(15,f,i) = book1(1,f,i)+book1(13,f,i);
+            book1(15,f,i) = book1(3,f,i)-book1(13,f,i);
             book1(17,f,i) = book1(5,f,i)-book1(13,f,i);
         end
     end
@@ -245,10 +245,10 @@ end
 for i = 1:numTraj
     for f = 1:totalNumFrames
         if abs(book1(6,f,i)) < trackErrorThreshold
-            book1(16,f,i) = book1(2,f,i);
+            book1(16,f,i) = book1(4,f,i);
             book1(18,f,i) = book1(6,f,i);
         else
-            book1(16,f,i) = book1(2,f,i)+book1(14,f,i);
+            book1(16,f,i) = book1(4,f,i)-book1(14,f,i);
             book1(18,f,i) = book1(6,f,i)-book1(14,f,i);
         end
     end
@@ -258,20 +258,32 @@ end
 %--------------------------------------------------------------------------
 %Drawing zero state displacement fields
 %--------------------------------------------------------------------------
-for f = 1:totalNumFrames        % number of z-slices
-    res= {152,154};
-    data = figure('units','pixels','outerposition',[0 0 resX resY]);
-    h = quiver(book1(15,f,:),resY-book1(16,f,:),book1(17,f,:),-book1(18,f,:),0);
-    hU = get(h,'UData');
-    hV = get(h,'VData');
-    set(h,'UData',scaleOutputVectors*hU,'VData',scaleOutputVectors*hV)
-    axis(gca,'tight')
-     savefile = sprintf('Trajectory between 1st Frame and Frame %u.tif',f);
-     print(savefile,'-dtiff','-r300')
-     close
-end
+% for f = 1:totalNumFrames        % number of z-slices
+%     res= {152,154};
+%     data = figure('units','pixels','outerposition',[0 0 resX resY]);
+%     h = quiver(book1(15,f,:),resY-book1(16,f,:),book1(17,f,:),-book1(18,f,:),0);
+%     hU = get(h,'UData');
+%     hV = get(h,'VData');
+%     set(h,'UData',scaleOutputVectors*hU,'VData',scaleOutputVectors*hV)
+%     axis(gca,'tight')
+%     savefile = sprintf('Trajectory between 1st Frame and Frame %u.tif',f);
+%     print(savefile,'-dtiff','-r300')
+%     close
+% end
 
 %%
-% plot(objAll(:,1),objAll(:,2),'o')
-% hold on
-% plot(objAll(i,1),objAll(i,2),'ro')
+[a,b] = uigetfile('*.tif','Select trajectories image');
+c = imread([b,a]);
+figure
+imshow(c,[])
+hold on
+quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
+hold off
+
+[a,b] = uigetfile('*.tif','Select cell overlay image');
+d = imread([b,a]);
+figure
+imshow(d,[])
+hold on
+quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
+hold off
