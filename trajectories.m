@@ -10,9 +10,6 @@ close all; clear; clc;
 % for u(ser)
 [name,path] = uigetfile('*.xlsx');
 file = [path,name];
-
-% % for me
-% file = 'F:\trajectories.xlsx';
 [num,txt,raw] = xlsread(file);
 resX = 152;
 resY = 274;
