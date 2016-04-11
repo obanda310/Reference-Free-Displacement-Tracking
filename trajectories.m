@@ -111,19 +111,20 @@ for i = 1:numTraj
     else
         rightNeighbor = goodNeighbors;
     end
-    if isempty (rows)
-        rows(row,col) = i;
-        book1(10,:,i)= rightNeighbor(3);
-        book1(9,:,i) = row;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if isempty (rows)                       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        rows(row,col) = i;                  %%%%% This never happens %%%%%%
+        book1(10,:,i)= rightNeighbor(3);    %%%%%% This never happens %%%%%
+        book1(9,:,i) = row;                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     else
         if isempty(rightNeighbor)   %if a right neighbor doesn't exist for the current trajectory (i.e. if it is on the edge of the frame)
-            col = col + 1;           %adjust the current column to the next slot(to the right), and
+            col = col + 1;          %adjust the current column to the next slot(to the right), and
             rows(row,col) = i;      %place the current trajectory in that slot
             book1(9,:,i) = row;
             row = row + 1;          %then start a new row for the next trajectory in the list (because we have reached an edge)
             col = 1;                %start at the beginning of the new row for the next trajectory
             book1(10,:,i)= 0;
-            
         else                                                     %if we are NOT at the end of the row, we assume first that we MAY NOT be in the correct row, 
                                                                  %we check the current trajectory's right neighbor's row to see if it exists 
             rowCheck = ismember(rightNeighbor(3),rows);          %is the right neighbor to current object already assigned a row? store as 'rowCheck'

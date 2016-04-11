@@ -35,9 +35,9 @@ classdef Row < Experiment
                 goodNeighbors = n(abs(a(:,2)) < b & a(:,1) > 0,:);
                 if size(goodNeighbors,1) > 1
                     sortN = sortrows(goodNeighbors,1);
-                    rightNeighbor = sortN(1,:);
+                    obj.rightNeighbor = sortN(1,:);
                 else
-                    rightNeighbor = goodNeighbors;
+                    obj.rightNeighbor = goodNeighbors;
                 end
             end
         end
