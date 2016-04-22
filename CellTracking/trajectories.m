@@ -11,8 +11,13 @@ close all; clear; clc;
 [name,path] = uigetfile('*.xlsx');
 file = [path,name];
 [num,txt,raw] = xlsread(file);
-resX = 152;
-resY = 274;
+
+[trajFile,trajPath] = uigetfile('*.tif','Select trajectories image');
+c = imread([trajPath,trajFile]);
+[cellFile,cellPath] = uigetfile('*.tif','Select cell overlay image');
+d = imread([cellPath,cellFile]);
+[resY,resX] = size(c);
+
 scaleOutputVectors = 1;
 trackErrorThreshold = .3;
 patternErrorThreshold = .5;
@@ -286,23 +291,19 @@ end
 %     hU = get(h,'UData');
 %     hV = get(h,'VData');
 %     set(h,'UData',scaleOutputVectors*hU,'VData',scaleOutputVectors*hV)
-%     axis(gca,'tight')
+%     axis(gca,'equal','tight')
 %     savefile = sprintf('Trajectory between 1st Frame and Frame %u.tif',f);
 %     print(savefile,'-dtiff','-r300')
 %     close
 % end
 
 %%
-[a,b] = uigetfile('*.tif','Select trajectories image');
-c = imread([b,a]);
 figure
 imshow(c,[])
 hold on
 quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
 hold off
 
-[a,b] = uigetfile('*.tif','Select cell overlay image');
-d = imread([b,a]);
 figure
 imshow(d,[])
 hold on
