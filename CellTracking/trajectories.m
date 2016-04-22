@@ -24,7 +24,8 @@ patternErrorThreshold = .5;
 numIndices = 20;
 traj = num(:,2);
 numTraj = max(traj); % number of objects
-totalNumFrames = max(num(:,3)) + 1; % Maximum number of frames observable for any one object
+% Maximum number of frames observable for any one object
+totalNumFrames = max(num(:,3)) + 1;
 book1 = zeros(numIndices,totalNumFrames,numTraj);
 for i = 1:numTraj
     %Here we build a book of pages (3D array) with the data for a single
@@ -132,47 +133,77 @@ for i = 1:numTraj
     else
         leftNeighbor = goodNeighborsForLeft;
     end
-    
-        if isempty(rightNeighbor)   %if a right neighbor doesn't exist for the current trajectory (i.e. if it is on the edge of the frame)
-            col = col + 1;          %adjust the current column to the next slot(to the right), and
-            rows(row,col) = i;      %place the current trajectory in that slot
+    % if a right neighbor doesn't exist for the current trajectory (i.e. 
+    % if it is on the edge of the frame)
+        if isempty(rightNeighbor)   
+            % adjust the current column to the next slot(to the right)
+            col = col + 1;
+            % place the current trajectory in that slot
+            rows(row,col) = i;
             book1(9,:,i) = row;
-            row = row + 1;          %then start a new row for the next trajectory in the list (because we have reached an edge)
-            col = 1;                %start at the beginning of the new row for the next trajectory
+            % then start a new row for the next trajectory in the list
+            % (because we have reached an edge)
+            row = row + 1;
+            % start at the beginning of the new row for the next trajectory
+            col = 1;
             book1(10,:,i)= 0;
-        elseif isempty(leftNeighbor)   %if a left neighbor doesn't exist for the current trajectory (i.e. the first member of a row)
-            col = 1;          %adjust the current column to the first column
-            rows(row,col) = i;      %place the current trajectory in that slot
+        % if a left neighbor doesn't exist for the current trajectory 
+        % (i.e. the first member of a row)
+        elseif isempty(leftNeighbor)
+            col = 1;    % adjust the current column to the first column
+            rows(row,col) = i;  % place the current trajectory in that slot
             book1(9,:,i) = row;
-            col = 1;                %start at the beginning of the new row for the next trajectory
+            % start at the beginning of the new row for the next trajectory
+            col = 1;
             book1(10,:,i)= 0;
-        else                                                     %if we are NOT at the beginning or end of the row, we assume first that we MAY NOT be in the correct row, 
-                                                                 %we check the current trajectory's right/left neighbor's row to see if they exist 
+        else
+            % if we are NOT at the beginning or end of the row, we assume 
+            % first that we MAY NOT be in the correct row, we check the 
+            % current trajectory's right/left neighbor's row to see if they
+            % exist 
             rowCheckRight = ismember(rightNeighbor(3),rows);
-            rowCheckLeft = ismember(leftNeighbor(3),rows);       %is the right neighbor to current object already assigned a row? store as 'rowCheck'
-            if rowCheckRight == 1                                %if right exists then
-                [trow,tcol] = find(rows == rightNeighbor(3));    %what row does the right neighbor belong to? Store as 'trow'
-                emptyColumn = size(rows,2)+1;                    %Add one to the width of the 'rows' array to have a slot which will necessarily be empty, stored as 'emptyColumn'                            
-                    while rows(trow,emptyColumn-1) == 0          %If there is an empty value to the left of 'emptyColumn' in 'trow' then,
+            % is the right neighbor to current object already assigned a 
+            % row? store as 'rowCheck'
+            rowCheckLeft = ismember(leftNeighbor(3),rows);
+            if rowCheckRight == 1	% if right exists then
+                % what row does the right neighbor belong to? Store as trow
+                [trow,tcol] = find(rows == rightNeighbor(3));
+                % Add one to the width of the 'rows' array to have a slot 
+                % which will necessarily be empty, stored as 'emptyColumn'
+                emptyColumn = size(rows,2)+1;
+                % If there is an empty value to the left of 'emptyColumn' 
+                % in 'trow' then,
+                    while rows(trow,emptyColumn-1) == 0
                         emptyColumn = emptyColumn-1;
                     end
-                rows(trow,emptyColumn) = i;                      %place the trajectory number into a new empty column           
+                % place the trajectory number into a new empty column
+                rows(trow,emptyColumn) = i;
                 book1(10,:,i)= rightNeighbor(3);
                 book1(9,:,i) = trow;
                 col = col + 1;
-            elseif rowCheckLeft == 1                             %if left exists then                 
-                [trow,tcol] = find(rows == leftNeighbor(3));     %what row does the right neighbor belong to? Store as 'trow'
-                emptyColumn = size(rows,2)+1;                    %Add one to the width of the 'rows' array to have a slot which will necessarily be empty, stored as 'emptyColumn'                              
-                    while rows(trow,emptyColumn-1) == 0          %If there is an empty value to the left of 'emptyColumn' in 'trow' then,
+            elseif rowCheckLeft == 1	% if left exists then
+                % what row does the right neighbor belong to? Store as trow
+                [trow,tcol] = find(rows == leftNeighbor(3));
+                % Add one to the width of the 'rows' array to have a slot 
+                % which will necessarily be empty, stored as 'emptyColumn'
+                emptyColumn = size(rows,2)+1;
+                % If there is an empty value to the left of 'emptyColumn' 
+                % in 'trow' then,
+                    while rows(trow,emptyColumn-1) == 0
                         emptyColumn = emptyColumn-1;
                     end             
-                rows(trow,emptyColumn) = i;                      %place the trajectory number into a new empty column
+                % place the trajectory number into a new empty column
+                rows(trow,emptyColumn) = i;
                 book1(9,:,i) = trow;
                 col = col + 1;             
             else
-                col = col + 1;                                   %if the right neighbor is not on the list of rows yet, then move one column right and
-                rows(row,col) = i;                               %add the current trajectory to the empty slot
-                book1(10,:,i)= rightNeighbor(3);                 %add rightNeighbor to index book1 (index#10)
+                % if the right neighbor is not on the list of rows yet, 
+                % then move one column right and...
+                col = col + 1;
+                % ... add the current trajectory to the empty slot
+                rows(row,col) = i;
+                % add rightNeighbor to index book1 (index#10)
+                book1(10,:,i)= rightNeighbor(3);
                 book1(9,:,i) = row;
             end
         end
@@ -301,11 +332,13 @@ end
 figure
 imshow(c,[])
 hold on
-quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
+quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),...
+    book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
 hold off
 
 figure
 imshow(d,[])
 hold on
-quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
+quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),...
+    book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
 hold off
