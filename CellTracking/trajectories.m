@@ -16,10 +16,11 @@ file = [path,name];
 c = imread([trajPath,trajFile]);
 [cellFile,cellPath] = uigetfile('*.tif','Select cell overlay image');
 d = imread([cellPath,cellFile]);
+
 [resY,resX] = size(c);
 
 scaleOutputVectors = 1;
-trackErrorThreshold = .3;
+trackErrorThreshold = .2;
 patternErrorThreshold = .5;
 numIndices = 20;
 traj = num(:,2);
@@ -45,6 +46,12 @@ for i = 1:numTraj
     book1(12,:,i) = endFrame;
     % this fills in the upper portion of obj matrix with zeros if the first
     % frame is not 0
+    if startFrame > 0 && endFrame < totalNumFrames
+        obj = [zeros(startFrame,12);tempObj;zeros(totalNumFrames-endFrame,12)];
+    else
+    if endFrame < totalNumFrames
+        obj = [tempObj;zeros(totalNumFrames-endFrame,12)];
+    else
     if startFrame > 0  
         obj = [zeros(startFrame,12);tempObj];
     else
@@ -55,6 +62,8 @@ for i = 1:numTraj
         obj = tempObj; %this applies to objects that start in frame 0
         end
         end
+    end
+    end
     end
     if i == 1
         %'book1' is our book (3D array) of object data
@@ -179,6 +188,28 @@ for i = 1:numTraj
     end
 end
 %%
+numTrajInRows = max(rows(:));
+% for m = 1:size(rows,2)
+% for i = 1:numTrajInRows
+%     for j = 1:size(rows,1)
+%         for k = 1:size(rows,2)
+%             if k>1
+%             if rows(j,k) == i && rows(j,k-1) == 0
+%                 rows(j,k) = 0;
+%                 rows(j,k-1) = i;
+%                 k = k-2;
+%             end
+%             end
+%         end
+%     end
+% end
+% end
+                
+                
+        
+        
+
+%%
 %--------------------------------------------------------------------------
 %4.)Identifying deviations from zero state in later frames
 %--------------------------------------------------------------------------
@@ -202,30 +233,30 @@ end
 % By shifting the start position of the vectors, we can remove the error in
 % displacement caused by patterning irregularities
 
-numTrajInRows = max(rows(:));
-rowElements = find(book1(9,1,:)==1);
-numRowElements = numel(rowElements);
-bookX = zeros(numRowElements+1,max(book1(9,1,:)),totalNumFrames);
+
+numRowElements = size(rows,2);
+bookX = zeros(numRowElements+10,max(book1(9,1,:)),totalNumFrames);
 bookY = zeros(numRowElements+1,max(book1(9,1,:)),totalNumFrames);
 for f=1:totalNumFrames
-    m=2;
-    for i=1:numTrajInRows
+   for i=1:numTrajInRows
         j=book1(9,f,i);
+        if max(bookX(:,j,f))==0
+            m=1;
+        end
         k=book1(7,f,i);
         l=book1(8,f,i);
-        rowElements = find(book1(9,1,:)==j);
-        numRowElements = numel(rowElements);
-        bookX(m-((j-1)*numRowElements),j,f)= k;
-        bookY(m-((j-1)*numRowElements),j,f)= l;
+        numRowElements = size(rows,2);
+        bookX((numRowElements+1-m),j,f)= k;
+        bookY((numRowElements+1-m),j,f)= l;
         m=m+1;
-    end
+        end
 end
 
 
 %filter bookX and bookY to remove noise caused by particle tracker and find
 %the mode error from patterning
 fBookX = bookX .* (abs(bookX)>trackErrorThreshold);
-fBookY = bookY .* (abs(bookX)>trackErrorThreshold);
+fBookY = bookY .* (abs(bookY)>trackErrorThreshold);
 numRows = max(nonzeros(book1(9,:,:)));
 for f = 1:totalNumFrames  
    for r = 1:numRows
@@ -236,6 +267,7 @@ for f = 1:totalNumFrames
        end
    end
 end
+
 for f = 1:totalNumFrames  
    for r = 1:numRows
        if max(abs(fBookY(:,r,f)))>0
@@ -260,10 +292,10 @@ end
 for i = 1:numTraj
     for f = 1:totalNumFrames
         if abs(book1(5,f,i)) < trackErrorThreshold
-            book1(15,f,i) = book1(3,f,i);
+            book1(15,f,i) = book1(1,f,i);
             book1(17,f,i) = book1(5,f,i);
         else
-            book1(15,f,i) = book1(3,f,i)-book1(13,f,i);
+            book1(15,f,i) = book1(1,f,i)-book1(13,f,i);
             book1(17,f,i) = book1(5,f,i)-book1(13,f,i);
         end
     end
@@ -271,11 +303,11 @@ end
 for i = 1:numTraj
     for f = 1:totalNumFrames
         if abs(book1(6,f,i)) < trackErrorThreshold
-            book1(16,f,i) = book1(4,f,i);
+            book1(16,f,i) = book1(2,f,i);
             book1(18,f,i) = book1(6,f,i);
         else
-            book1(16,f,i) = book1(4,f,i)-book1(14,f,i);
-            book1(18,f,i) = book1(6,f,i)-book1(14,f,i);
+            book1(16,f,i) = book1(2,f,i);% -book1(14,f,i); add these to track constant y errors
+            book1(18,f,i) = book1(6,f,i);% -book1(14,f,i); right now they are not necessary
         end
     end
 end
@@ -292,20 +324,75 @@ end
 %     hV = get(h,'VData');
 %     set(h,'UData',scaleOutputVectors*hU,'VData',scaleOutputVectors*hV)
 %     axis(gca,'equal','tight')
-%     savefile = sprintf('Trajectory between 1st Frame and Frame %u.tif',f);
+%    savefile = sprintf('Trajectory between 1st Frame and Frame %u.tif',f);
 %     print(savefile,'-dtiff','-r300')
 %     close
 % end
-
 %%
-figure
-imshow(c,[])
-hold on
-quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
-hold off
+%--------------------------------------------------------------------------
+%Drawing zero state displacement fields on black background
+%--------------------------------------------------------------------------
+[blackFile,blackPath] = uigetfile('*.tif','Select black image of correct size');
+e = imread([blackPath,blackFile]);
+for f = 1:totalNumFrames        % number of z-slices
+    blackOverlay = figure
+    imshow(e,[])
+    hold on
+    quiver(book1(15,f,:),book1(16,f,:),book1(17,f,:),book1(18,f,:),0,'g');
+    hold off
+    mkdir(blackPath,'Black Image Overlays')
+    savefile = [blackPath '\Black Image Overlays\Black Background Overlay' num2str(f) '.tif'];
+    export_fig(blackOverlay,savefile)
+    close
+end
+%%
+%--------------------------------------------------------------------------
+%Plotting corrected x,y coordinate fields
+%--------------------------------------------------------------------------
+%data = figure('units','pixels','outerposition',[0 0 resX resY]);
+% figure
+% imshow(d,[])
+% hold on
+% for t = 1:numTrajInRows
+%     
+%     plot(book1(15,1,t),book1(16,1,t),'r.','MarkerSize',10);
+%     hold on
+%     plot(book1(1,1,t),book1(2,1,t),'g.','MarkerSize',5);
+%     hold on
+%     for f = 1:totalNumFrames
+%     plot(book1(15,f,t),book1(16,f,t),'b.','MarkerSize',3);
+%     hold on
+% %     plot(book1(1,f,t),book1(2,f,t),'w.','MarkerSize',2);
+% %     hold on
+%     end
+% %     savefile = sprintf('Trajectory between 1st Frame and Frame %u.tif',f);
+% %     print(savefile,'-dtiff','-r300')
+% %     close
+% end
+% hold on
+% quiver(book1(3,totalNumFrames,:),book1(4,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
 
-figure
-imshow(d,[])
-hold on
-quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
-hold off
+% %%
+% trajOverlay = figure
+% imshow(c,[])
+% hold on
+% quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
+% hold off
+% savefile = [trajPath '\Trajectories Overlay.tif'];
+% %mkdir('trajPath','Trajectories Overlay')
+% export_fig(trajOverlay,savefile)
+% 
+% transmittedOverlay = figure
+% imshow(d,[])
+% hold on
+% quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
+% hold off
+% savefile = [cellPath '\Transmitted Overlay.tif'];
+% %mkdir('cellPath','Transmitted Overlay')
+% export_fig(transmittedOverlay,savefile)
+
+% figure
+% imshow(d,[])
+% hold on
+% quiver(book1(15,q,:),book1(16,q,:),book1(17,q,:),book1(18,q,:),0,'g');
+% hold off
