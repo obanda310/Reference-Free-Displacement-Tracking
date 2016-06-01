@@ -93,6 +93,11 @@ function SlaterLab_GUI_v3
         'String','Percent Compressive Strain of Interest (%):',...
         'Position',[10,175,175,25],...
         'HorizontalAlignment','Right');
+    uicontrol(...
+        'Style','text',...
+        'String','Estimated Initial Height:',...
+        'Position',[10,140,175,25],...
+        'HorizontalAlignment','Right');
     
     % GUI input
     hDiameter = uicontrol(...
@@ -108,6 +113,9 @@ function SlaterLab_GUI_v3
         'Style','edit',...
         'String',dlgStrain,...
         'Position',[200,175,50,25]);
+    hEstimatedInitialHeight = uicontrol(...
+        'Style','edit',...
+        'Position',[200,140,50,25]);
     
     % GUI buttons
     uicontrol(...
@@ -172,7 +180,7 @@ function SlaterLab_GUI_v3
         'String','Delete Selected Row(s)',...
         'Position',[1150,50,600,25],...
         'Callback',@RowDelete_Callback);
-        
+%%        
     function RowSelection_Callback(h,event)
         % Get indices of selected rows and make them available for other
         % callbacks
@@ -182,6 +190,7 @@ function SlaterLab_GUI_v3
             set(h,'UserData',rows);
         end
     end
+%%
     function RowDelete_Callback(~,~)
         selectedRows = get(hTable,'UserData');
         spreadsheet = get(hTable,'Data');
@@ -190,7 +199,7 @@ function SlaterLab_GUI_v3
         spreadsheet = spreadsheet(mask,:);
         set(hTable,'Data',spreadsheet);
     end
-    
+%%    
     % GUI button callbacks
     function GetFile_Callback(~,~)
         [filename,filepath] = uigetfile('*.csv');    
@@ -433,6 +442,10 @@ function SlaterLab_GUI_v3
             end
         end
         
+        hEstimatedInitialHeight = uicontrol(...
+        'Style','edit',...
+        'String',iSampleHeight,...
+        'Position',[200,110,50,25]);
         % Fit a curved line of the form y = Ax^2 + Bx + C to the stress vs 
         % strain curve
         [dataFit,~] = polyfit(data.strain,data.stress,2);
@@ -499,6 +512,7 @@ function SlaterLab_GUI_v3
         
         guidata(h,data);
     end
+%%
     function Recalculate_Callback(~,~)
         data.time = zeros(length(data.raw)-4,1);
         data.extension = zeros(length(data.raw)-4,1);
@@ -533,6 +547,7 @@ function SlaterLab_GUI_v3
             'Location','northwest')
         
         [~,minLoadIdx] = min(data.gelLoad);
+
         data.time = data.time(minLoadIdx:end);
         data.extension = data.extension(minLoadIdx:end);
         data.gelLoad = data.gelLoad(minLoadIdx:end);
@@ -644,6 +659,7 @@ function SlaterLab_GUI_v3
             data.slopeDeriv});
         set(hTable,'Data',newSpreadsheet)
     end
+%%
     function SetDestination_Callback(~,~)
         [savefile,savepath] = uigetfile({'*.xls';'*.xlsx'});
         data.savefull = cat(2,savepath,'\',savefile);
@@ -655,6 +671,7 @@ function SlaterLab_GUI_v3
         % Exposure Time (s), NVP, NVP Amount (uL), NVP Concentration (M),
         % Initial Sample Height (mm), Initial Diameter (mm), Slope (kPa)
     end
+%%
     function SaveData_Callback(~,~)
         if isempty(data.savefull) == 1
             msgbox('Error! Please Choose a Destination File!');
@@ -668,6 +685,7 @@ function SlaterLab_GUI_v3
             xlswrite(data.savefull,savedata,1,xlRange);
         end
     end
+%%
     function ManualFitEnd_Callback(~,~)
         if isempty(data.chosenPoint) == 0
             delete(data.chosenPoint)
@@ -675,12 +693,88 @@ function SlaterLab_GUI_v3
         set(h,'CurrentAxes',hStressStrain)
         data.chosenPoint = impoint;
         chosenPointPos = getPosition(data.chosenPoint);
-        [~,newStartIdx] = ...
-            min(abs(data.strain-chosenPointPos(1)));
-
+        disp(data.sampleHeight(1))
+        newSampleHeight = data.sampleHeight(1) + (data.sampleHeight(1)*chosenPointPos(1));
+        disp(newSampleHeight)
+        disp(data.extension(1))
+        disp(data.iHeight)
+        [~,minLoadIdx] = min(abs(((data.extension*-1)+ data.iHeight)- newSampleHeight));
+        disp(min(abs(data.extension - newSampleHeight)))
+        disp(minLoadIdx)
+        %[~,newStartIdx] = ...
+        %    min(abs(data.strain-chosenPointPos(1)));
+set(h,'CurrentAxes',hForceTime)
+        plot(data.time,data.gelLoad,'Color','green')
+        xlabel('Time (s)')
+        ylabel('Force (N)')
+        title('Load vs Time')
+        
+        set(h,'CurrentAxes',hExtensionTime)
+        plot(data.time,data.extension,'Color','green')
+        xlabel('Time (s)')
+        ylabel('Extension (mm)')
+        title('Extension vs Time')
+        hold on
+        data.zeroExtIdx = find(data.extension >= 0,1);
+        plot(data.time(data.zeroExtIdx),data.extension(data.zeroExtIdx),...
+            '-go','MarkerSize',10,'MarkerEdgeColor','red',...
+            'LineWidth',3)
+        hold off
+        data.iHeight = get(hHeight,'string');
+        data.iHeight = str2double(data.iHeight);
+        legend('Full Dataset',sprintf('%1.1f mm Grip-to-Grip Distance',data.iHeight),...
+            'Location','northwest')
+        
+        data.time = data.time(minLoadIdx:end);
+        data.extension = data.extension(minLoadIdx:end);
+        data.gelLoad = data.gelLoad(minLoadIdx:end);
+        set(h,'CurrentAxes',hForceTime)
+        hold on
+        plot(data.time,data.gelLoad,'LineWidth',3,'Color','black')
+        hold off
+        legend('Full Dataset','Relevant Dataset','Location','northwest')
+        
+        set(h,'CurrentAxes',hExtensionTime)
+        hold on
+        plot(data.time(1),data.extension(1),...
+            '-ko','MarkerSize',10,'MarkerEdgeColor','blue',...
+            'LineWidth',3)
+        plot(data.time,data.extension,'LineWidth',3,'Color','black')
+        hold off
+        legend('Full Dataset',sprintf('%1.1f mm Distance',data.iHeight),...
+            'Initial Gel Loading','Relevant Dataset',...
+            'Location','northwest')
+        
+        data.iHeight = get(hHeight,'string');
+        data.iHeight = str2double(data.iHeight);
+        data.sampleHeight = data.iHeight - data.extension;
+        set(h,'CurrentAxes',hSampleHeight)
+        plot(data.time,data.sampleHeight)
+        xlabel('Time (s)')
+        ylabel('Sample Height (mm)')
+        title('Sample Height vs Time')
+        
+        data.iDiameter = get(hDiameter,'string');
+        data.iDiameter = str2double(data.iDiameter);
+        iSampleArea = pi*data.iDiameter^2/4;
+        iSampleHeight = data.sampleHeight(1);
+        if isempty(data.iDiameter) == 1
+            msgbox('Error! Please input initial sample diameter!')
+        else
+            data.strain = zeros(size(data.time));
+            data.sampleArea = data.strain;
+            data.stress = data.strain;
+            for a = 1:length(data.time)
+                data.strain(a) = (data.sampleHeight(a)-iSampleHeight)/...
+                    iSampleHeight;
+                data.sampleArea(a) = iSampleArea/(1+data.strain(a));
+                data.stress(a) = 1000*data.gelLoad(a)/data.sampleArea(a);
+            end
+        end
+        
         % Fit a curved line of the form y = Ax^2 + Bx + C to the stress vs 
         % strain curve
-        [dataFit,~] = polyfit(data.strain(newStartIdx:end),data.stress(newStartIdx:end),2);
+        [dataFit,~] = polyfit(data.strain,data.stress,2);
         data.C = dataFit(1);
         data.D = dataFit(2);
         data.E = dataFit(3);
@@ -688,7 +782,7 @@ function SlaterLab_GUI_v3
         fitFun = @(x) data.C*x.^2 + data.D*x + data.E;
         % X data to be used as input for the fit line (y = Ax^2 + Bx + C)
         % is the strain data
-        xFit = data.strain(newStartIdx:end);
+        xFit = data.strain;
         % Input x data to model (y = mx + b) to generate y (stress) data
         yFit = fitFun(xFit);
         % Define derivative (d/dx) of polynomial fit function
@@ -702,7 +796,13 @@ function SlaterLab_GUI_v3
             'Position',[10,150,175,25],...
             'HorizontalAlignment','Right');
         data.slopeDeriv = dfitFun(data.perStrain);
-
+        
+        set(h,'CurrentAxes',hSampleArea)
+        plot(data.time,data.sampleArea)
+        xlabel('Time (s)')
+        ylabel('Sample Area (mm^2)')
+        title('Sample Area vs Time')
+        
         set(h,'CurrentAxes',hStressStrain)
         plot(data.strain,data.stress,'Color','black')
         hold on
@@ -735,5 +835,6 @@ function SlaterLab_GUI_v3
             data.sampleHeight(1),data.iDiameter,data.perStrain,...
             data.slopeDeriv});
         set(hTable,'Data',newSpreadsheet)
+
     end
 end
