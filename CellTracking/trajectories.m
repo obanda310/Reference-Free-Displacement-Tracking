@@ -110,41 +110,71 @@ rows = zeros(2,1);
 row = 1;
 col = 1;
 % distances = cell(numObj,3);
-%for i = 1:21
+%for i = 1:29
 for i = 1:numTraj
     if book1(11,1,i) ~= 1
         i=i+1;
     else    
-    thisObj = [x_0(i,1),resY-y_0(i,1)];
-    objCount = (1:numTraj)';
-    distances = sqrt(sum(bsxfun(@minus,objAll,thisObj).^2,2));
-    objData = [objCount,distances];
-    sortDist = sortrows(objData,2);
-    neighbors(1,1:4) = sortDist(2:5,1);
-    nDistance = sortDist(2:5,2);
-    for j = 1:4
-        n(j,1:2) = objAll(neighbors(1,j),:);
-        n(j,3) = neighbors(j);
-    end
-    a = bsxfun(@minus,n(:,1:2),thisObj);
-    b = mean([min(abs(a)),max(abs(a))]);
-    goodNeighbors = n(abs(a(:,2)) < b & a(:,1) > 0,:);
-    if size(goodNeighbors,1) > 1
-        sortN = sortrows(goodNeighbors,1);
-        rightNeighbor = sortN(1,:);
-    else
-        rightNeighbor = goodNeighbors;
-    end
-    goodNeighborsForLeft = n(abs(a(:,2)) < b & a(:,1) < 0,:);
-    if size(goodNeighborsForLeft,1) > 1
-        sortN = sortrows(goodNeighborsForLeft,1);
-        leftNeighbor = sortN(1,:);
-    else
-        leftNeighbor = goodNeighborsForLeft;
-    end
-    % if a right neighbor doesn't exist for the current trajectory (i.e. 
-    % if it is on the edge of the frame)
-        if isempty(rightNeighbor)   
+        thisObj = [x_0(i,1),resY-y_0(i,1)];
+        objCount = (1:numTraj)';
+        unweightedDistances = bsxfun(@minus,objAll,thisObj);
+        xDistances = unweightedDistances(:,1);
+        yDistances = unweightedDistances(:,2);
+        distances = sqrt((xDistances.^2+yDistances.^2));
+        objData = [objCount,distances];
+        sortDist = sortrows(objData,2);
+        neighbors(1,1:4) = sortDist(2:5,1);
+        nDistance = sortDist(2:5,2);
+        for j = 1:4
+            n(j,1:2) = objAll(neighbors(1,j),:);
+            n(j,3) = neighbors(j);
+        end
+        a = bsxfun(@minus,n(:,1:2),thisObj);
+        b = mean([min(abs(a)),max(abs(a))]);
+        goodNeighbors = n(abs(a(:,2)) < b & a(:,1) > 0,:);
+        if size(goodNeighbors,1) > 1
+            sortN = sortrows(goodNeighbors,1);
+            rightNeighbor = sortN(1,:);
+        else
+            rightNeighbor = goodNeighbors;
+        end
+        goodNeighborsForLeft = n(abs(a(:,2)) < b & a(:,1) < 0,:);
+        if size(goodNeighborsForLeft,1) > 1
+            sortLeftN = sortrows(goodNeighborsForLeft,1);
+            leftNeighbor = sortLeftN(1,:);
+        else
+            leftNeighbor = goodNeighborsForLeft;
+        end
+    
+    %%%%%%%%%%%%Row Assignment Method 1: Using Distance%%%%%%%%%%%%%%%%%%%%
+        %A threshold y distance is chosen. Any trajectories outside of the
+        %threshold distance in y are considered part of a different row than
+        %the current row.
+        yThresholdFactor = 0.5
+        if i>1 && abs(yDistances(i-1,1)) < abs(yThresholdFactor*nDistance(1,1))
+            col = col + 1;
+            % Add one to the width of the 'rows' array to have a slot 
+            % which will necessarily be empty, stored as 'emptyColumn'
+            emptyColumn = size(rows,2)+1;
+            % If there is an empty value to the left of 'emptyColumn' 
+            % in 'trow' then,
+                  while rows(book1(9,1,i-1),emptyColumn-1) == 0
+                            emptyColumn = emptyColumn-1;
+                  end
+            % place the trajectory number into a new empty column
+            rows(book1(9,1,i-1),emptyColumn) = i;
+            book1(9,:,i) = row;
+            % if a right neighbor doesn't exist for the current trajectory (i.e. 
+            % if it is on the edge of the frame)
+        elseif i>1 && abs(yDistances(i-1,1)) > abs(0.5*nDistance(1,1))
+            row = row + 1;
+            col = 1;
+            rows(row,col) = i;
+            book1(9,:,i) = row;
+
+
+    %%%%%%%%%%%%Row Assignment Method 2: Using Neighbor Trajectories%%%%%%%    
+        elseif isempty(rightNeighbor) == 1 && isempty(leftNeighbor) == 0   
             % adjust the current column to the next slot(to the right)
             col = col + 1;
             % place the current trajectory in that slot
@@ -156,23 +186,23 @@ for i = 1:numTraj
             % start at the beginning of the new row for the next trajectory
             col = 1;
             book1(10,:,i)= 0;
-        % if a left neighbor doesn't exist for the current trajectory 
-        % (i.e. the first member of a row)
-        elseif isempty(leftNeighbor)
+            % if a left neighbor doesn't exist for the current trajectory 
+            % (i.e. the first member of a row)
+         elseif isempty(leftNeighbor)
             col = 1;    % adjust the current column to the first column
             rows(row,col) = i;  % place the current trajectory in that slot
             book1(9,:,i) = row;
             % start at the beginning of the new row for the next trajectory
             col = 1;
-            book1(10,:,i)= 0;
-        else
+            book1(20,:,i)= 0;
+         else
             % if we are NOT at the beginning or end of the row, we assume 
             % first that we MAY NOT be in the correct row, we check the 
             % current trajectory's right/left neighbor's row to see if they
             % exist 
-            rowCheckRight = ismember(rightNeighbor(3),rows);
-            % is the right neighbor to current object already assigned a 
+            % is the right/left neighbor to current object already assigned a 
             % row? store as 'rowCheck'
+            rowCheckRight = ismember(rightNeighbor(3),rows);
             rowCheckLeft = ismember(leftNeighbor(3),rows);
             if rowCheckRight == 1	% if right exists then
                 % what row does the right neighbor belong to? Store as trow
@@ -191,7 +221,7 @@ for i = 1:numTraj
                 book1(9,:,i) = trow;
                 col = col + 1;
             elseif rowCheckLeft == 1	% if left exists then
-                % what row does the right neighbor belong to? Store as trow
+                % what row does the left neighbor belong to? Store as trow
                 [trow,tcol] = find(rows == leftNeighbor(3));
                 % Add one to the width of the 'rows' array to have a slot 
                 % which will necessarily be empty, stored as 'emptyColumn'
@@ -212,13 +242,23 @@ for i = 1:numTraj
                 % ... add the current trajectory to the empty slot
                 rows(row,col) = i;
                 % add rightNeighbor to index book1 (index#10)
-                book1(10,:,i)= rightNeighbor(3);
+
                 book1(9,:,i) = row;
             end
+            book1(10,:,i)= rightNeighbor(3);
+            book1(20,:,i)= leftNeighbor(3);
+        end
+        if isempty(rightNeighbor)==0
+        book1(10,:,i)= rightNeighbor(3);
+        end
+        if isempty(leftNeighbor)==0
+        book1(20,:,i)= leftNeighbor(3);
         end
     end
 end
+
 %%
+
 numTrajInRows = max(rows(:));
 % for m = 1:size(rows,2)
 % for i = 1:numTrajInRows
@@ -235,12 +275,9 @@ numTrajInRows = max(rows(:));
 %     end
 % end
 % end
-                
-                
-        
-        
-
+                                             
 %%
+
 %--------------------------------------------------------------------------
 %4.)Identifying deviations from zero state in later frames
 %--------------------------------------------------------------------------
@@ -266,7 +303,7 @@ numTrajInRows = max(rows(:));
 
 
 numRowElements = size(rows,2);
-bookX = zeros(numRowElements+10,max(book1(9,1,:)),totalNumFrames);
+bookX = zeros(numRowElements+100,max(book1(9,1,:)),totalNumFrames);
 bookY = zeros(numRowElements+1,max(book1(9,1,:)),totalNumFrames);
 for f=1:totalNumFrames
    for i=1:numTrajInRows
@@ -344,6 +381,7 @@ for i = 1:numTraj
 end
 
 %%
+
 %--------------------------------------------------------------------------
 %Drawing zero state displacement fields
 %--------------------------------------------------------------------------
@@ -359,6 +397,7 @@ end
 %     print(savefile,'-dtiff','-r300')
 %     close
 % end
+
 %%
 
 %--------------------------------------------------------------------------
@@ -377,34 +416,36 @@ for f = 1:totalNumFrames        % number of z-slices
     export_fig(blackOverlay,savefile)
     close
 end
+
 %%
+
 %--------------------------------------------------------------------------
 %Plotting corrected x,y coordinate fields
 %--------------------------------------------------------------------------
-%data = figure('units','pixels','outerposition',[0 0 resX resY]);
+data = figure('units','pixels','outerposition',[0 0 resX resY]);
 % figure
-% imshow(d,[])
-% hold on
-% for t = 1:numTrajInRows
-%     
-%     plot(book1(15,1,t),book1(16,1,t),'r.','MarkerSize',10);
+imshow(d,[])
+hold on
+for t = 1:numTrajInRows
+    
+    plot(book1(15,1,t),book1(16,1,t),'r.','MarkerSize',10);
+    hold on
+    plot(book1(1,1,t),book1(2,1,t),'g.','MarkerSize',5);
+    hold on
+    for f = 1:totalNumFrames
+    plot(book1(15,f,t),book1(16,f,t),'b.','MarkerSize',3);
+    hold on
+%     plot(book1(1,f,t),book1(2,f,t),'w.','MarkerSize',2);
 %     hold on
-%     plot(book1(1,1,t),book1(2,1,t),'g.','MarkerSize',5);
-%     hold on
-%     for f = 1:totalNumFrames
-%     plot(book1(15,f,t),book1(16,f,t),'b.','MarkerSize',3);
-%     hold on
-% %     plot(book1(1,f,t),book1(2,f,t),'w.','MarkerSize',2);
-% %     hold on
-%     end
-% %     savefile = sprintf('Trajectory between 1st Frame and Frame %u.tif',f);
-% %     print(savefile,'-dtiff','-r300')
-% %     close
-% end
-% hold on
-% quiver(book1(3,totalNumFrames,:),book1(4,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
+    end
+%     savefile = sprintf('Trajectory between 1st Frame and Frame %u.tif',f);
+%     print(savefile,'-dtiff','-r300')
+%     close
+end
+hold on
+quiver(book1(3,totalNumFrames,:),book1(4,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
 
-% %%
+%%
 % trajOverlay = figure
 % imshow(c,[])
 % hold on
@@ -428,7 +469,10 @@ end
 % hold on
 % quiver(book1(15,q,:),book1(16,q,:),book1(17,q,:),book1(18,q,:),0,'g');
 % hold off
-%%=======
+
+%%
+
+%Plot overlay on trajectories and transmitted images.
 figure
 imshow(c,[])
 hold on
@@ -442,4 +486,6 @@ hold on
 quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),...
     book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
 hold off
-
+%%
+Test(1:30,2) = book1(10,9,1:30);
+Test(1:30,1) = book1(20,9,1:30);
