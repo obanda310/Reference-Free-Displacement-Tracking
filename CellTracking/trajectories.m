@@ -1,15 +1,15 @@
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Converting Particle Tracking Data to Displacement Data from Zero State  %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%--------------------------------------------------------------------------
-%1.) Sorting the raw data from excel file
-%--------------------------------------------------------------------------
 close all; clear; clc;
-%%
+%Analyzing Trajectories from FIJI input
+
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+%Section 1.) Inputs and Sorting the Raw Data From Excel File
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%1.1 Loading Data and Background Images for Overlays%%%%%%%%%%%%%%
+%1.1 Loading Data and Background Images for Overlays%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 [name,path] = uigetfile('*.xlsx','Select .xlsx File From Particle Tracker Output');
 file = [path,name];
@@ -28,16 +28,20 @@ outputs = OutputSelector()
 
 %%
 
-[resY,resX] = size(c);
-scaleOutputVectors = 1;
-trackErrorThreshold = .2;
-patternErrorThreshold = .5;
-numIndices = 24;
-traj = num(:,2);
-numTraj = max(traj); % number of objects
-% Maximum number of frames observable for any one object
-totalNumFrames = max(num(:,3)) + 1;
-book1 = zeros(numIndices,totalNumFrames,numTraj);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%1.2 Input Variables%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+[resY,resX] = size(c); %for Section 5
+scaleOutputVectors = 1; %for Section 5.1
+trackErrorThreshold = .2; %for Section 4
+numIndices = 26; %for Section 1 and 2 (number of elements in book1)
+numTraj = max(num(:,2)); %Number of Trajectories
+totalNumFrames = max(num(:,3)) + 1; %Maximum number of frames observable for any one object
+book1 = zeros(numIndices,totalNumFrames,numTraj); %Creates book1
+
+%%
+
 for i = 1:numTraj
     %Here we build a book of pages (3D array) with the data for a single
     %object/trajectory per page. Most of the code is to ensure that each
@@ -45,7 +49,7 @@ for i = 1:numTraj
     
     % stores data to 'tempObj' pertaining to all frames of one
     % object/trajectory
-    tempObj = num(traj==i,:);
+    tempObj = num(num(:,2)==i,:);
     % number of frames that the current object appears in.
     numFrames = size(tempObj,1);
     % the first frame that an object appears in (tracking software starts 
@@ -95,9 +99,17 @@ for i = 1:numTraj
     end
 end
 %%
+
 %--------------------------------------------------------------------------
-%2.) Building book1 from the raw data
 %--------------------------------------------------------------------------
+%Section 2.) Building book1 from the raw data
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+
+
+%Notes: The majority of indices are added in later sections, but listed 
+%here for reference.
+
 %Index List for Book1
 %1 = Raw X Centroid Location of Traj in Specified Frame
 %2 = Raw Y Centroid Location of Traj in Specified Frame
@@ -126,8 +138,6 @@ end
 %25 = Value of book1 index 21 (see above) in Last Frame that Traj Appears
 %26 = Value of book1 index 22 (see above) in Last Frame that Traj Appears
 
-
-
   for i = 1:numTraj
         for j = 1:totalNumFrames
             book1(1,j,i) = book2(j,4,i);
@@ -142,15 +152,22 @@ end
   end
 
 %%
+
+
 %--------------------------------------------------------------------------
-%3.) Associating objects to rows by identifying nearest right neighbor 
 %--------------------------------------------------------------------------
+%Section 3.) Assigning Objects to Rows by Based on Neighbor Particles
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+%3.1 Identifying Nearest Left and Right Neighbors%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 objAll = [x_0(:,1),resY-y_0(:,1)];
 rows = zeros(2,1);
 row = 1;
 col = 1;
-% distances = cell(numObj,3);
-%for i = 1:29
 for i = 1:numTraj
     if book1(11,1,i) ~= 1
         i=i+1;
@@ -185,8 +202,11 @@ for i = 1:numTraj
         else
             leftNeighbor = goodNeighborsForLeft;
         end
-    
-    %%%%%%%%%%%%Row Assignment Method 1: Using Distance%%%%%%%%%%%%%%%%%%%%
+        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+%3.2 Row Assignment Method 1: Using Distance%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         %A threshold y distance is chosen. Any trajectories outside of the
         %threshold distance in y are considered part of a different row than
         %the current row.
@@ -212,8 +232,10 @@ for i = 1:numTraj
             rows(row,col) = i;
             book1(9,:,i) = row;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%3.3 Row Assignment Method 2: Using Neighbor Trajectories%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    %%%%%%%%%%%%Row Assignment Method 2: Using Neighbor Trajectories%%%%%%%    
         elseif isempty(rightNeighbor) == 1 && isempty(leftNeighbor) == 0   
             % adjust the current column to the next slot(to the right)
             col = col + 1;
@@ -296,31 +318,17 @@ for i = 1:numTraj
         end
     end
 end
-
-%%
-
-numTrajInRows = max(rows(:));
-% for m = 1:size(rows,2)
-% for i = 1:numTrajInRows
-%     for j = 1:size(rows,1)
-%         for k = 1:size(rows,2)
-%             if k>1
-%             if rows(j,k) == i && rows(j,k-1) == 0
-%                 rows(j,k) = 0;
-%                 rows(j,k-1) = i;
-%                 k = k-2;
-%             end
-%             end
-%         end
-%     end
-% end
-% end
                                              
 %%
 
 %--------------------------------------------------------------------------
-%4.)Identifying deviations from zero state in later frames
 %--------------------------------------------------------------------------
+%Section 4.)Identifying Deviations From Zero-State in Later Frames
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+
+%CURRENTLY DISABLED
+
 % Now that we have a list of rows of trajectories we need to find the
 % error displacement for members of a particular row caused by 
 % irregularities in the patterning process. 
@@ -341,7 +349,13 @@ numTrajInRows = max(rows(:));
 % By shifting the start position of the vectors, we can remove the error in
 % displacement caused by patterning irregularities
 
+%%
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%4.1 Identifying Deviations%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+numTrajInRows = max(rows(:));
 numRowElements = size(rows,2);
 bookX = zeros(numRowElements+100,max(book1(9,1,:)),totalNumFrames);
 bookY = zeros(numRowElements+1,max(book1(9,1,:)),totalNumFrames);
@@ -405,8 +419,8 @@ for i = 1:numTraj
             book1(21,f,i) = book1(1,f,i);
         else
             book1(15,f,i) = book1(3,f,i);%+book1(13,f,i);
-            book1(17,f,i) = book1(5,f,i)-book1(13,f,i);
-            book1(21,f,i) = book1(1,f,i)-book1(13,f,i);
+            book1(17,f,i) = book1(5,f,i);%-book1(13,f,i);
+            book1(21,f,i) = book1(1,f,i);%-book1(13,f,i);
         end
     end
 end
@@ -425,7 +439,7 @@ for i = 1:numTraj
 end
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%4.2 Storing the Maximum Displacement Values%%%%%%%%%%%%%%%%%%
+%4.2 Storing the Maximum Displacement Values%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Notes: Some trajectories do not persist all the way to the top frame, and
 %so they would not be visible in the outputs in section 5 unless their
@@ -447,8 +461,11 @@ for i = 1:numTraj
 end
 
 %%
+
+%--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 %5.)IMAGE OUTPUTS
+%--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 
 %%
@@ -491,10 +508,37 @@ if ismember(2,outputs) == 1
     end
 end
 
+
+
 %%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%5.3 DEBUGGING:Plotting Corrected X,Y Coordinate Fields%%%%%%%%%%%
+%%%%%%%%%%%%5.3 Plotting Centroids on a Black Background%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Notes: This section plots centroids (as in 5.3) on a black background for
+%processing into heat maps in imageJ to view 3D information in a 2D image.
+
+if ismember(4,outputs) == 1
+mkdir(blackPath,'Centroid Black Image Overlays')
+for f = 1:totalNumFrames
+centroidsOnly = figure;
+imshow(e,[])
+hold on
+xTemp = squeeze(book1(21,f,:));
+yTemp = squeeze(book1(22,f,:));
+plot(xTemp,yTemp,'w.','MarkerSize',3);
+hold on
+hold off
+savefile = [blackPath '\Centroid Black Image Overlays\Centroids on Frame ' num2str(f) '.tif'];
+export_fig(centroidsOnly,savefile);
+close
+end  
+end
+
+%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%5.4 DEBUGGING:Plotting Corrected X,Y Coordinate Fields%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Notes: This sections is really helpful for debugging. It shows x0,y0 positions
 % as well as current X,Y coordinates for each trajectory on each frame. It
@@ -504,49 +548,26 @@ if ismember(3,outputs) == 1
 debugImage = figure('units','pixels','outerposition',[0 0 resX resY]);
 imshow(d,[])
 hold on
-for t = 1:numTrajInRows
-    plot(book1(21,1,t),book1(22,1,t),'r.','MarkerSize',10);
+xTemp = squeeze(book1(21,1,:));
+yTemp = squeeze(book1(22,1,:));
+plot(xTemp,yTemp,'r.','MarkerSize',10);
+hold on
+if ismember(7,outputs) == 0
+for f = 1:totalNumFrames
+    xTemp = squeeze(book1(21,f,:));
+    yTemp = squeeze(book1(22,f,:));
+    plot(xTemp,yTemp,'b.','MarkerSize',3);
     hold on
-    plot(book1(1,1,t),book1(2,1,t),'g.','MarkerSize',5);
-    hold on
-    for f = 1:totalNumFrames
-        plot(book1(21,f,t),book1(22,f,t),'b.','MarkerSize',3);
-        hold on
-    end
+end
 end
 hold on
+if ismember(8,outputs) == 0
 quiver(book1(3,1,:),book1(4,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
+end
 hold off
 savefile = [blackPath '\Debug Image.tif'];
 export_fig(debugImage,savefile);
 end
-
-%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%5.4 Plotting Centroids on a Black Background%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Notes: This section plots centroids (as in 5.3) on a black background for
-%processing into heat maps in imageJ to view 3D information in a 2D image.
-
-if ismember(4,outputs) == 1
-mkdir(blackPath,'Centroid Black Image Overlays')
-for f = 1:totalNumFrames
-centroidsOnly = figure;
-hold on
-imshow(e,[])
-hold on
-    for t = 1:numTrajInRows
-    plot(book1(21,f,t),book1(22,f,t),'w.','MarkerSize',3);
-    hold on
-    end
-hold off
-savefile = [blackPath '\Centroid Black Image Overlays\Centroids on Frame ' num2str(f) '.tif'];
-export_fig(centroidsOnly,savefile);
-close
-end  
-end
-
 %%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -561,7 +582,6 @@ hold on
 quiver(book1(3,totalNumFrames,:),book1(4,totalNumFrames,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 hold off
 savefile = [trajPath '\Trajectories Overlay.tif'];
-%mkdir('trajPath','Trajectories Overlay')
 export_fig(trajOverlay,savefile);
 
 transmittedOverlay = figure;
@@ -570,7 +590,6 @@ hold on
 quiver(book1(3,1,:),book1(4,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 hold off
 savefile = [cellPath '\Transmitted Overlay.tif'];
-%mkdir('cellPath','Transmitted Overlay')
 export_fig(transmittedOverlay,savefile);
 end
 %%
