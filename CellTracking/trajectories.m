@@ -1,3 +1,4 @@
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Converting Particle Tracking Data to Displacement Data from Zero State  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -6,23 +7,32 @@
 %1.) Sorting the raw data from excel file
 %--------------------------------------------------------------------------
 close all; clear; clc;
-
-% for u(ser)
-[name,path] = uigetfile('*.xlsx');
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%1.1 Loading Data and Background Images for Overlays%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+[name,path] = uigetfile('*.xlsx','Select .xlsx File From Particle Tracker Output');
 file = [path,name];
 [num,txt,raw] = xlsread(file);
 
 [trajFile,trajPath] = uigetfile('*.tif','Select trajectories image');
 c = imread([trajPath,trajFile]);
+
 [cellFile,cellPath] = uigetfile('*.tif','Select cell overlay image');
 d = imread([cellPath,cellFile]);
 
-[resY,resX] = size(c);
+[blackFile,blackPath] = uigetfile('*.tif','Select black image of correct size');
+e = imread([blackPath,blackFile]);
 
+outputs = OutputSelector()
+
+%%
+
+[resY,resX] = size(c);
 scaleOutputVectors = 1;
 trackErrorThreshold = .2;
 patternErrorThreshold = .5;
-numIndices = 20;
+numIndices = 24;
 traj = num(:,2);
 numTraj = max(traj); % number of objects
 % Maximum number of frames observable for any one object
@@ -88,6 +98,36 @@ end
 %--------------------------------------------------------------------------
 %2.) Building book1 from the raw data
 %--------------------------------------------------------------------------
+%Index List for Book1
+%1 = Raw X Centroid Location of Traj in Specified Frame
+%2 = Raw Y Centroid Location of Traj in Specified Frame
+%3 = Raw X Centroid Location of Traj in First Frame
+%4 = Raw Y Centroid Location of Traj in First Frame
+%5 = Raw dX Centroid Location of Traj in Specified Frame from First Frame
+%6 = Raw dY Centroid Location of Traj in Specified Frame from First Frame
+%7 = Rounded dX Centroid Location of Traj in Specified Frame from First Frame
+%8 = Rounded dY Centroid Location of Traj in Specified Frame from First Frame
+%9 = Row that current Traj is a member of
+%10 = Nearest Right neighbor Traj to current Traj
+%11 = First Frame that a Traj Appears
+%12 = Last Frame that a Traj Appears
+%13 = Mode of Rounded X Displacements of all Traj in Current Traj's Row
+%14 = Mode of Rounded X Displacements of all Traj in Current Traj's Row
+%15 = Mode Corrected X_0 Coordinate of Traj
+%16 = Mode Corrected Y_0 Coordinate of Traj
+%17 = Mode Corrected X Displacement of Traj in Current Frame from First 
+%18 = Mode Corrected Y Displacement of Traj in Current Frame from First
+%19 = Currently empty
+%20 = Nearest Left neighbor Traj to current Traj
+%21 = Mode Corrected X Coordinate of Traj in Current Frame
+%22 = Mode Corrected Y Coordinate of Traj in Current Frame
+%23 = Value of book1 index 17 (see above) in Last Frame that Traj Appears
+%24 = Value of book1 index 18 (see above) in Last Frame that Traj Appears
+%25 = Value of book1 index 21 (see above) in Last Frame that Traj Appears
+%26 = Value of book1 index 22 (see above) in Last Frame that Traj Appears
+
+
+
   for i = 1:numTraj
         for j = 1:totalNumFrames
             book1(1,j,i) = book2(j,4,i);
@@ -150,7 +190,7 @@ for i = 1:numTraj
         %A threshold y distance is chosen. Any trajectories outside of the
         %threshold distance in y are considered part of a different row than
         %the current row.
-        yThresholdFactor = 0.5
+        yThresholdFactor = 0.5;
         if i>1 && abs(yDistances(i-1,1)) < abs(yThresholdFactor*nDistance(1,1))
             col = col + 1;
             % Add one to the width of the 'rows' array to have a slot 
@@ -360,132 +400,203 @@ end
 for i = 1:numTraj
     for f = 1:totalNumFrames
         if abs(book1(5,f,i)) < trackErrorThreshold
-            book1(15,f,i) = book1(1,f,i);
+            book1(15,f,i) = book1(3,f,i);
             book1(17,f,i) = book1(5,f,i);
+            book1(21,f,i) = book1(1,f,i);
         else
-            book1(15,f,i) = book1(1,f,i)-book1(13,f,i);
+            book1(15,f,i) = book1(3,f,i);%+book1(13,f,i);
             book1(17,f,i) = book1(5,f,i)-book1(13,f,i);
+            book1(21,f,i) = book1(1,f,i)-book1(13,f,i);
         end
     end
 end
 for i = 1:numTraj
     for f = 1:totalNumFrames
         if abs(book1(6,f,i)) < trackErrorThreshold
-            book1(16,f,i) = book1(2,f,i);
+            book1(16,f,i) = book1(4,f,i);
             book1(18,f,i) = book1(6,f,i);
+            book1(22,f,i) = book1(2,f,i);
         else
-            book1(16,f,i) = book1(2,f,i);% -book1(14,f,i); add these to track constant y errors
+            book1(16,f,i) = book1(4,f,i);% +book1(14,f,i); add these to track constant y errors
             book1(18,f,i) = book1(6,f,i);% -book1(14,f,i); right now they are not necessary
+            book1(22,f,i) = book1(2,f,i);% -book1(14,f,i); 
         end
+    end
+end
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%4.2 Storing the Maximum Displacement Values%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Notes: Some trajectories do not persist all the way to the top frame, and
+%so they would not be visible in the outputs in section 5 unless their
+%maximum value is used for those overlays.
+
+for i = 1:numTraj
+    ind17 = find(book1(17,:,i));
+    ind17 = ind17(end);
+    book1(23,:,i) = book1(17,ind17,i);
+    ind18 = find(book1(18,:,i));
+    ind18 = ind18(end);
+    book1(24,:,i) = book1(18,ind18,i);
+    ind21 = find(book1(21,:,i));
+    ind21 = ind21(end);
+    book1(25,:,i) = book1(21,ind21,i);
+    ind22 = find(book1(22,:,i));
+    ind22 = ind22(end);
+    book1(26,:,i) = book1(22,ind22,i);
+end
+
+%%
+%--------------------------------------------------------------------------
+%5.)IMAGE OUTPUTS
+%--------------------------------------------------------------------------
+
+%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%5.1 Drawing Zero-State Displacement Fields%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if ismember(1,outputs) == 1
+for f = 1:totalNumFrames        % number of z-slices
+    res= {152,154};
+    data = figure('units','pixels','outerposition',[0 0 resX resY]);
+    h = quiver(book1(15,f,:),resY-book1(16,f,:),book1(17,f,:),-book1(18,f,:),0);
+    hU = get(h,'UData');
+    hV = get(h,'VData');
+    set(h,'UData',scaleOutputVectors*hU,'VData',scaleOutputVectors*hV)
+    axis(gca,'equal','tight')
+    savefile = sprintf('Trajectory between 1st Frame and Frame %u.tif',f);
+    print(savefile,'-dtiff','-r300')
+    close
+end
+end
+%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%5.2 Drawing Zero-State Displacement Fields on Black Background%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if ismember(2,outputs) == 1
+    mkdir(blackPath,'Black Image Quiver Overlays')
+    for f = 1:totalNumFrames        % number of z-slices
+        blackOverlay = figure
+        imshow(e,[])
+        hold on
+        quiver(book1(15,f,:),book1(16,f,:),book1(17,f,:),book1(18,f,:),0,'g');
+        hold off
+        savefile = [blackPath '\Black Image Quiver Overlays\Black Background Overlay' num2str(f) '.tif'];
+        export_fig(blackOverlay,savefile);
+        close
     end
 end
 
 %%
 
-%--------------------------------------------------------------------------
-%Drawing zero state displacement fields
-%--------------------------------------------------------------------------
-% for f = 1:totalNumFrames        % number of z-slices
-%     res= {152,154};
-%     data = figure('units','pixels','outerposition',[0 0 resX resY]);
-%     h = quiver(book1(15,f,:),resY-book1(16,f,:),book1(17,f,:),-book1(18,f,:),0);
-%     hU = get(h,'UData');
-%     hV = get(h,'VData');
-%     set(h,'UData',scaleOutputVectors*hU,'VData',scaleOutputVectors*hV)
-%     axis(gca,'equal','tight')
-%    savefile = sprintf('Trajectory between 1st Frame and Frame %u.tif',f);
-%     print(savefile,'-dtiff','-r300')
-%     close
-% end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%5.3 DEBUGGING:Plotting Corrected X,Y Coordinate Fields%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Notes: This sections is really helpful for debugging. It shows x0,y0 positions
+% as well as current X,Y coordinates for each trajectory on each frame. It
+% also plots the final displacement quiver field.
 
-%%
-
-%--------------------------------------------------------------------------
-%Drawing zero state displacement fields on black background
-%--------------------------------------------------------------------------
-[blackFile,blackPath] = uigetfile('*.tif','Select black image of correct size');
-e = imread([blackPath,blackFile]);
-for f = 1:totalNumFrames        % number of z-slices
-    blackOverlay = figure
-    imshow(e,[])
-    hold on
-    quiver(book1(15,f,:),book1(16,f,:),book1(17,f,:),book1(18,f,:),0,'g');
-    hold off
-    mkdir(blackPath,'Black Image Overlays')
-    savefile = [blackPath '\Black Image Overlays\Black Background Overlay' num2str(f) '.tif'];
-    export_fig(blackOverlay,savefile)
-    close
-end
-
-%%
-
-%--------------------------------------------------------------------------
-%Plotting corrected x,y coordinate fields
-%--------------------------------------------------------------------------
-data = figure('units','pixels','outerposition',[0 0 resX resY]);
-% figure
+if ismember(3,outputs) == 1
+debugImage = figure('units','pixels','outerposition',[0 0 resX resY]);
 imshow(d,[])
 hold on
 for t = 1:numTrajInRows
-    
-    plot(book1(15,1,t),book1(16,1,t),'r.','MarkerSize',10);
+    plot(book1(21,1,t),book1(22,1,t),'r.','MarkerSize',10);
     hold on
     plot(book1(1,1,t),book1(2,1,t),'g.','MarkerSize',5);
     hold on
     for f = 1:totalNumFrames
-    plot(book1(15,f,t),book1(16,f,t),'b.','MarkerSize',3);
-    hold on
-%     plot(book1(1,f,t),book1(2,f,t),'w.','MarkerSize',2);
-%     hold on
+        plot(book1(21,f,t),book1(22,f,t),'b.','MarkerSize',3);
+        hold on
     end
-%     savefile = sprintf('Trajectory between 1st Frame and Frame %u.tif',f);
-%     print(savefile,'-dtiff','-r300')
-%     close
 end
 hold on
-quiver(book1(3,totalNumFrames,:),book1(4,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
-
-%%
-% trajOverlay = figure
-% imshow(c,[])
-% hold on
-% quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
-% hold off
-% savefile = [trajPath '\Trajectories Overlay.tif'];
-% %mkdir('trajPath','Trajectories Overlay')
-% export_fig(trajOverlay,savefile)
-% 
-% transmittedOverlay = figure
-% imshow(d,[])
-% hold on
-% quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
-% hold off
-% savefile = [cellPath '\Transmitted Overlay.tif'];
-% %mkdir('cellPath','Transmitted Overlay')
-% export_fig(transmittedOverlay,savefile)
-
-% figure
-% imshow(d,[])
-% hold on
-% quiver(book1(15,q,:),book1(16,q,:),book1(17,q,:),book1(18,q,:),0,'g');
-% hold off
+quiver(book1(3,1,:),book1(4,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
+hold off
+savefile = [blackPath '\Debug Image.tif'];
+export_fig(debugImage,savefile);
+end
 
 %%
 
-%Plot overlay on trajectories and transmitted images.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%5.4 Plotting Centroids on a Black Background%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Notes: This section plots centroids (as in 5.3) on a black background for
+%processing into heat maps in imageJ to view 3D information in a 2D image.
+
+if ismember(4,outputs) == 1
+mkdir(blackPath,'Centroid Black Image Overlays')
+for f = 1:totalNumFrames
+centroidsOnly = figure;
+hold on
+imshow(e,[])
+hold on
+    for t = 1:numTrajInRows
+    plot(book1(21,f,t),book1(22,f,t),'w.','MarkerSize',3);
+    hold on
+    end
+hold off
+savefile = [blackPath '\Centroid Black Image Overlays\Centroids on Frame ' num2str(f) '.tif'];
+export_fig(centroidsOnly,savefile);
+close
+end  
+end
+
+%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%5.5 Plotting Transmitted Quiver Overlays v1%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Notes: 5.5 Saves files, 5.6 does not.
+
+if ismember(5,outputs) == 1
+trajOverlay = figure;
+imshow(c,[])
+hold on
+quiver(book1(3,totalNumFrames,:),book1(4,totalNumFrames,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
+hold off
+savefile = [trajPath '\Trajectories Overlay.tif'];
+%mkdir('trajPath','Trajectories Overlay')
+export_fig(trajOverlay,savefile);
+
+transmittedOverlay = figure;
+imshow(d,[])
+hold on
+quiver(book1(3,1,:),book1(4,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
+hold off
+savefile = [cellPath '\Transmitted Overlay.tif'];
+%mkdir('cellPath','Transmitted Overlay')
+export_fig(transmittedOverlay,savefile);
+end
+%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%5.6 Plot Overlay on Trajectories and Transmitted Images v2%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Notes: 5.5 Saves files, 5.6 does not.
+
+if ismember(6,outputs) == 1
 figure
 imshow(c,[])
 hold on
-quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),...
-    book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
+quiver(book1(3,1,:),book1(4,1,:),...
+    book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 hold off
 
 figure
 imshow(d,[])
 hold on
-quiver(book1(15,totalNumFrames,:),book1(16,totalNumFrames,:),...
-    book1(17,totalNumFrames,:),book1(18,totalNumFrames,:),0,'g');
+quiver(book1(3,1,:),book1(4,1,:),...
+    book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 hold off
+end
+
 %%
 Test(1:30,2) = book1(10,9,1:30);
 Test(1:30,1) = book1(20,9,1:30);
+
