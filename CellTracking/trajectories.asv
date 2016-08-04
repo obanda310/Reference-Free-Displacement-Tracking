@@ -146,16 +146,14 @@ end
 %25 = Value of book1 index 21 (see above) in Last Frame that Traj Appears
 %26 = Value of book1 index 22 (see above) in Last Frame that Traj Appears
 for i = 1:numTraj
-
+        book1(1,1:book1(12,:,i),i) = tempObj(:,xCol).*pixelScale;
+        book1(2,startFrame:endFrame,i) = tempObj(:,yCol).*pixelScale;
         book1(3,:,i) = book1(1,book1(11,1,i),i);
         book1(4,:,i) = book1(2,book1(11,1,i),i);
-        book1(1,1:book1(11,1,i),i) = book1(3,1,i);
-        book1(2,1:book1(11,1,i),i) = book1(4,1,i);
         book1(5,:,i) = book1(1,:,i) - book1(3,:,i);
         book1(6,:,i) = book1(2,:,i) - book1(4,:,i);
         book1(7,:,i) = round(book1(5,:,i),1);
         book1(8,:,i) = round(book1(6,:,i),1);
-        
 end
 %%
 
