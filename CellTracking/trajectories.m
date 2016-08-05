@@ -31,17 +31,17 @@ elseif strcmp(inputVar,'TrackMate') == 1
     fCol = 10;
     tCol = 4;
     totalCol = 22;
-    prompt = 'How many pixels per micron? Enter a decimal and press return';
+    prompt = 'How many pixels per micron? Enter a decimal and press enter: ';
     pixelScale = input(prompt)
 end
     
-[trajFile,trajPath] = uigetfile('*.tif','Select trajectories image');
+[trajFile,trajPath] = uigetfile('*.tif','Select Fluorescent Image for Overlay');
 c = imread([trajPath,trajFile]);
 
-[cellFile,cellPath] = uigetfile('*.tif','Select cell overlay image');
+[cellFile,cellPath] = uigetfile('*.tif','Select Transmitted Image for Overlay');
 d = imread([cellPath,cellFile]);
 
-[blackFile,blackPath] = uigetfile('*.tif','Select black image of correct size');
+[blackFile,blackPath] = uigetfile('*.tif','Select a Black Image of the Correct Dimensions');
 e = imread([blackPath,blackFile]);
 
 outputs = OutputSelector()
@@ -55,7 +55,7 @@ attemptRowAdjust = 0; %Try to adjust for wobble from patterning process? 1 for y
 [resY,resX] = size(c); %for Section 5
 scaleOutputVectors = 1; %for Section 5.1
 trackErrorThreshold = .2; %for Section 4
-numIndices = 26; %for Section 1 and 2 (number of elements in book1)
+numIndices = 29; %for Section 1 and 2 (number of elements in book1)
 numTraj = max(num(:,tCol)); %Number of Trajectories
 totalNumFrames = max(num(:,fCol)) + 1; %Maximum number of frames observable for any one object
 book1 = zeros(numIndices,totalNumFrames,numTraj); %Creates book1
@@ -81,20 +81,9 @@ for i = 1:numTraj
     book1(12,:,i) = endFrame;
     % this fills in the upper portion of obj matrix with zeros if the first
     % frame is not 0
-%     if startFrame > 0 && endFrame < totalNumFrames
-%         obj = [zeros(startFrame,totalCol);tempObj;zeros(totalNumFrames-endFrame,totalCol)];
-%     elseif endFrame < totalNumFrames
-%         obj = [tempObj;zeros(totalNumFrames-endFrame,totalCol)];
-%     elseif startFrame > 0  
-%         obj = [zeros(startFrame,totalCol);tempObj];
-%     elseif numFrames < totalNumFrames
-%         obj = [tempObj;zeros(totalNumFrames-numFrames,totalCol)];
-%     elseif startFrame == 0
-%         obj = tempObj; %this applies to objects that start in frame 0
-%     end
-book1(1,startFrame:endFrame,i) = tempObj(:,xCol).*pixelScale;
-book1(2,startFrame:endFrame,i) = tempObj(:,yCol).*pixelScale;
 
+    book1(1,startFrame:endFrame,i) = tempObj(:,xCol).*pixelScale;
+    book1(2,startFrame:endFrame,i) = tempObj(:,yCol).*pixelScale;
 
     if i == 1 || i == 5000 || i == 10000 || i == 15000
         progress = 'Section 1'
@@ -145,16 +134,20 @@ end
 %24 = Value of book1 index 18 (see above) in Last Frame that Traj Appears
 %25 = Value of book1 index 21 (see above) in Last Frame that Traj Appears
 %26 = Value of book1 index 22 (see above) in Last Frame that Traj Appears
+%27 = Full page of x_0
+%28 = Full page of y_0
 for i = 1:numTraj
 
-        book1(3,:,i) = book1(1,book1(11,1,i),i);
-        book1(4,:,i) = book1(2,book1(11,1,i),i);
-        book1(1,1:book1(11,1,i),i) = book1(3,1,i);
-        book1(2,1:book1(11,1,i),i) = book1(4,1,i);
+        book1(3,book1(11,1,i):book1(12,1,i),i) = book1(1,book1(11,1,i),i);
+        book1(4,book1(11,1,i):book1(12,1,i),i) = book1(2,book1(11,1,i),i);
         book1(5,:,i) = book1(1,:,i) - book1(3,:,i);
         book1(6,:,i) = book1(2,:,i) - book1(4,:,i);
         book1(7,:,i) = round(book1(5,:,i),1);
         book1(8,:,i) = round(book1(6,:,i),1);
+        book1(19,:,i) = (book1(5,:,i).^2 + book1(6,:,i).^2).^0.5;
+        book1(27,:,i) = book1(3,book1(11,1,i),i);
+        book1(28,:,i) = book1(4,book1(11,1,i),i);
+        
         
 end
 %%
@@ -165,6 +158,8 @@ end
 %Section 3.) Assigning Objects to Rows by Based on Neighbor Particles
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
+
+%CURRENTLY DISABLED
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
 %3.1 Identifying Nearest Left and Right Neighbors%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -378,7 +373,7 @@ bookY = zeros(numRowElements+1,max(book1(9,1,:)),totalNumFrames);
             bookX((numRowElements+1-m),j,f)= k;
             bookY((numRowElements+1-m),j,f)= l;
             m=m+1;
-            end
+       end
     end
 
 
@@ -463,6 +458,7 @@ for i = 1:numTraj
     book1(24,:,i) = book1(18,book1(12,1,i),i);
     book1(25,:,i) = book1(21,book1(12,1,i),i);
     book1(26,:,i) = book1(22,book1(12,1,i),i);
+    book1(29,:,i) = (book1(23,:,i).^2 + book1(24,:,i).^2).^0.5;
     if i == 1 || i == 5000 || i == 10000 || i == 15000
     progress = 'Section 4.2'
     end
@@ -470,6 +466,34 @@ end
 
 %%
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%4.3 Creating a Color Map for Quiver Plots%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+promptColorMap = 'How many colors on color map? Enter an integer and press enter: ';
+cMD = input(promptColorMap) %color map divisions
+divSize = (max(max(book1(19,:,:))))/cMD;
+cMDBook = zeros(numIndices,totalNumFrames,numTraj,cMD);
+cMDBook2 = zeros(numIndices,totalNumFrames,numTraj,cMD);
+for i = 1:cMD
+     cMDBook(:,:,:,i) = book1(:,:,:);
+     maskArray = zeros(numIndices,totalNumFrames,numTraj,1);
+     maskArray(1,:,:,1) = book1(19,:,:) < (divSize*i) & book1(19,:,:) > (divSize*(i-1));
+     for j = 1:numIndices         
+     cMDBook(j,:,:,i) = cMDBook(j,:,:,i).*maskArray(1,:,:,1);
+     end
+end
+progress = 'done cMDBook1'
+for i = 1:cMD
+     cMDBook2(:,:,:,i) = book1(:,:,:);
+     maskArray = zeros(numIndices,totalNumFrames,numTraj,1);
+     maskArray(1,:,:,1) = book1(29,:,:) < (divSize*i) & book1(29,:,:) > (divSize*(i-1));
+     for j = 1:numIndices         
+     cMDBook2(j,:,:,i) = cMDBook2(j,:,:,i).*maskArray(1,:,:,1);
+     end
+end
+progress = 'done cMDBook2'
+%%
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 %5.)IMAGE OUTPUTS
@@ -505,10 +529,23 @@ end
 if ismember(2,outputs) == 1
     mkdir(blackPath,'Black Image Quiver Overlays')
     for f = 1:totalNumFrames        % number of z-slices
-        blackOverlay = figure
+        blackOverlay = figure;
         imshow(e,[])
         hold on
-        quiver(book1(15,f,:),book1(16,f,:),book1(17,f,:),book1(18,f,:),0,'g');
+%       quiver(book1(15,f,:),book1(16,f,:),book1(17,f,:),book1(18,f,:),0,'g');
+        for i = 1:cMD
+        if (i/cMD) >= .5
+            blue = 0;
+            green = 1-(((i/cMD)-0.5)/(.5));
+            red = 1 - green ;
+        elseif (i/cMD) < .5
+            blue = ((0.5-(i/cMD))/0.5);
+            green = 1 - blue ;
+            red = 0;
+        end
+        quiver(cMDBook(15,f,:,i),cMDBook(16,f,:,i),cMDBook(17,f,:,i),cMDBook(18,f,:,i),0,'color',[red green blue]);
+        hold on
+        end
         hold off
         savefile = [blackPath '\Black Image Quiver Overlays\Black Background Overlay' num2str(f) '.tif'];
         export_fig(blackOverlay,savefile,'-native');
@@ -570,7 +607,20 @@ end
 end
 hold on
 if ismember(8,outputs) == 0
-quiver(book1(3,1,:),book1(4,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
+    for i = 1:cMD
+        if (i/cMD) >= .5
+            blue = 0;
+            green = 1-(((i/cMD)-0.5)/(.5));
+            red = 1 - green ;
+        elseif (i/cMD) < .5
+            blue = ((0.5-(i/cMD))/0.5);
+            green = 1 - blue ;
+            red = 0;
+        end
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[red green blue]);
+        hold on
+    end
+%quiver(book1(3,1,:),book1(4,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 end
 hold off
 savefile = [blackPath '\Debug Image.tif'];
@@ -587,15 +637,41 @@ if ismember(5,outputs) == 1
 trajOverlay = figure;
 imshow(c,[])
 hold on
-quiver(book1(3,totalNumFrames,:),book1(4,totalNumFrames,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
+ for i = 1:cMD
+        if (i/cMD) >= .5
+            blue = 0;
+            green = 1-(((i/cMD)-0.5)/(.5));
+            red = 1 - green ;
+        elseif (i/cMD) < .5
+            blue = ((0.5-(i/cMD))/0.5);
+            green = 1 - blue ;
+            red = 0;
+        end
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[red green blue]);
+        hold on
+    end
+%quiver(book1(27,1,:),book1(28,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 hold off
-savefile = [trajPath '\Trajectories Overlay.tif'];
+savefile = [trajPath '\Fluorescent Overlay.tif'];
 export_fig(trajOverlay,savefile,'-native');
 
 transmittedOverlay = figure;
 imshow(d,[])
 hold on
-quiver(book1(3,1,:),book1(4,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
+ for i = 1:cMD
+        if (i/cMD) >= .5
+            blue = 0;
+            green = 1-(((i/cMD)-0.5)/(.5));
+            red = 1 - green ;
+        elseif (i/cMD) < .5
+            blue = ((0.5-(i/cMD))/0.5);
+            green = 1 - blue ;
+            red = 0;
+        end
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[red green blue]);
+        hold on
+    end
+%quiver(book1(27,1,:),book1(28,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 hold off
 savefile = [cellPath '\Transmitted Overlay.tif'];
 export_fig(transmittedOverlay,savefile,'-native');
@@ -611,15 +687,39 @@ if ismember(6,outputs) == 1
 figure
 imshow(c,[])
 hold on
-quiver(book1(3,1,:),book1(4,1,:),...
-    book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
+ for i = 1:cMD
+        if (i/cMD) >= .5
+            blue = 0;
+            green = 1-(((i/cMD)-0.5)/(.5));
+            red = 1 - green ;
+        elseif (i/cMD) < .5
+            blue = ((0.5-(i/cMD))/0.5);
+            green = 1 - blue ;
+            red = 0;
+        end
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[red green blue]);
+        hold on
+    end
+%quiver(book1(27,1,:),book1(28,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 hold off
 
 figure
 imshow(d,[])
 hold on
-quiver(book1(3,1,:),book1(4,1,:),...
-    book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
+ for i = 1:cMD
+        if (i/cMD) >= .5
+            blue = 0;
+            green = 1-(((i/cMD)-0.5)/(.5));
+            red = 1 - green ;
+        elseif (i/cMD) < .5
+            blue = ((0.5-(i/cMD))/0.5);
+            green = 1 - blue ;
+            red = 0;
+        end
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[red green blue]);
+        hold on
+    end
+%quiver(book1(27,1,:),book1(28,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 hold off
 end
 
