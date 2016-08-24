@@ -55,7 +55,7 @@ attemptRowAdjust = 0; %Try to adjust for wobble from patterning process? 1 for y
 [resY,resX] = size(c); %for Section 5
 scaleOutputVectors = 1; %for Section 5.1
 trackErrorThreshold = .2; %for Section 4
-numIndices = 29; %for Section 1 and 2 (number of elements in book1)
+numIndices = 30; %for Section 1 and 2 (number of elements in book1)
 numTraj = max(num(:,tCol)); %Number of Trajectories
 totalNumFrames = max(num(:,fCol)) + 1; %Maximum number of frames observable for any one object
 book1 = zeros(numIndices,totalNumFrames,numTraj); %Creates book1
@@ -84,6 +84,7 @@ for i = 1:numTraj
 
     book1(1,startFrame:endFrame,i) = tempObj(:,xCol).*pixelScale;
     book1(2,startFrame:endFrame,i) = tempObj(:,yCol).*pixelScale;
+    book1(30,startFrame:endFrame,i) = tempObj(:,14);
 
     if i == 1 || i == 5000 || i == 10000 || i == 15000
         progress = 'Section 1'
@@ -126,7 +127,7 @@ end
 %16 = Mode Corrected Y_0 Coordinate of Traj
 %17 = Mode Corrected X Displacement of Traj in Current Frame from First 
 %18 = Mode Corrected Y Displacement of Traj in Current Frame from First
-%19 = Currently empty
+%19 = Magnitude of displacement
 %20 = Nearest Left neighbor Traj to current Traj
 %21 = Mode Corrected X Coordinate of Traj in Current Frame
 %22 = Mode Corrected Y Coordinate of Traj in Current Frame
@@ -136,6 +137,8 @@ end
 %26 = Value of book1 index 22 (see above) in Last Frame that Traj Appears
 %27 = Full page of x_0
 %28 = Full page of y_0
+%29 = Maximum Magnitude of displacement
+%30 = Intensity in current frame (column 14 from TrackMate output)
 for i = 1:numTraj
 
         book1(3,book1(11,1,i):book1(12,1,i),i) = book1(1,book1(11,1,i),i);
@@ -475,9 +478,9 @@ cMD = input(promptColorMap) %color map divisions
 divSize = (max(max(book1(19,:,:))))/cMD;
 cMDBook = zeros(numIndices,totalNumFrames,numTraj,cMD);
 cMDBook2 = zeros(numIndices,totalNumFrames,numTraj,cMD);
+maskArray = zeros(numIndices,totalNumFrames,numTraj,1);
 for i = 1:cMD
-     cMDBook(:,:,:,i) = book1(:,:,:);
-     maskArray = zeros(numIndices,totalNumFrames,numTraj,1);
+     cMDBook(:,:,:,i) = book1(:,:,:);     
      maskArray(1,:,:,1) = book1(19,:,:) < (divSize*i) & book1(19,:,:) > (divSize*(i-1));
      for j = 1:numIndices         
      cMDBook(j,:,:,i) = cMDBook(j,:,:,i).*maskArray(1,:,:,1);
@@ -486,13 +489,23 @@ end
 progress = 'done cMDBook1'
 for i = 1:cMD
      cMDBook2(:,:,:,i) = book1(:,:,:);
-     maskArray = zeros(numIndices,totalNumFrames,numTraj,1);
      maskArray(1,:,:,1) = book1(29,:,:) < (divSize*i) & book1(29,:,:) > (divSize*(i-1));
      for j = 1:numIndices         
      cMDBook2(j,:,:,i) = cMDBook2(j,:,:,i).*maskArray(1,:,:,1);
      end
 end
 progress = 'done cMDBook2'
+%%
+%4.4 Using intensity values to extract z information
+intProfiles = zeros(totalNumFrames,numTraj);
+for i = 1:numTraj
+    intProfiles(book1(11,1,i):book1(12,1,i),i) = book1(30,book1(11,1,i):book1(12,1,i),i); 
+end
+%image(intProfiles,'cdatamapping','scaled'); 
+%colormap(gray);
+%imwrite(intProfilesImage,'intProfilesImage.tiff');
+phasesym = phasesymmono(intProfiles,'minWaveLength',2,'mult',1.5);
+%image(phasesym,'cdatamapping','scaled'); colormap(gray);
 %%
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
@@ -569,9 +582,27 @@ for f = 1:totalNumFrames
 centroidsOnly = figure;
 imshow(e,[])
 hold on
-xTemp = squeeze(book1(21,f,:));
-yTemp = squeeze(book1(22,f,:));
-plot(xTemp,yTemp,'w.','MarkerSize',3);
+        for i = 1:cMD
+        if (i/cMD) >= .5
+            blue = 0;
+            green = 1-(((i/cMD)-0.5)/(.5));
+            red = 1 - green ;
+        elseif (i/cMD) < .5
+            blue = ((0.5-(i/cMD))/0.5);
+            green = 1 - blue ;
+            red = 0;
+        end
+        xTemp = squeeze(squeeze(cMDBook(1,f,:,i)));
+        xTemp = xTemp';
+        yTemp = squeeze(squeeze(cMDBook(2,f,:,i)));
+        yTemp = yTemp';
+        plot(xTemp,yTemp,'.','MarkerSize',3,'Color',[red,green,blue]);
+        %quiver(cMDBook(15,f,:,i),cMDBook(16,f,:,i),cMDBook(17,f,:,i),cMDBook(18,f,:,i),0,'color',[red green blue]);
+        hold on
+        end
+% xTemp = squeeze(book1(21,f,:));
+% yTemp = squeeze(book1(22,f,:));
+% plot(xTemp,yTemp,'w.','MarkerSize',3);
 hold on
 hold off
 savefile = [blackPath '\Centroid Black Image Overlays\Centroids on Frame ' num2str(f) '.tif'];
