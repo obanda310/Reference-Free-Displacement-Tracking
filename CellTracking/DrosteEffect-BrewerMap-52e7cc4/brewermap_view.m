@@ -1,4 +1,6 @@
+
 function [map,scheme] = brewermap_view(N,scheme)
+global map scheme
 % An interactive figure for ColorBrewer colormap selection. With demo!
 %
 % (c) 2016 Stephen Cobeldick
@@ -53,6 +55,7 @@ function [map,scheme] = brewermap_view(N,scheme)
 
 % ### Input Wrangling ###
 %
+
 if nargin<1 || isnumeric(N)&&isempty(N)
 	N = 128;
 elseif iscell(N)&&numel(N)
@@ -74,11 +77,13 @@ end
 [~,~,h] = bmvUpDt(N, scheme);
 %
 if nargout
-	waitfor(h);
-	[~,scheme,map] = bmvUpDt();
+    [~,scheme,map] = bmvUpDt();    
+    waitfor(h)    
 end
 %
+
 end
+ 
 %----------------------------------------------------------------------END:colorbrewer_view
 function [N,S,ghnd] = bmvUpDt(N,S)
 % Draw a new figure or update an existing figure. Callback for buttons & demo.
@@ -178,6 +183,8 @@ end
 function H = bmvPlot(lbd,rbd,stp,V,S,L)
 % Draw a new figure with RGBplot axes, ColorBar axes, and uicontrol sliders.
 %
+
+       
 M = 9; % buttons per column
 gap = 0.01; % gaps
 bth = 0.04; % demo height
@@ -258,10 +265,21 @@ for k = numel(L):-1:1
 	H.bSep(k) = uicontrol('Style','Toggle', 'String',L{k}, 'Parent',H.bGrp,...
 	'Unit','normalized', 'Position',[C(k),R(k),1/4,1/M]);
 end
+H.close = uicontrol( 'String','Close', 'Parent',H.bGrp,...
+	'Unit','normalized', 'Position',[C(10),R(9),1/4,1/M],'BackgroundColor',[1 0 0],'Callback',@updateandclose);
 set(H.bGrp,'SelectedObject',H.bSep(strcmpi(S,L)));
 set(H.bGrp,'SelectionChangeFcn',@(~,e)bmvUpDt(get(e.NewValue,'String')));
+
+
 %
 end
+
+function updateandclose(varargin)
+global map scheme
+[~,scheme,map] = bmvUpDt();
+close
+end
+    
 %----------------------------------------------------------------------END:bmvPlot
 function bmv2D3D(H,tgh)
 % Switch between 2D-line and 3D-cube: swap visibility and hittest, then update.
@@ -298,6 +316,7 @@ while ishghandle(tgh)&&get(tgh,'Value')
 end
 %
 end
+
 %----------------------------------------------------------------------END:bmvDemo
 % Copyright (c) 2016 Stephen Cobeldick
 %

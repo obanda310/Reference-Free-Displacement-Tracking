@@ -1,4 +1,4 @@
-
+%current scale 3.0769  (x4=12.3076)
 close all; clear; clc;
 %Analyzing Trajectories from FIJI input
 
@@ -28,9 +28,10 @@ if strcmp(inputVar,'Mosaic') == 1
 elseif strcmp(inputVar,'TrackMate') == 1
     xCol = 6;
     yCol = 7;
-    fCol = 10;
-    tCol = 4;
-    totalCol = 22;
+    fCol = 10; %Frame
+    tCol = 4; %Pillar/Trajectory
+    intCol = 14 %Intensity information
+    totalCol = 22; %Number of columns in spreadsheet
     prompt = 'How many pixels per micron? Enter a decimal and press enter: ';
     pixelScale = input(prompt)
 end
@@ -58,6 +59,7 @@ trackErrorThreshold = .2; %for Section 4
 numIndices = 30; %for Section 1 and 2 (number of elements in book1)
 numTraj = max(num(:,tCol)); %Number of Trajectories
 totalNumFrames = max(num(:,fCol)) + 1; %Maximum number of frames observable for any one object
+global book1 
 book1 = zeros(numIndices,totalNumFrames,numTraj); %Creates book1
 
 %%
@@ -72,6 +74,7 @@ for i = 1:numTraj
     tempObj = num(num(:,tCol)==i,:);
     % number of frames that the current object appears in.
     numFrames = size(tempObj,1);
+    if numFrames > 0
     % the first frame that an object appears in (tracking software starts 
     % at 0
     startFrame = min(tempObj(:,fCol))+1;
@@ -84,16 +87,22 @@ for i = 1:numTraj
 
     book1(1,startFrame:endFrame,i) = tempObj(:,xCol).*pixelScale;
     book1(2,startFrame:endFrame,i) = tempObj(:,yCol).*pixelScale;
-    book1(30,startFrame:endFrame,i) = tempObj(:,14);
-
-    if i == 1 || i == 5000 || i == 10000 || i == 15000
-        progress = 'Section 1'
+    book1(30,startFrame:endFrame,i) = tempObj(:,intCol);   
+    else
+        startFrame = 1;
+        endFrame = 1;
+        book1(11,:,i) = startFrame;
+        book1(12,:,i) = endFrame;
+    end
+    if i == 1 || i == 5000 || i == 10000 || i == 15000 || i==20000 || i==25000
+        progress = 'Section 1' 
     end
 end
 
  %Here we use the temporary data stored in 'obj' to build 2 matrices to
  %describe the x and y positions in frame 1 for each object, as well as the
  %displacement from those matrices occurring in successive frames.
+
 
 
 %%
@@ -150,7 +159,7 @@ for i = 1:numTraj
         book1(19,:,i) = (book1(5,:,i).^2 + book1(6,:,i).^2).^0.5;
         book1(27,:,i) = book1(3,book1(11,1,i),i);
         book1(28,:,i) = book1(4,book1(11,1,i),i);
-        
+
         
 end
 %%
@@ -457,11 +466,13 @@ end
 %maximum value is used for those overlays.
 
 for i = 1:numTraj
+   
     book1(23,:,i) = book1(17,book1(12,1,i),i);
     book1(24,:,i) = book1(18,book1(12,1,i),i);
     book1(25,:,i) = book1(21,book1(12,1,i),i);
     book1(26,:,i) = book1(22,book1(12,1,i),i);
     book1(29,:,i) = (book1(23,:,i).^2 + book1(24,:,i).^2).^0.5;
+    
     if i == 1 || i == 5000 || i == 10000 || i == 15000
     progress = 'Section 4.2'
     end
@@ -475,9 +486,11 @@ end
 
 promptColorMap = 'How many colors on color map? Enter an integer and press enter: ';
 cMD = input(promptColorMap) %color map divisions
+[map,scheme] = brewermap_view(cMD)
+cMD = size(map,1)
 divSize = (max(max(book1(19,:,:))))/cMD;
-cMDBook = zeros(numIndices,totalNumFrames,numTraj,cMD);
-cMDBook2 = zeros(numIndices,totalNumFrames,numTraj,cMD);
+cMDBook = zeros(numIndices,totalNumFrames,numTraj,cMD); %for creating colormaps of deformations in current frame
+cMDBook2 = zeros(numIndices,totalNumFrames,numTraj,cMD); %for creating colormaps of largest deformation all in one frame
 maskArray = zeros(numIndices,totalNumFrames,numTraj,1);
 for i = 1:cMD
      cMDBook(:,:,:,i) = book1(:,:,:);     
@@ -496,16 +509,188 @@ for i = 1:cMD
 end
 progress = 'done cMDBook2'
 %%
-%4.4 Using intensity values to extract z information
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%4.4a Using Intensity Values to Extract Z-Information%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Notes: Calculates average distance between PSFs in a single pillar.
+%Outputs stored as variable "yDataDiffAverage"
+close all
+
 intProfiles = zeros(totalNumFrames,numTraj);
+
+sortedArray = zeros(numTraj,3);
 for i = 1:numTraj
-    intProfiles(book1(11,1,i):book1(12,1,i),i) = book1(30,book1(11,1,i):book1(12,1,i),i); 
+    sortedArray(i,1) = i;
+    sortedArray(i,2) = book1(3,1,i);
+    sortedArray(i,3) = book1(4,1,i);
+end
+
+[sortedArray,sortedArrayIndices] = sortrows(sortedArray,[3, 2]);
+
+for i = 1:(numTraj)
+    intProfiles(book1(11,1,sortedArray(i,1)):book1(12,1,sortedArray(i,1)),i) = book1(30,book1(11,1,sortedArray(i,1)):book1(12,1,sortedArray(i,1)),sortedArray(i,1));    
 end
 %image(intProfiles,'cdatamapping','scaled'); 
 %colormap(gray);
 %imwrite(intProfilesImage,'intProfilesImage.tiff');
-phasesym = phasesymmono(intProfiles,'minWaveLength',2,'mult',1.5);
-%image(phasesym,'cdatamapping','scaled'); colormap(gray);
+close;
+intProfilesPS = phasesym(intProfiles,'minWaveLength',3,'mult',1.5);
+intProfilesMax = (localmax(intProfilesPS'))' > 0;
+intProfilesClosed1 = imclose(intProfilesMax, ones(1,20));
+intProfilesCleaned = bwareaopen(intProfilesClosed1,200);
+intProfilesClosed2 = imclose(intProfilesCleaned, ones(1,1000));
+
+intProfilesLabeled = bwlabel(intProfilesClosed2);
+
+intProfilesFitCoefs = zeros(5,5);
+yData = zeros(numTraj,5);
+yDataDiffAverage = zeros(1,5);
+intProfilesFits = figure;
+image(intProfiles,'cdatamapping','scaled'); colormap(gray);
+hold on
+for i = 1:max(max(intProfilesLabeled))
+    [intProfilesCurrentLabely,intProfilesCurrentLabelx] = find((intProfilesLabeled == i).*intProfilesCleaned);
+    intProfilesFitCoefs(1:2,i) = polyfit(intProfilesCurrentLabelx, intProfilesCurrentLabely, 1);
+    xData = linspace(1,numTraj,numTraj);
+    yData(1:numTraj,i) = intProfilesFitCoefs(1,i)*(xData) + intProfilesFitCoefs(2,i);
+    plot(xData,yData(1:numTraj,i))
+    hold on
+    plot(intProfilesCurrentLabelx, intProfilesCurrentLabely,'*','MarkerSize',5);
+    hold on
+end
+savefile = [trajPath '\Intensity Profile Linear Fits.tif'];
+export_fig(intProfilesFits,savefile);
+hold off
+
+intProfilesRaw = figure;
+image(intProfiles,'cdatamapping','scaled'); colormap(gray);
+savefile = [trajPath '\Intensity Profiles 1 Raw.tif'];
+export_fig(intProfilesRaw,savefile);
+
+intProfilesPSfig = figure;
+image(intProfilesPS,'cdatamapping','scaled'); colormap(gray);
+savefile = [trajPath '\Intensity Profiles 2 Phase Sym.tif'];
+export_fig(intProfilesPSfig,savefile);
+
+intProfilesMaxfig = figure;
+image(intProfilesMax,'cdatamapping','scaled'); colormap(gray);
+savefile = [trajPath '\Intensity Profiles 3 Max.tif'];
+export_fig(intProfilesMaxfig,savefile);
+
+intProfilesClosedfig1 = figure;
+image(intProfilesClosed1,'cdatamapping','scaled'); colormap(gray);
+savefile = [trajPath '\Intensity Profiles 4 Closed.tif'];
+export_fig(intProfilesClosedfig1,savefile);
+
+intProfilesCleanedfig = figure;
+image(intProfilesCleaned,'cdatamapping','scaled'); colormap(gray);
+savefile = [trajPath '\Intensity Profiles 5 Cleaned.tif'];
+export_fig(intProfilesCleanedfig,savefile);
+
+intProfilesClosedfig2 = figure;
+image(intProfilesClosed2,'cdatamapping','scaled'); colormap(gray);
+savefile = [trajPath '\Intensity Profiles 6 Closed.tif'];
+export_fig(intProfilesClosedfig2,savefile);
+
+intProfilesLabeledfig = figure;
+image(intProfilesLabeled,'cdatamapping','scaled'); colormap(gray);
+savefile = [trajPath '\Intensity Profiles 7 Labeled.tif'];
+export_fig(intProfilesLabeledfig,savefile);
+
+for i = 2:max(max(intProfilesLabeled))
+    yDataDiffAverage(1,i) = mean(yData(:,i-1)-yData(:,i));
+end
+
+
+
+
+
+% close;
+% intProfilesPSM = phasesymmono(intProfiles,'minWaveLength',2,'mult',1.5);
+% intProfilesPS = phasesym(intProfiles,'minWaveLength',2,'mult',1.5);
+% intProfilesPCM = phasecongmono(intProfilesPSM);
+% [intProfilesPC3,trash, orient] = phasecong3(intProfilesPS);
+% [intProfilesNMS, intProfilesNMSPos] = nonmaxsup(intProfilesPS,intProfilesOrient,1.3);
+% intProfilesNMS2 = medfilt2(intProfilesNMS, [3 3]) > 0;
+% intProfilesNMS3 = imclose(intProfilesNMS2, ones(1,200));
+% intProfilesNMSM = nonmaxsuppts(intProfilesPCM);
+% 
+% image(intProfilesNMS3,'cdatamapping','scaled'); colormap(gray);
+
+%imwrite(intProfilesImage,'intProfilesImage.tiff');
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%4.4b Using Intensity Values to Extract Z-Information%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+cMDBook2(cMDBook2 == 0) = NaN;
+% plottedProfiles = figure
+% for i = 1:numTraj
+% plot(linspace(1,54,54),cMDBook2(30,:,i,18),'.','MarkerSize',5)
+% hold on
+% end
+
+trajOfInterest = 1;
+winSize = 50
+if trajOfInterest > winSize && trajOfInterest < (numTraj-winSize) 
+    lowerLim = trajOfInterest - winSize;
+    upperLim = trajOfInterest + winSize;
+elseif trajOfInterest < winSize
+    lowerLim = trajOfInterest-(trajOfInterest-1);
+    upperLim = trajOfInterest*2 + winSize;
+elseif trajOfInterest > (numTraj-winSize)
+    lowerLim = trajOfInterest - winSize - (numTraj-trajOfInterest);
+    upperLim = trajOfInterest + (trajOfInterest-1);
+end
+
+plottedProfiles = figure
+plot(linspace(1,totalNumFrames,totalNumFrames),book1(30,:,trajOfInterest),'.','MarkerSize',5,'Color',[0 0 0])
+hold on
+findpeaks((book1(30,:,trajOfInterest)))
+
+currentAverages = zeros(totalNumFrames,1);
+ 
+for i = 1:totalNumFrames
+errorbar(i,mean(cMDBook2(30,i,lowerLim:upperLim,1),'omitnan'),std(cMDBook2(30,i,:,1),'omitnan'),'.','MarkerSize',5,'Color','r')
+hold on
+currentAverages(i,1) = mean(cMDBook2(30,i,lowerLim:upperLim,1),'omitnan');
+end
+findpeaks(currentAverages(:,1))
+
+hold on
+xVals = linspace(1,totalNumFrames,totalNumFrames);
+fitWeights = zeros(totalNumFrames,1);
+fitWeights(:,1) = xVals(1,:)+1000;
+s = fitoptions('Method','NonlinearLeastSquares',...
+               'Lower',[4000,25000,0,0,0,0,0],...
+               'Upper',[6000,35000,15,.1,1,3.14,15],...
+               'StartPoint',[5500,29000,11.5,.015,0.1731,2.2,6.712]);
+f = fittype('pillarFit2(x,S,iS,iP,P,Pg,Mo,Mf)','options',s);
+[fitCoef,fitQual] = fit(xVals',currentAverages,f,'weight',fitWeights); 
+fitCoef2 = coeffvalues(fitCoef);
+yVals = pillarFit(xVals,fitCoef2(1,5),fitCoef2(1,7),fitCoef2(1,6),fitCoef2(1,3),fitCoef2(1,4),fitCoef2(1,2),fitCoef2(1,1));
+plot(xVals,yVals,'MarkerSize',20,'Color','bl')
+findpeaks(yVals(1,:))
+
+
+% folderName = strcat( 'Intensity Average Profiles with ',num2str(cMD),' Divisions');
+% mkdir(blackPath,folderName)
+% for j = 1:cMD
+% plottedProfilesErrorBars = figure
+% for i = 1:totalNumFrames
+% errorbar(i,mean(cMDBook2(30,i,:,j),'omitnan'),std(cMDBook2(30,i,:,j),'omitnan'),'.','MarkerSize',5)
+% hold on
+% end
+% 
+% axis([0 60 0 40000])
+% savefile = [blackPath '\' folderName '\Displacement Magnitude Division ' num2str(j) '.tif'];
+% export_fig(plottedProfilesErrorBars,savefile);
+% 
+% close
+% end
+%%
+
+
 %%
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
@@ -540,27 +725,19 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if ismember(2,outputs) == 1
-    mkdir(blackPath,'Black Image Quiver Overlays')
+    folderName = strcat('Black Image_',scheme,' Quiver Overlays');
+    mkdir(blackPath,folderName)
     for f = 1:totalNumFrames        % number of z-slices
         blackOverlay = figure;
         imshow(e,[])
         hold on
 %       quiver(book1(15,f,:),book1(16,f,:),book1(17,f,:),book1(18,f,:),0,'g');
         for i = 1:cMD
-        if (i/cMD) >= .5
-            blue = 0;
-            green = 1-(((i/cMD)-0.5)/(.5));
-            red = 1 - green ;
-        elseif (i/cMD) < .5
-            blue = ((0.5-(i/cMD))/0.5);
-            green = 1 - blue ;
-            red = 0;
-        end
-        quiver(cMDBook(15,f,:,i),cMDBook(16,f,:,i),cMDBook(17,f,:,i),cMDBook(18,f,:,i),0,'color',[red green blue]);
+        quiver(cMDBook(15,f,:,i),cMDBook(16,f,:,i),cMDBook(17,f,:,i),cMDBook(18,f,:,i),0,'color',[map(i,1:3)]);
         hold on
         end
         hold off
-        savefile = [blackPath '\Black Image Quiver Overlays\Black Background Overlay' num2str(f) '.tif'];
+        savefile = [blackPath '\' folderName '\Black Background Overlay' scheme ' ' num2str(f) '.tif'];
         export_fig(blackOverlay,savefile,'-native');
         close
     end
@@ -577,26 +754,19 @@ end
 %processing into heat maps in imageJ to view 3D information in a 2D image.
 
 if ismember(4,outputs) == 1
-mkdir(blackPath,'Centroid Black Image Overlays')
+folderName = strcat( 'Centroid_',scheme,' Black Image Overlays');
+mkdir(blackPath, folderName)
 for f = 1:totalNumFrames
 centroidsOnly = figure;
 imshow(e,[])
 hold on
         for i = 1:cMD
-        if (i/cMD) >= .5
-            blue = 0;
-            green = 1-(((i/cMD)-0.5)/(.5));
-            red = 1 - green ;
-        elseif (i/cMD) < .5
-            blue = ((0.5-(i/cMD))/0.5);
-            green = 1 - blue ;
-            red = 0;
-        end
+        
         xTemp = squeeze(squeeze(cMDBook(1,f,:,i)));
         xTemp = xTemp';
         yTemp = squeeze(squeeze(cMDBook(2,f,:,i)));
         yTemp = yTemp';
-        plot(xTemp,yTemp,'.','MarkerSize',3,'Color',[red,green,blue]);
+        plot(xTemp,yTemp,'.','MarkerSize',3,'Color',[map(i,1:3)]);
         %quiver(cMDBook(15,f,:,i),cMDBook(16,f,:,i),cMDBook(17,f,:,i),cMDBook(18,f,:,i),0,'color',[red green blue]);
         hold on
         end
@@ -605,7 +775,7 @@ hold on
 % plot(xTemp,yTemp,'w.','MarkerSize',3);
 hold on
 hold off
-savefile = [blackPath '\Centroid Black Image Overlays\Centroids on Frame ' num2str(f) '.tif'];
+savefile = [blackPath '\' folderName '\Centroids on Frame ' scheme ' ' num2str(f) '.tif'];
 export_fig(centroidsOnly,savefile,'-native');
 close
 end  
@@ -639,22 +809,13 @@ end
 hold on
 if ismember(8,outputs) == 0
     for i = 1:cMD
-        if (i/cMD) >= .5
-            blue = 0;
-            green = 1-(((i/cMD)-0.5)/(.5));
-            red = 1 - green ;
-        elseif (i/cMD) < .5
-            blue = ((0.5-(i/cMD))/0.5);
-            green = 1 - blue ;
-            red = 0;
-        end
-        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[red green blue]);
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[map(i,1:3)]);
         hold on
     end
 %quiver(book1(3,1,:),book1(4,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 end
 hold off
-savefile = [blackPath '\Debug Image.tif'];
+savefile = [blackPath '\Debug Image ' scheme '.tif'];
 export_fig(debugImage,savefile,'-native');
 end
 %%
@@ -669,42 +830,25 @@ trajOverlay = figure;
 imshow(c,[])
 hold on
  for i = 1:cMD
-        if (i/cMD) >= .5
-            blue = 0;
-            green = 1-(((i/cMD)-0.5)/(.5));
-            red = 1 - green ;
-        elseif (i/cMD) < .5
-            blue = ((0.5-(i/cMD))/0.5);
-            green = 1 - blue ;
-            red = 0;
-        end
-        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[red green blue]);
+
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[map(i,1:3)]);
         hold on
     end
 %quiver(book1(27,1,:),book1(28,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 hold off
-savefile = [trajPath '\Fluorescent Overlay.tif'];
+savefile = [trajPath '\Fluorescent Overlay ' scheme '.tif'];
 export_fig(trajOverlay,savefile,'-native');
 
 transmittedOverlay = figure;
 imshow(d,[])
 hold on
  for i = 1:cMD
-        if (i/cMD) >= .5
-            blue = 0;
-            green = 1-(((i/cMD)-0.5)/(.5));
-            red = 1 - green ;
-        elseif (i/cMD) < .5
-            blue = ((0.5-(i/cMD))/0.5);
-            green = 1 - blue ;
-            red = 0;
-        end
-        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[red green blue]);
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[map(i,1:3)]);
         hold on
     end
 %quiver(book1(27,1,:),book1(28,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 hold off
-savefile = [cellPath '\Transmitted Overlay.tif'];
+savefile = [cellPath '\Transmitted Overlay ' scheme '.tif'];
 export_fig(transmittedOverlay,savefile,'-native');
 end
 %%
@@ -728,7 +872,7 @@ hold on
             green = 1 - blue ;
             red = 0;
         end
-        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[red green blue]);
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[map(i,1:3)]);
         hold on
     end
 %quiver(book1(27,1,:),book1(28,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
@@ -747,7 +891,7 @@ hold on
             green = 1 - blue ;
             red = 0;
         end
-        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[red green blue]);
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[map(i,1:3)]);
         hold on
     end
 %quiver(book1(27,1,:),book1(28,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
@@ -755,6 +899,4 @@ hold off
 end
 
 %%
-Test(1:30,2) = book1(10,9,1:30);
-Test(1:30,1) = book1(20,9,1:30);
 
