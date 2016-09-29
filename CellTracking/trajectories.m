@@ -29,9 +29,9 @@ numTraj = max(traj); % number of objects
 totalNumFrames = max(num(:,3)) + 1;
 book1 = zeros(numIndices,totalNumFrames,numTraj);
 for i = 1:numTraj
-    %Here we build a book of pages (3D array) with the data for a single
-    %object/trajectory per page. Most of the code is to ensure that each
-    %page is the same size matrix as the next.
+    % Here we build a book of pages (3D array) with the data for a single
+    % object/trajectory per page. Most of the code is to ensure that each
+    % page is the same size matrix as the next.
     
     % stores data to 'tempObj' pertaining to all frames of one
     % object/trajectory
