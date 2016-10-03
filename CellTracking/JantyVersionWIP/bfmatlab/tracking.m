@@ -15,6 +15,16 @@ for i = 1:noImgs
     images(:,:,i) = czi{1}{i,1};
 end
 
+%% read metadata
+metadata = czi{1,2};
+metadataKeys = metadata.keySet().iterator();
+for i=1:metadata.size()
+    keys{i} = metadataKeys.nextElement();
+    values{i} = metadata.get(keys{i});
+%     fprintf('%s = %s\n', key, value)
+end
+zz = [keys,values];
+
 %% edge detection
 boundaries = cell(noImgs,1);
 labeledBoundaries = cell(noImgs,1);
