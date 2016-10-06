@@ -26,7 +26,6 @@ end
 zz = [keys,values];
 %% omar's preprocessing
 close all
-centroids2 = cell(noImgs,1);
 d=3;
 sig1 = 1/(1+sqrt(2))*d;
 sig2 = sqrt(2) * sig1;
@@ -42,14 +41,7 @@ ppImages(:,:,i) = (imadjust(images(:,:,i)/65535,[noiseRng/65535 highIn/65535],[]
 ppImages2(:,:,i) = (imgaussfilt(imadjust(images(:,:,i)/65535,[noiseRng/65535 highIn/65535],[])*65535,sig2)-imgaussfilt(imadjust(images(:,:,i)/65535,[noiseRng/65535 highIn/65535],[])*65535,sig1))*10;
 ppImages3(:,:,i) = imfilter(ppImages2(:,:,i),Lap);
 end
-ppImages4 = (ppImages3>(prctile(ppImages3(ppImages3>0),25)));
-
-for i = 1:noImgs
-ppImages5(:,:,i) = bwareaopen(ppImages4(:,:,i),5);
-    c = regionprops(ppImages5(:,:,i),'Centroid');
-    centroids2{i} = cat(1,c.Centroid);
-end
-
+ppImages4 = (ppImages3>(prctile(ppImages3(ppImages3>0),50)));
 
 
 imshow(uint16(ppImages2(:,:,50)))
@@ -59,8 +51,6 @@ figure
 imshow(uint16(ppImages3(:,:,50)))
 figure
 imshow((ppImages4(:,:,50)))
-figure
-imshow((ppImages5(:,:,50)))
 %% edge detection
 boundaries = cell(noImgs,1);
 labeledBoundaries = cell(noImgs,1);
