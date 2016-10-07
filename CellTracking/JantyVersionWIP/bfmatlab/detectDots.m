@@ -1,8 +1,8 @@
 % Feature detection
 function [boundaries,centroids] = detectDots(img)
     % find edges using Canny filter (log filter almost works too)
-    [bw,~] = edge(img,'log');
-%     [bw,~] = edge(img,'Canny',[0.1375,0.3]);
+%     [bw,~] = edge(img,'log');
+    [bw,~] = edge(img,'Canny',[0.1375,0.3]);
     % fill in gaps in detected edges by dilating features slightly
     se90 = strel('line',1,90);
     se0 = strel('line',1,0);
