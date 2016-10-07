@@ -1,3 +1,6 @@
+%%
+clear all
+close all
 %% import image stack
 % choose .czi image stack
 [name,path] = uigetfile('*.czi');
@@ -7,14 +10,14 @@ czi = bfopen(filename);
 % get image dimensions from first image in .czi file
 [imgRows, imgCols] = size(czi{1}{1,1});
 % get number of images (z-slices) from .czi file
-noImgs = length(czi{1});
+global noImgs 
+noImgs= length(czi{1});
 % column 1 in cell 1 contains all images, row index corresponds to position
 % in z stack
 images = zeros(imgRows,imgCols,noImgs);
 parfor i = 1:noImgs
     images(:,:,i) = czi{1}{i,1};
 end
-
 %% read metadata
 metadata = czi{1,2};
 binning          = metadata.get('Global Information|Image|Channel|Binning #1');
@@ -23,10 +26,13 @@ zEnd             = metadata.get('Global Experiment|AcquisitionBlock|MultiTrackSe
 exposureTime     = metadata.get('Global HardwareSetting|ParameterCollection|ExposureTime #1');
 colorDepth       = metadata.get('Global Information|Image|ComponentBitCount #1');
 scaling          = metadata.get('Global Scaling|Distance|Value #1');
+global sizeX;sizeX = str2num(metadata.get('Global Information|Image|SizeX #1'));
+global sizeY;sizeY = str2num(metadata.get('Global Information|Image|SizeY #1'));
 
 %% omar's preprocessing
 close all
-centroids2 = cell(noImgs,1);
+global centroids2
+centroids2= cell(noImgs,1);
 d=3;
 sig1 = 1/(1+sqrt(2))*d;
 sig2 = sqrt(2) * sig1;
@@ -50,22 +56,17 @@ ppImages5(:,:,i) = bwareaopen(ppImages4(:,:,i),5);
     centroids2{i} = cat(1,c.Centroid);
 end
 %%
-rOI = 6;
-imshow(uint16(ppImages2(:,:,rOI)))
-figure
-imshow(uint16(ppImages(:,:,rOI)))
-figure
-imshow(uint16(ppImages3(:,:,rOI)))
-figure
-imshow((ppImages4(:,:,rOI)))
-figure
-imshow((ppImages5(:,:,rOI)))
-
+ShowStack(images)
+ShowStack(ppImages)
+ShowStack(ppImages2)
+ShowStack(ppImages3)
+ShowStack(ppImages4)
+ShowStack(ppImages5)
 %% image pre-processing
 % something in here is making the features larger and blur into each other
 % maybe need to get rid of noise better before doing imadjust
  imagesPro = zeros(size(images));
- for i = 1:noImgs
+ parfor i = 1:noImgs
     imgOld = images(:,:,i);
     % Normalize image grayscale values so the image works with the
     % following built-in image processing functions.
@@ -84,7 +85,7 @@ imshow((ppImages5(:,:,rOI)))
     imgNew = imtophat(imgNew,strel('disk',2));
     imagesPro(:,:,i) = imgNew;
  end
-
+ShowStack(imagesPro)
 %% paper steps
 % 1. define point spread function
 %   a. empirically
