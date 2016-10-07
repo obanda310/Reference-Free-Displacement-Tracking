@@ -11,7 +11,7 @@ noImgs = length(czi{1});
 % column 1 in cell 1 contains all images, row index corresponds to position
 % in z stack
 images = zeros(imgRows,imgCols,noImgs);
-for i = 1:noImgs
+parfor i = 1:noImgs
     images(:,:,i) = czi{1}{i,1};
 end
 
@@ -36,7 +36,7 @@ refHistImage = images(:,:,mIdx);
 LoG = fspecial('log',3,.25);
 Lap = fspecial('laplacian');
 % imadjust(ppImages, [noiseRng;max(max(max(images)))],[0,1];
-for i = 1:noImgs
+parfor i = 1:noImgs
 highIn = max(max(max(images(:,:,i))));
 ppImages(:,:,i) = (imadjust(images(:,:,i)/65535,[noiseRng/65535 highIn/65535],[])*65535);
 ppImages2(:,:,i) = (imgaussfilt(imadjust(images(:,:,i)/65535,[noiseRng/65535 highIn/65535],[])*65535,sig2)-imgaussfilt(imadjust(images(:,:,i)/65535,[noiseRng/65535 highIn/65535],[])*65535,sig1))*10;
@@ -44,7 +44,7 @@ ppImages3(:,:,i) = imfilter(ppImages2(:,:,i),Lap);
 end
 ppImages4 = (ppImages3>(prctile(ppImages3(ppImages3>0),25)));
 
-for i = 1:noImgs
+parfor i = 1:noImgs
 ppImages5(:,:,i) = bwareaopen(ppImages4(:,:,i),5);
     c = regionprops(ppImages5(:,:,i),'Centroid');
     centroids2{i} = cat(1,c.Centroid);
