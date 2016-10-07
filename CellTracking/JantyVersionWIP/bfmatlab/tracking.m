@@ -17,13 +17,12 @@ end
 
 %% read metadata
 metadata = czi{1,2};
-metadataKeys = metadata.keySet().iterator();
-for i=1:metadata.size()
-    keys{i} = metadataKeys.nextElement();
-    values{i} = metadata.get(keys{i});
-%     fprintf('%s = %s\n', key, value)
-end
-zz = [keys,values];
+binning          = metadata.get('Global Information|Image|Channel|Binning #1');
+zStart           = metadata.get('Global Experiment|AcquisitionBlock|MultiTrackSetup|ZStackSetup|First|Distance|Value #1'); %um
+zEnd             = metadata.get('Global Experiment|AcquisitionBlock|MultiTrackSetup|ZStackSetup|Last|Distance|Value #1'); %um
+exposureTime     = metadata.get('Global HardwareSetting|ParameterCollection|ExposureTime #1');
+colorDepth       = metadata.get('Global Information|Image|ComponentBitCount #1');
+
 %% omar's preprocessing
 close all
 centroids2 = cell(noImgs,1);
@@ -50,8 +49,6 @@ ppImages5(:,:,i) = bwareaopen(ppImages4(:,:,i),5);
     centroids2{i} = cat(1,c.Centroid);
 end
 
-
-
 imshow(uint16(ppImages2(:,:,50)))
 figure
 imshow(uint16(ppImages(:,:,50)))
@@ -61,44 +58,30 @@ figure
 imshow((ppImages4(:,:,50)))
 figure
 imshow((ppImages5(:,:,50)))
-%% edge detection
-boundaries = cell(noImgs,1);
-labeledBoundaries = cell(noImgs,1);
-centroids = cell(noImgs,1);
-for i = 1:noImgs
-    % find edges using Canny filter (log filter almost works too)
-    [bw,threshOut] = edge(images(:,:,i),'Canny',[0.1375,0.3]);
-    % fill in gaps in detected edges by dilating features slightly
-    se90 = strel('line',3,90);
-    se0 = strel('line',3,0);
-    % pack the image to make dilation operation more efficient - not 
-    % necessary, but could speed up operations on large/many images
-    % see: http://www.mathworks.com/help/images/ref/bwpack.html
-    bwPacked = bwpack(bw);
-    bwPackedDilate = imdilate(bwPacked,[se90,se0],'ispacked');
-    bwDilate = bwunpack(bwPackedDilate);
-    % fill in edge-detected areas so they are solid objects
-    bwFill = imfill(bwDilate,'holes');
-    % trace boundary of each object
-    [boundaries{i},labeledBoundaries{i}] = bwboundaries(bwFill);
-    % get centroid location of each object (in pixel units) 
-    c = regionprops(bwFill,'Centroid');
-    % concatenate all centroids into single matrix
-    centroids{i} = cat(1,c.Centroid);
-end
 
-% %% surf test
-% % extract features
-% img1 = images(:,:,1);
-% img2 = images(:,:,2);
-% points1 = detectSURFFeatures(img1);
-% points2 = detectSURFFeatures(img2);
-% [features1, validPoints1] = extractFeatures(img1,points1);
-% [features2, validPoints2] = extractFeatures(img2,points2);
-% [indexPairs, matchMetric] = matchFeatures(features1,features2);
-% matchedPoints1 = validPoints1(indexPairs(:,1));
-% matchedPoints2 = validPoints2(indexPairs(:,2));
-% showMatchedFeatures(img1,img2,matchedPoints1,matchedPoints2);
+%% image pre-processing
+% something in here is making the features larger and blur into each other
+% maybe need to get rid of noise better before doing imadjust
+ imagesPro = zeros(size(images));
+ for i = 1:noImgs
+    imgOld = images(:,:,i);
+    % Normalize image grayscale values so the image works with the
+    % following built-in image processing functions.
+    imgNew = imgOld/(2^str2double(colorDepth)-1);
+    % Rolling ball background subtraction
+    imgNew = rollingBall(imgNew,3);
+    % Scale pixel intensities to use the entire dynamic range specified by
+    % the image stack's color depth.
+    imgNew = imadjust(imgNew);
+    % Adjust local histograms in image to even out uneven illumination and
+    % differing dot intensities within each image
+    imgNew = adapthisteq(imgNew);
+    % Size of structuring element radius should be JUST larger than the
+    % size of the features you want to see. Dots are about 4 pixels in
+    % diameter, so radius of the structuring element should be 2 or 3.
+    imgNew = imtophat(imgNew,strel('disk',2));
+    imagesPro(:,:,i) = imgNew;
+ end
 
 %% paper steps
 % 1. define point spread function
