@@ -22,6 +22,7 @@ zStart           = metadata.get('Global Experiment|AcquisitionBlock|MultiTrackSe
 zEnd             = metadata.get('Global Experiment|AcquisitionBlock|MultiTrackSetup|ZStackSetup|Last|Distance|Value #1'); %um
 exposureTime     = metadata.get('Global HardwareSetting|ParameterCollection|ExposureTime #1');
 colorDepth       = metadata.get('Global Information|Image|ComponentBitCount #1');
+scaling          = metadata.get('Global Scaling|Distance|Value #1');
 
 %% omar's preprocessing
 close all
