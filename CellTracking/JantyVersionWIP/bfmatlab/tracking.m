@@ -49,16 +49,17 @@ ppImages5(:,:,i) = bwareaopen(ppImages4(:,:,i),5);
     c = regionprops(ppImages5(:,:,i),'Centroid');
     centroids2{i} = cat(1,c.Centroid);
 end
-
-imshow(uint16(ppImages2(:,:,50)))
+%%
+rOI = 6;
+imshow(uint16(ppImages2(:,:,rOI)))
 figure
-imshow(uint16(ppImages(:,:,50)))
+imshow(uint16(ppImages(:,:,rOI)))
 figure
-imshow(uint16(ppImages3(:,:,50)))
+imshow(uint16(ppImages3(:,:,rOI)))
 figure
-imshow((ppImages4(:,:,50)))
+imshow((ppImages4(:,:,rOI)))
 figure
-imshow((ppImages5(:,:,50)))
+imshow((ppImages5(:,:,rOI)))
 
 %% image pre-processing
 % something in here is making the features larger and blur into each other
