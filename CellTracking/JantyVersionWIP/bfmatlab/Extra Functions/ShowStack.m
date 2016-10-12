@@ -41,7 +41,7 @@ InputStack = getappdata(hFig,'MyMatrix');
         set(handles.Edit1,'String',num2str(CurrentFrame));
 
         %// Display appropriate frame.
-        imshow(InputStack(:,:,CurrentFrame),'Parent',handles.axes1);
+        imshow(InputStack(:,:,CurrentFrame),[],'Parent',handles.axes1);
 
         guidata(hFig,handles);
     end
