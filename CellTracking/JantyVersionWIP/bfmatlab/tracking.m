@@ -50,18 +50,50 @@ ppImages3(:,:,i) = imfilter(ppImages2(:,:,i),Lap);
 end
 ppImages4 = (ppImages3>(prctile(ppImages3(ppImages3>0),25)));
 
+
 parfor i = 1:noImgs
 ppImages5(:,:,i) = bwareaopen(ppImages4(:,:,i),5);
     c = regionprops(ppImages5(:,:,i),'Centroid');
     centroids2{i} = cat(1,c.Centroid);
 end
-%%
-ShowStack(images)
-ShowStack(ppImages)
-ShowStack(ppImages2)
-ShowStack(ppImages3)
-ShowStack(ppImages4)
+
+%Clear any objects that are not 3-Dimensionally Larger than a threshold
+%value
+ppImages5 = bwareaopen(ppImages5,20);
 ShowStack(ppImages5)
+%% Final Pre-Processing Before Finding Local Maxima
+%create ppImages 9 to fill holes in z-dimension
+ppImages6 = ppImages5;
+
+%% Finding 3D Local Maxima
+%create a gaussian filtered version of original to decrease false local
+%maxima
+parfor i = 1:noImgs
+    ppImages7(:,:,i) = imgaussfilt(images(:,:,i),sig2);
+end
+
+%multiply the gaussian image by the mask image to isolate regions of
+%interest
+ppImages8 = ppImages6.*ppImages7;
+
+ShowStack(ppImages8)
+
+%find local maxima in 3D (pixel resolution)
+ppImages9 = imregionalmax(ppImages8);
+
+%% Kovesi's Fxn subpix3d
+%obtain vectors with coordinates for x,y,z positions of local maxima with
+%pixel resolution
+[rM,cM,sM] = ind2sub(size(ppImages9),find(ppImages9 == 1));
+
+%find subpixel maxima based on initial guesses from imregionalmax on the
+%original images
+[rsM,csM,ssM] = subpix3d(rM,cM,sM,images);
+
+%3D plot subpixel local maxima
+figure
+scatter3(rsM,csM,ssM,'.')
+
 %% image pre-processing
 % something in here is making the features larger and blur into each other
 % maybe need to get rid of noise better before doing imadjust
@@ -85,7 +117,6 @@ ShowStack(ppImages5)
     imgNew = imtophat(imgNew,strel('disk',2));
     imagesPro(:,:,i) = imgNew;
  end
-ShowStack(imagesPro)
 %% paper steps
 % 1. define point spread function
 %   a. empirically
