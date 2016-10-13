@@ -56,11 +56,11 @@ scatter3(rsM,csM,ssM,'.')
 % something in here is making the features larger and blur into each other
 % maybe need to get rid of noise better before doing imadjust
  imagesPro = zeros(size(images));
- parfor i = 1:noImgs
+ for i = 1:noImgs
     imgOld = images(:,:,i);
     % Normalize image grayscale values so the image works with the
     % following built-in image processing functions.
-    imgNew = imgOld/(2^str2double(colorDepth)-1);
+    imgNew = imgOld/(2^meta.colorDepth-1);
     % Rolling ball background subtraction
     imgNew = rollingBall(imgNew,3);
     % Scale pixel intensities to use the entire dynamic range specified by
