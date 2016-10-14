@@ -1,12 +1,12 @@
 % InputStack should be a 3D image matrix where dimensions 1 and 2 contain
 % pixel information in y and x, respectively, and dimension 3 indexes
 % separate images in the stack
-function [OutputStackFinal, bounds] = EditStack(InputStack,centroids2)
+function [OutputStackFinal,cropImages, bounds] = EditStack(InputStack,Original,centroids2)
     
     noImgs = size(InputStack,3);
     bounds = [1,1,size(InputStack,1),size(InputStack,2)];
     OutputStack = InputStack;
-
+    cropImages = Original;
     hFig = figure('Position',[100 100 800 800]);
 
     handles.axes1 = axes('Units','normalized','Position',[0 0 1 1]);
@@ -73,6 +73,7 @@ function [OutputStackFinal, bounds] = EditStack(InputStack,centroids2)
     % You could use setappdata(0,'MyMatrix',MyMatrix) to store in the base 
     % workspace. 
     setappdata(hFig,'MyMatrix',OutputStack);
+    setappdata(hFig,'MyOrigMatrix',cropImages);
 
     % Display 1st frame
     imshow(OutputStack(:,:,1),[])
@@ -124,14 +125,19 @@ function [OutputStackFinal, bounds] = EditStack(InputStack,centroids2)
     end 
     
     function cropImage(~,~)
+        f = msgbox('Double-Click to crop after making rectangular selection!');
+        waitfor(f);
         handles = guidata(gcf);
         OutputStack = getappdata(hFig,'MyMatrix');
         CurrentFrame = round((get(handles.SliderFrame,'Value')));
-        set(handles.Edit1,'String',num2str(CurrentFrame));
+        set(handles.Edit1,'String',num2str(CurrentFrame));    
+        
         [~, bounds] = imcrop(OutputStack(:,:,CurrentFrame));
         bounds = round(bounds);
         CroppedStack = OutputStack(bounds(1,2):bounds(1,2)+bounds(1,4),bounds(1,1):bounds(1,1)+bounds(1,3),:);
+        cropImages = Original(bounds(1,2):bounds(1,2)+bounds(1,4),bounds(1,1):bounds(1,1)+bounds(1,3),:);
         setappdata(hFig,'MyMatrix',CroppedStack);
+        setappdata(hFig,'MyOrigMatrix',cropImages);
         OutputStack = getappdata(hFig,'MyMatrix');
         imshow(OutputStack(:,:,CurrentFrame),[],'Parent',handles.axes1);
         guidata(hFig,handles);
