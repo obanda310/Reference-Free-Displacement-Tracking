@@ -9,7 +9,7 @@ noImgs = size(images,3);
 
 %% Pre-processing
 % Process images and get centroid locations
-[filtMasks,centroids] = getCentroids(images,meta);
+[filtMasks,centroids] = getCentroidsStack(images,meta);
 % Clear any objects that are not 3-Dimensionally larger than a threshold
 % value of 20 pixels
 filtMasks = bwareaopen(filtMasks,20);
