@@ -54,16 +54,18 @@ function finalMask = createMask(img)
     % Find the peaks in the correlation image to isolate each feature well
     % from neighboring features
     corrPeaks = imregionalmax(corrImgCrop);
-    % Dilate the peaks so that the mask covers enough of the features so
-    % that we can obtain trustworthy subpixel centroid locations
-    corrPeaksDilated = imdilate(corrPeaks,strel('disk',3));
-    % Multiply the dilated mask by the original image to recapture the
-    % actual shape of the features
-    filteredImg = corrPeaksDilated.*img;
-    % Generate a new mask that accounts for the true geometry of each
-    % feature
-    mask = imbinarize(filteredImg,'adaptive');
-    % Filter out features that have areas of 5 pixels or less and features
-    % that have areas of 30 pixels or more
-    finalMask = bwareafilt(mask,[5,30]);
+    
+    finalMask = corrPeaks;
+%     % Dilate the peaks so that the mask covers enough of the features so
+%     % that we can obtain trustworthy subpixel centroid locations
+%     corrPeaksDilated = imdilate(corrPeaks,strel('disk',2));
+%     % Multiply the dilated mask by the original image to recapture the
+%     % actual shape of the features
+%     filteredImg = corrPeaksDilated.*img;
+%     % Generate a new mask that accounts for the true geometry of each
+%     % feature
+%     mask = imbinarize(filteredImg,'adaptive');
+%     % Filter out features that have areas of 5 pixels or less and features
+%     % that have areas of 30 pixels or more
+%     finalMask = bwareafilt(mask,[5,Inf]);
 end
