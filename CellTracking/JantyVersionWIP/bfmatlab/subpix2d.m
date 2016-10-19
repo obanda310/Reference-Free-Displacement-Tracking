@@ -113,4 +113,4 @@ function [rs, cs] = subpix2d(R, C, L)
     % have m valid extrema.
     rs = x(1, 1:m);
     cs = x(2, 1:m);
-end
+

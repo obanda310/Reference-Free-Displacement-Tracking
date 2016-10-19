@@ -14,7 +14,7 @@ function [filtMasks,centroids] = getCentroidsStack(images,metadata)
     % for-loop below. These sigma values (i.e. sig1 and sig2) were obtained
     % in code written by Peter Kovesi. These values and the remainder of
     % the code perform a "difference of gaussians" filter operation
-    d = 3;
+    d = 4;
     sig1 = 1/(1+sqrt(2))*d;
     sig2 = sqrt(2) * sig1;
     % For the last image in the z-stack, find the grayscale intensities 
