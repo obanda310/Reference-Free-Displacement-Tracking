@@ -1,7 +1,7 @@
 % InputStack should be a 3D image matrix where dimensions 1 and 2 contain
 % pixel information in y and x, respectively, and dimension 3 indexes
 % separate images in the stack
-function ShowStack(InputStack,centroids2)
+function ShowStack(InputStack,centroids)
     noImgs = size(InputStack,3);
 
     hFig = figure('Position',[100 100 800 800]);
@@ -86,8 +86,8 @@ function ShowStack(InputStack,centroids2)
         InputStack = getappdata(hFig,'MyMatrix');
         CurrentFrame = round((get(handles.SliderFrame,'Value')));
         set(handles.Edit1,'String',num2str(CurrentFrame));
-        xs = (centroids2{CurrentFrame,1}(:,1));
-        ys = (centroids2{CurrentFrame,1}(:,2));
+        xs = (centroids{CurrentFrame,1}(:,1));
+        ys = (centroids{CurrentFrame,1}(:,2));
         imshow(InputStack(:,:,CurrentFrame),[],'Parent',handles.axes1);
         hold on
         plot(xs,ys,'o')
