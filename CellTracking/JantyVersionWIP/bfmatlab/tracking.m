@@ -211,13 +211,14 @@ maxLD = maxLinkDistance/pixelSize;
 maxJD = 2;
 
 %Find number of objects per frame in subpixMaxima
-for i = 1:noImgs
+parfor i = 1:noImgs
      [lastNZElement,~] = find(subpixMaxima(:,1,i),1,'last');
      twoDimMaxIndSub(i,1) = lastNZElement;
 end
 
 
 %closest neighbor in frame above
+noPillars = 1
 for i = 1:noImgs-1
     for j = 1:(twoDimMaxIndSub(i,1))      
         clear tempDistances
@@ -226,18 +227,40 @@ for i = 1:noImgs-1
         if tempDistances(min(nearUpNeighbor),1) < maxLD
         subpixMaxima(j,4,i) = min(nearUpNeighbor); 
         subpixMaxima(j,5,i) = tempDistances(min(nearUpNeighbor),1);
+        if i>1 && ismember(j,subpixMaxima(:,4,i-1))==1
+            subpixMaxima(j,6,i) = subpixMaxima(find(subpixMaxima(:,4,i-1)==j,1,'first'),6,i-1);
+        else
+            subpixMaxima(j,6,i) = noPillars;
+            noPillars = noPillars +1
+        end
         end
     end
 end
 
-%closest neighbor in frame below
-for i = 2:noImgs
-    for j = 1:(twoDimMaxIndSub(i,1))      
-        clear tempDistances
-        tempDistances = sqrt((subpixMaxima(1:twoDimMaxIndSub(i,1),1,i-1)-subpixMaxima(j,1,i)).^2 +(subpixMaxima(1:twoDimMaxIndSub(i,1),2,i-1)-subpixMaxima(j,2,i)).^2);
-        [nearDownNeighbor,~] = find(tempDistances==min(tempDistances));
-        subpixMaxima(j,6,i) = min(nearDownNeighbor); 
-        subpixMaxima(j,7,i) = tempDistances(min(nearDownNeighbor),1); 
+% %closest neighbor in frame below
+% for i = 2:noImgs
+%     for j = 1:(twoDimMaxIndSub(i,1))      
+%         clear tempDistances
+%         tempDistances = sqrt((subpixMaxima(1:twoDimMaxIndSub(i,1),1,i-1)-subpixMaxima(j,1,i)).^2 +(subpixMaxima(1:twoDimMaxIndSub(i,1),2,i-1)-subpixMaxima(j,2,i)).^2);
+%         [nearDownNeighbor,~] = find(tempDistances==min(tempDistances));
+%         subpixMaxima(j,6,i) = min(nearDownNeighbor); 
+%         subpixMaxima(j,7,i) = tempDistances(min(nearDownNeighbor),1); 
+%     end
+% end
+
+pillarBook = zeros(noImgs,3,noPillars);
+for i = 1:noPillars
+    [row,frame] = find(subpixMaxima(:,6,:)==i);
+    for j = 1:size(row,1)
+    pillarBook(j,1,i) = subpixMaxima(row(j,1),1,frame(j,1));
+    pillarBook(j,2,i) = subpixMaxima(row(j,1),2,frame(j,1));
+    pillarBook(j,3,i) = subpixMaxima(row(j,1),3,frame(j,1));
     end
 end
 
+figure
+for j = 500:1000
+scatter3(pillarBook(:,1,j),pillarBook(:,2,j),pillarBook(:,3,j),'.')
+hold on
+end
+hold off
