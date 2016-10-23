@@ -1,34 +1,47 @@
 classdef Experiment
     properties
-        trajImg     % image of the trajectories map output from imageJ
-        cellImg     % image of the cell(s) being observed
-        trajData    % matrix of trajectory data
-        numFrames   % number of frames (z-slices) in experiment
-        numTrajs    % number of trajectories in experiment
-        resolution  % [y resolution, x resolution]
+        images
+        metadata
+        cellImg
     end
     methods
-        function obj = Experiment(trajImgFile,cellImgFile,trajDataFile)
-            if nargin == 0
-                [tFile,tPath] = uigetfile('*.tif','Select trajectories image');
-                trajImgFile = [tPath,tFile];
-                [cFile,cPath] = uigetfile('*.tif','Select cell overlay image');
-                cellImgFile = [cPath,cFile];
-                [dFile,dPath] = uigetfile('*.xlsx');
-                trajDataFile = [dPath,dFile];
+        function obj = Experiment(stackFile,cellFile)
+            % If a stackFile input argument is not supplied, ask the user
+            % to select an image stack he/she would like to analyze
+            if ~exist('stackFile','var') || isempty(stackFile)
+                w = msgbox('Choose the image stack you''d like to analyze');
+                waitfor(w);
+                [obj.images,obj.metadata] = getImages;
+            % If a stackFile input argument is provided, use that as an
+            % input for getImages without asking the user to select a file
+            % manually
+            else
+                [obj.images,obj.metadata] = getImages(stackFile);
             end
-            obj.trajImg = imread(trajImgFile);
-            obj.cellImg = imread(cellImgFile);
-            [obj.trajData,~,~] = xlsread(trajDataFile);
+            % If a cellFile input argument is not supplied, ask the user
+            % to select the cell image he/she would like to use as an
+            % overlay
+            if ~exist('cellFile','var') || isempty(cellFile)
+                w = msgbox('Choose the image of the cells on this gel');
+                waitfor(w);
+                [obj.cellImg,~] = getImages;
+            % If a cellFile input argument is provided, use that as an
+            % input for getImages without asking the user to select a file
+            % manually
+            else
+                [obj.cellImg,~] = getImages(cellFile);
+            end
+        end
+        function [roiStack,roiCell,roiBounds,bkImg] = cropImgs(obj)
+            roiGUIHandle = ROI_GUI(obj);
+            waitfor(roiGUIHandle);
             
-            obj.resolution = size(obj.trajImg);
-            % Subtract y-position data from y-resolution to redefine the
-            % origin in the top-left corner of the image instead of the
-            % bottom-left corner.
-            obj.trajData(:,5) = obj.resolution(2)-obj.trajData(:,5);
+            roiStack = roiGUIData.ROI;
+            roiBounds = roiGUIData.ROIBounds;
             
-            obj.numFrames = max(obj.trajData(:,3)) + 1;
-            obj.numTrajs = max(obj.trajData(:,2));
+            roiCell = imcrop(exp.cellImg,roiBounds);
+            
+            bkImg = zeroes(roiBounds(4)+1,roiBounds(3)+1);
         end
     end
 end
