@@ -17,23 +17,33 @@ close all; clear; clc;
 file = [path,name];
 [num,txt,raw] = xlsread(file);
 
-inputVar = InputSelector()
+inputVar = InputSelector();
 if strcmp(inputVar,'Mosaic') == 1
     xCol = 4;
     yCol = 5;
     fCol = 3;
     tCol = 2;
     totalCol = 12;
-    pixelScale = 1
+    pixelScale = 1;
 elseif strcmp(inputVar,'TrackMate') == 1
     xCol = 6;
     yCol = 7;
     fCol = 10; %Frame
     tCol = 4; %Pillar/Trajectory
-    intCol = 14 %Intensity information
+    intCol = 14; %Intensity information
     totalCol = 22; %Number of columns in spreadsheet
+    startVar = 1;
     prompt = 'How many pixels per micron? Enter a decimal and press enter: ';
-    pixelScale = input(prompt)
+    pixelScale = input(prompt);
+elseif strcmp(inputVar,'Custom Code') == 1
+    xCol = 2;
+    yCol = 3;
+    fCol = 4;
+    tCol = 5;
+    intCol = 6;
+    totalCol = 6;
+    pixelScale = 1;
+    startVar = 0;
 end
     
 [trajFile,trajPath] = uigetfile('*.tif','Select Fluorescent Image for Overlay');
@@ -45,7 +55,7 @@ d = imread([cellPath,cellFile]);
 [blackFile,blackPath] = uigetfile('*.tif','Select a Black Image of the Correct Dimensions');
 e = imread([blackPath,blackFile]);
 
-outputs = OutputSelector()
+outputs = OutputSelector();
 
 %%
 
@@ -58,7 +68,7 @@ scaleOutputVectors = 1; %for Section 5.1
 trackErrorThreshold = .2; %for Section 4
 numIndices = 30; %for Section 1 and 2 (number of elements in book1)
 numTraj = max(num(:,tCol)); %Number of Trajectories
-totalNumFrames = max(num(:,fCol)) + 1; %Maximum number of frames observable for any one object
+totalNumFrames = max(num(:,fCol))+startVar; %Maximum number of frames observable for any one object
 global book1 
 book1 = zeros(numIndices,totalNumFrames,numTraj); %Creates book1
 
@@ -77,7 +87,7 @@ for i = 1:numTraj
     if numFrames > 0
     % the first frame that an object appears in (tracking software starts 
     % at 0
-    startFrame = min(tempObj(:,fCol))+1;
+    startFrame = min(tempObj(:,fCol))+startVar;
     % the last frame that an object appears in
     endFrame = (startFrame+numFrames-1);
     book1(11,:,i) = startFrame;
@@ -655,6 +665,7 @@ errorbar(i,mean(cMDBook2(30,i,lowerLim:upperLim,1),'omitnan'),std(cMDBook2(30,i,
 hold on
 currentAverages(i,1) = mean(cMDBook2(30,i,lowerLim:upperLim,1),'omitnan');
 end
+currentAverages(isnan(currentAverages))=0;
 findpeaks(currentAverages(:,1))
 
 hold on

@@ -250,13 +250,19 @@ end
 % end
 %%
 clear pillarBook
-pillarBook = zeros(noImgs,3,noPillars);
+pillarBook = zeros(noImgs,5,noPillars);
 for i = 1:noPillars
     [row,frame] = find(subpixMaxima(:,6,:)==i);
     for j = 1:size(row,1)
         pillarBook(j,1,i) = subpixMaxima(row(j,1),1,frame(j,1));
         pillarBook(j,2,i) = subpixMaxima(row(j,1),2,frame(j,1));
         pillarBook(j,3,i) = subpixMaxima(row(j,1),3,frame(j,1));
+        pillarBook(j,4,i) = i;
+        if round(pillarBook(j,1,i)) > 0 && round(pillarBook(j,2,i))>0 && round(pillarBook(j,3,i))>0
+            pillarBook(j,5,i) = cropImages2(round(pillarBook(j,1,i)),round(pillarBook(j,2,i)),pillarBook(j,3,i));
+        else
+            pillarBook(j,5,i) = 0;
+        end
     end
 end
 %% 3D Scatterplot of points color coded by pillar
