@@ -3,6 +3,8 @@ classdef Experiment
         images
         metadata
         cellImg
+        masks
+        centroids2d
     end
     methods
         function obj = Experiment(stackFile,cellFile)
@@ -31,17 +33,34 @@ classdef Experiment
             else
                 [obj.cellImg,~] = getImages(cellFile);
             end
-        end
-        function [roiStack,roiCell,roiBounds,bkImg] = cropImgs(obj)
-            roiGUIHandle = ROI_GUI(obj);
-            waitfor(roiGUIHandle);
             
-            roiStack = roiGUIData.ROI;
+            % Process images and get centroid locations
+            [masks,obj.centroids2d] = ... 
+                getCentroidsStack(obj.images,obj.metadata);
+            % Clear any objects that are not 3-Dimensionally larger than a 
+            % threshold value of 20 pixels
+            obj.masks = bwareaopen(masks,20); 
+        end
+        function [roiImgs,roiMasks,roiCell,roiBounds,bkImg] = cropImgs(obj)
+            roiGUIHandle = ROI_GUI(obj);
+            w = msgbox('Click ok when you''re happy with the ROI');
+            waitfor(w);
+            roiGUIData = getappdata(roiGUIHandle);
+            close(roiGUIHandle);
+
+            roiImgs = roiGUIData.ROI;
             roiBounds = roiGUIData.ROIBounds;
             
-            roiCell = imcrop(exp.cellImg,roiBounds);
+            noImgs = size(obj.images,3);
+            roiMasks = zeros(roiBounds(4)+1,roiBounds(3)+1,noImgs);
+            for i = 1:noImgs
+                newImg = imcrop(obj.masks(:,:,i),roiBounds);
+                roiMasks(:,:,i) = newImg;
+            end
             
-            bkImg = zeroes(roiBounds(4)+1,roiBounds(3)+1);
+            roiCell = imcrop(obj.cellImg,roiBounds);
+            
+            bkImg = zeros(roiBounds(4)+1,roiBounds(3)+1);
         end
     end
 end
