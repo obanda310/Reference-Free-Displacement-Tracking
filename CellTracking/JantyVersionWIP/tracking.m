@@ -25,7 +25,7 @@ filtMasks = bwareaopen(filtMasks,20);
 % maxima
 d = 3;
 sig1 = 1/(1+sqrt(2))*d;
-sig2 = sqrt(2) * sig1; 
+sig2 = sqrt(2) * sig1;
 
 % Multiply the gaussian image by the mask image to isolate regions of
 % interest
@@ -62,19 +62,19 @@ end
 %Separate maxima by z (frame) and determine indices in rM, cM, sM
 for i = 1:noImgs
     if min(find(sM == i)) > 0
-    twoDimMaxInd(i,1) = min(find(sM == i));
-    twoDimMaxInd(i,2) = max(find(sM == i));
+        twoDimMaxInd(i,1) = min(find(sM == i));
+        twoDimMaxInd(i,2) = max(find(sM == i));
     end
 end
 
 %use indices to create book of subpixel maxima for use later in linking
 %maxima to pillars
-for i = 1:noImgs 
+for i = 1:noImgs
     if min(find(sM == i)) > 0
-[rsM,csM] = subpix2d(rM(twoDimMaxInd(i,1):twoDimMaxInd(i,2)),cM(twoDimMaxInd(i,1):twoDimMaxInd(i,2)),double(ppImages7(:,:,i)));
-subpixMaxima(1:size(rsM,2),1,i) = rsM(1,:); 
-subpixMaxima(1:size(rsM,2),2,i) = csM(1,:);
-subpixMaxima(1:size(rsM,2),3,i) = i;
+        [rsM,csM] = subpix2d(rM(twoDimMaxInd(i,1):twoDimMaxInd(i,2)),cM(twoDimMaxInd(i,1):twoDimMaxInd(i,2)),double(ppImages7(:,:,i)));
+        subpixMaxima(1:size(rsM,2),1,i) = rsM(1,:);
+        subpixMaxima(1:size(rsM,2),2,i) = csM(1,:);
+        subpixMaxima(1:size(rsM,2),3,i) = i;
     end
 end
 
@@ -104,8 +104,8 @@ scatter3(rM,cM,sM,'.')
 figure
 for i = 1:noImgs
     if min(find(sM == i)) > 0
-    scatter3(subpixMaxima(:,1,i),subpixMaxima(:,2,i),subpixMaxima(:,3,i),'.')
-    hold on
+        scatter3(subpixMaxima(:,1,i),subpixMaxima(:,2,i),subpixMaxima(:,3,i),'.')
+        hold on
     end
 end
 
@@ -118,26 +118,33 @@ close all
 
 %Set a maximum linking distance in microns that any object can still be
 %considered part of a pillar. Smaller values will speed up code.
-maxLinkDistance = 1.5;
+maxLinkDistance = 1;
 maxLD = maxLinkDistance/pixelSize;
 
 %Set a maximum number of frames to look for a linked object before giving
 %up (maxJumpDistance)
-maxJD = 2;
+maxJD = 4;
 
 %Find number of objects per frame in subpixMaxima
 for i = 1:size(subpixMaxima,3)
-     [lastNZElement,~] = find(subpixMaxima(:,1,i),1,'last');
-     twoDimMaxIndSub(i,1) = lastNZElement;
+    [lastNZElement,~] = find(subpixMaxima(:,1,i),1,'last');
+    twoDimMaxIndSub(i,1) = lastNZElement;
 end
 
 %closest neighbor in frame above
 noPillars = 0
 ignoreM = 1;
+noProblemPillars = 0;
 for i = 1:size(subpixMaxima,3)
     for j = 1:(twoDimMaxIndSub(i,1))
-        ignoreN = 0;
-        for n = 1:maxJD
+        
+        %if on first frame, assign the current object a new pillar index
+        if i == 1
+            noPillars = noPillars +1;
+            subpixMaxima(j,6,i) = noPillars;
+        end
+        ignoreN = 0; %end the loop early if this value changes
+        for n = 1:maxJD %check all frames within jump distance range
             if ignoreN ==0 && i+n <= size(subpixMaxima,3)
                 clear tempDistances
                 
@@ -159,34 +166,47 @@ for i = 1:size(subpixMaxima,3)
                     subpixMaxima(j,5,i) = tempDistances(min(nearUpNeighbor),1);
                     subpixMaxima(j,8,i) = n;
                     ignoreN = 1;
-                    %if the current object has already been assigned as a nearest up
-                    %neighbor in a previous frame, give the current object the linked
-                    %objects pillar index
                     
-                    
-                end
-            end
-        end
-        if i>1
-            ignoreM = 0;
-            for m = 1:maxJD
-                if m<i
-                    if ismember(j,subpixMaxima(:,4,i-m))==1 && ignoreM==0
-                        subpixMaxima(j,6,i) = subpixMaxima(find(subpixMaxima(:,4,i-m)==j,1,'first'),6,i-m);
-                        subpixMaxima(j,7,i) = size(find(subpixMaxima(:,4,i-m)==j),1);
-                        ignoreM = 1;
+                    %assign a later pillar index if the current object has been
+                    %previously linked
+                    if subpixMaxima(j,6,i) > 0
+                        subpixMaxima(subpixMaxima(j,4,i),6,i+n) = subpixMaxima(j,6,i);
+                        
+                        %if no match was found, assign a new pillar
+                    else
+                        noPillars = noPillars +1;
+                        subpixMaxima(j,6,i) = noPillars;
+                        subpixMaxima(subpixMaxima(j,4,i),6,i+n) = subpixMaxima(j,6,i);
                     end
                 end
             end
-            %otherwise, assign the current object a new pillar index
-        end
-        if i == 1
-            noPillars = noPillars +1;
-            subpixMaxima(j,6,i) = noPillars;
-        end
-        if ignoreM == 0
-            noPillars = noPillars +1;
-            subpixMaxima(j,6,i) = noPillars;
+            
+            %%%%Try to assign pillar index to current pillar and pillar ahead!
+            
+            %%%%%%%%%%%%%%%%For Finding Pillars assigned in Previous Frames(no longer needed)
+            %             if i>1
+            %                 ignoreM = 0;
+            %                 for m = 1:maxJD % looking back for previous links
+            %                     if m<i && ismember(j,subpixMaxima(:,4,i-m))==1 && ignoreM==0
+            %                         clear tempInd
+            %                         tempInd = find(subpixMaxima(:,4,i-m)==j);
+            %                         for tempCount = 1:size(tempInd,1)
+            %                             ignoreTempCount = 0;
+            %                             if subpixMaxima(tempInd(tempCount,1),8,i-m) == m && ignoreTempCount ==0
+            %                                 subpixMaxima(j,6,i) = subpixMaxima(find(subpixMaxima(:,4,i-m)==j,1,'first'),6,i-m);
+            %                                 subpixMaxima(j,7,i) = size(find(subpixMaxima(:,4,i-m)==j),1);
+            %                                 ignoreM = 1;
+            %                                 ignoreTempCount = 1;
+            %                                 if m>1
+            %                                     noProblemPillars = noProblemPillars+1
+            %                                     problemPillars(noProblemPillars,1) = subpixMaxima(j,6,i);
+            %                                 end
+            %                             end
+            %                         end
+            %                     end
+            %                 end
+            %             end
+            %%%%%%%%%%%%%%%%%%%%%%%%
         end
     end
 end
@@ -196,7 +216,7 @@ end
 % searchWindowRadius = 1; %microns
 % sWR = searchWindowRadius/pixelSize; %pixels
 % for i = maxJD:size(subpixMaxima,3)-1
-%     for j = 1:(twoDimMaxIndSub(i+1,1)) 
+%     for j = 1:(twoDimMaxIndSub(i+1,1))
 %         if size(find(subpixMaxima(:,4,i)==j),1)>1
 %             culprits = find(subpixMaxima(:,4,i)==j);
 %             for k = 1:size(culprits,1)
@@ -213,10 +233,10 @@ end
 %                 [Ys(:,1),Ys(:,2)] = find(subpixMaxima(:,2,i-maxJD:i)>sWY(1,1) & subpixMaxima(:,2,i-maxJD:i)<sWY(1,2));
 %                 for m = 1:size(Xs,1)
 %                     tempXs = Xs(m,1:2);
-%                  
+%
 %                 end
-%                     
-%                 else %if there is not a hole 
+%
+%                 else %if there is not a hole
 %                 associates = find(subpixMaxima(:,4,i-1)==culprits(k,1));
 %                 v1(1,1) = subpixMaxima(culprits(k,1),1,i) - subpixMaxima(associates(1,1),1,i-1);
 %                 v1(1,2) = subpixMaxima(culprits(k,1),2,i) - subpixMaxima(associates(1,1),2,i-1);
@@ -229,20 +249,43 @@ end
 %     end
 % end
 %%
+clear pillarBook
 pillarBook = zeros(noImgs,3,noPillars);
 for i = 1:noPillars
     [row,frame] = find(subpixMaxima(:,6,:)==i);
     for j = 1:size(row,1)
-    pillarBook(j,1,i) = subpixMaxima(row(j,1),1,frame(j,1));
-    pillarBook(j,2,i) = subpixMaxima(row(j,1),2,frame(j,1));
-    pillarBook(j,3,i) = subpixMaxima(row(j,1),3,frame(j,1));
+        pillarBook(j,1,i) = subpixMaxima(row(j,1),1,frame(j,1));
+        pillarBook(j,2,i) = subpixMaxima(row(j,1),2,frame(j,1));
+        pillarBook(j,3,i) = subpixMaxima(row(j,1),3,frame(j,1));
     end
 end
-
+%% 3D Scatterplot of points color coded by pillar
 figure
 for j = 1:noPillars
-scatter3(pillarBook(:,1,j),pillarBook(:,2,j),pillarBook(:,3,j),'.')
-hold on
+    scatter3(pillarBook(:,1,j),pillarBook(:,2,j),pillarBook(:,3,j),'.')
+    hold on
+end
+hold off
+%% 3D Plot of points color coded by pillar and connected
+figure
+for j = 1:noPillars
+    clear tempPillar
+    first = find(pillarBook(:,1,j),1,'first');
+    last = find(pillarBook(:,1,j),1,'last');
+    tempPillar = pillarBook(first:last,:,j);
+    plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
+    hold on
+end
+hold off
+%% 3D Plot of pillars thought to have issues
+figure
+for j = 1:noProblemPillars
+    clear tempPillar
+    first = find(pillarBook(:,1,problemPillars(j,1)),1,'first');
+    last = find(pillarBook(:,1,problemPillars(j,1)),1,'last');
+    tempPillar = pillarBook(first:last,:,problemPillars(j,1));
+    plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
+    hold on
 end
 hold off
 
@@ -250,11 +293,11 @@ hold off
 % % Obtain vectors with coordinates for x,y,z positions of local maxima with
 % % pixel resolution
 % [rM,cM,sM] = ind2sub(size(ppImages9),find(ppImages9 == 1));
-% 
+%
 % % Find subpixel maxima based on initial guesses from imregionalmax on the
 % % original images
 % [rsM,csM,ssM] = subpix3d(rM,cM,sM,cropImages2);
-% 
+%
 % % 3D plot subpixel local maxima
 % figure
 % scatter3(rsM,csM,ssM,'.')
@@ -263,17 +306,17 @@ hold off
 % %Find the center of each z plane of dots based on histogram of local 3D
 % %maxima
 % [~,zCenters] = find(imregionalmax(imgaussfilt(histcounts(sM,noImgs),3)));
-% 
-% % Find the spacing (# of frames) between each plane 
+%
+% % Find the spacing (# of frames) between each plane
 % zSpacing = zeros(1,size(zCenters,2)-1);
 % for i = 1:(size(zCenters,2)-1)
 %     zSpacing(1,i) = zCenters(1,i+1)-zCenters(1,i);
 % end
-% 
+%
 % % Choose a 'tail' size around plane centers for associating local maxima
-% % above and below the plane of interest. 
+% % above and below the plane of interest.
 % zTails = round((mean(zSpacing(1,:)))/4);
-% 
+%
 % % Assign local maxima to planes
 % zPlaneIndices = zeros(size(zCenters,2),2);
 % for i = 1:size(zCenters,2)
@@ -281,14 +324,14 @@ hold off
 %     zPlaneIndices(i,2) = max(find(sM<(zCenters(1,i)+zTails)));
 %     zPlaneIndices(i,3) = zPlaneIndices(i,2)-zPlaneIndices(i,1);
 % end
-% 
+%
 % zSortedMaxima = zeros(max(zPlaneIndices(:,3)),3,size(zCenters,2));
 % for i = 1:size(zCenters,2)
 %     zSortedMaxima(1:zPlaneIndices(i,3)+1,1,i) = rM(zPlaneIndices(i,1):zPlaneIndices(i,2),1);
 %     zSortedMaxima(1:zPlaneIndices(i,3)+1,2,i) = cM(zPlaneIndices(i,1):zPlaneIndices(i,2),1);
 %     zSortedMaxima(1:zPlaneIndices(i,3)+1,3,i) = sM(zPlaneIndices(i,1):zPlaneIndices(i,2),1);
 % end
-% 
+%
 % zSortedMaximaFixed = zSortedMaxima;
 % for i = 1:size(zCenters,2)
 %     temp = zeros(zPlaneIndices(i,3),3);
@@ -299,9 +342,9 @@ hold off
 %     hold on
 % end
 % hold off
-% 
+%
 %% Predict New Local 3D maxima by Plane
-% 
+%
 % for i = 1:size(zCenters,2)
 %     temp = zeros(zPlaneIndices(i,3),3);
 %     temp(1:zPlaneIndices(i,3),:) = zSortedMaximaFixed(1:zPlaneIndices(i,3),:,i);
@@ -309,7 +352,7 @@ hold off
 %     hold on
 % end
 % hold off
-% 
+%
 %%
 % % Find subpixel maxima based on initial guesses from plane fits on the
 % % original images
@@ -320,7 +363,7 @@ hold off
 % zSortedMaximaFixedSubpix(1:size(rsM2,2),2,i) = csM2;
 % zSortedMaximaFixedSubpix(1:size(rsM2,2),3,i) = ssM2;
 % end
-% 
+%
 % for i = 1:size(zCenters,2)
 %     plot(fitobject{i},[zSortedMaximaFixedSubpix(:,1,i),zSortedMaximaFixedSubpix(:,2,i)],zSortedMaximaFixedSubpix(:,3,i))
 %     hold on
