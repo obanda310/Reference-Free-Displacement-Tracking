@@ -4,21 +4,15 @@ close all;
 clc;
 
 %% Get Images and Metadata
-[images,meta] = getCzi;
+experiment = Experiment;
+images = experiment.images;
+meta = experiment.metadata;
 noImgs = size(images,3);
-pixelSize = meta.scaling*1000000;
-
-%% Pre-processing
-% Process images and get centroid locations
-[filtMasks,centroids] = getCentroidsStack(images,meta);
-% Clear any objects that are not 3-Dimensionally larger than a threshold
-% value of 20 pixels
-filtMasks = bwareaopen(filtMasks,20);
+% Scaling is the same in X and Y; convert from meters to microns
+pixelSize = meta.scalingX*1000000;
 
 %% Final Pre-processing Before Finding Local Maxima
-% Create ppImages 9 to fill hole s in z-dimension. Double click after making
-% selection to crop or an error will occur.
-[ppImages6,cropImages2, rect2] = EditStack(filtMasks,images,centroids);
+[roiImgs,roiMasks,roiCell,roiBounds,bkImg] = experiment.cropImgs;
 
 %% Finding 3D Local Maxima
 % Create a gaussian filtered version of original to decrease false local
@@ -29,9 +23,9 @@ sig2 = sqrt(2) * sig1;
 
 % Multiply the gaussian image by the mask image to isolate regions of
 % interest
-ppImages7 = imgaussfilt(cropImages2,sig2);
-ppImages8 = ppImages6.*ppImages7;
-ShowStack(ppImages8,centroids)
+ppImages7 = imgaussfilt(roiImgs,sig2);
+ppImages8 = roiMasks.*ppImages7;
+ShowStack(ppImages8,experiment.centroids2d)
 
 % Find local maxima in 3D (pixel resolution)
 ppImages9 = imregionalmax(ppImages8);
@@ -259,7 +253,7 @@ for i = 1:noPillars
         pillarBook(j,3,i) = subpixMaxima(row(j,1),3,frame(j,1));
         pillarBook(j,4,i) = i;
         if round(pillarBook(j,1,i)) > 0 && round(pillarBook(j,2,i))>0 && round(pillarBook(j,3,i))>0
-            pillarBook(j,5,i) = cropImages2(round(pillarBook(j,1,i)),round(pillarBook(j,2,i)),pillarBook(j,3,i));
+            pillarBook(j,5,i) = roiImgs(round(pillarBook(j,1,i)),round(pillarBook(j,2,i)),pillarBook(j,3,i));
         else
             pillarBook(j,5,i) = 0;
         end
