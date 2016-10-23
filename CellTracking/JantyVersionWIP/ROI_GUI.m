@@ -1,9 +1,15 @@
-function [roiGUIHandle,roiGUIData] = ROI_GUI(experiment)
+function roiGUIHandle = ROI_GUI(experiment)
     % Create figure window and GUI handle roiGUIHandle
     roiGUIHandle = figure('Position',[50,100,1800,900]);
-    
     handles = guihandles(roiGUIHandle);
-
+    
+    roiBounds = [1,1,size(experiment.images,1),size(experiment.images,2)];
+    roi = experiment.images;
+    setappdata(roiGUIHandle,'ROIBounds',roiBounds);
+    setappdata(roiGUIHandle,'ROI',roi);
+    
+    noImgs = size(experiment.images,3);
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%% Displaying raw image stack
     
@@ -12,8 +18,9 @@ function [roiGUIHandle,roiGUIData] = ROI_GUI(experiment)
         'Position',[350,200,600,600]);
     handles.rawImgSlider = uicontrol( ...
         'Style','slider', ...
-        'Min',1,'Max',50, ...
+        'Min',1,'Max',noImgs, ...
         'Value',1, ...
+        'SliderStep',[1/noImgs,5/noImgs], ...
         'Position',[350,150,600,20], ...
         'Callback',@rawImgSliderCallback);
     handles.rawImgSliderListener = addlistener( ...
@@ -48,8 +55,9 @@ function [roiGUIHandle,roiGUIData] = ROI_GUI(experiment)
         'Position',[1000,200,600,600]);
     handles.roiImgSlider = uicontrol( ...
         'Style','slider', ...
-        'Min',1,'Max',50, ...
+        'Min',1,'Max',noImgs, ...
         'Value',1, ...
+        'SliderStep',[1/noImgs,5/noImgs], ...
         'Position',[1000,150,600,20], ...
         'Callback',@roiImgSliderCallback);
     handles.roiImgSliderListener = addlistener( ...
@@ -86,22 +94,10 @@ function [roiGUIHandle,roiGUIData] = ROI_GUI(experiment)
         axes(handles.roiImgAxes)
         imshow(roi(:,:,thisFrame),[])
 
-        guidata(roiGUIHandle,handles);
-        setappdata(roiGUIHandle,'ROI',roi);
         setappdata(roiGUIHandle,'ROIBounds',roiBounds);
+        setappdata(roiGUIHandle,'ROI',roi);
+        guidata(roiGUIHandle,handles);
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    handles.acceptButton = uicontrol( ...
-        'Style','pushbutton', ...
-        'Position',[20,80,150,20], ...
-        'String','Accept and Close', ...
-        'Callback',@acceptButtonCallback);
-    
-    function acceptButtonCallback(~,~)
-        
-        roiGUIData = getappdata(roiGUIHandle);
-%         waitfor(roiGUIHandle)
-%         close()
-    end
+
 end
