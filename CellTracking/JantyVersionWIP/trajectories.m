@@ -1,5 +1,5 @@
 %current scale 3.0769  (x4=12.3076)
-close all; clear; clc;
+% close all; clear; clc;
 %Analyzing Trajectories from FIJI input
 
 %--------------------------------------------------------------------------
@@ -36,14 +36,18 @@ elseif strcmp(inputVar,'TrackMate') == 1
     pixelScale = input(prompt)
 end
     
-[trajFile,trajPath] = uigetfile('*.tif','Select Fluorescent Image for Overlay');
-c = imread([trajPath,trajFile]);
+% [trajFile,trajPath] = uigetfile('*.tif','Select Fluorescent Image for Overlay');
+% fluoImg = imread([trajPath,trajFile]);
+% 
+% [cellFile,cellPath] = uigetfile('*.tif','Select Transmitted Image for Overlay');
+% cellImg = imread([cellPath,cellFile]);
+% 
+% [blackFile,blackPath] = uigetfile('*.tif','Select a Black Image of the Correct Dimensions');
+% bkImg = imread([blackPath,blackFile]);
 
-[cellFile,cellPath] = uigetfile('*.tif','Select Transmitted Image for Overlay');
-d = imread([cellPath,cellFile]);
-
-[blackFile,blackPath] = uigetfile('*.tif','Select a Black Image of the Correct Dimensions');
-e = imread([blackPath,blackFile]);
+cellImg = roiCell;
+fluoImg = cellImg;
+% bkImg = bkImg;
 
 outputs = OutputSelector()
 
@@ -53,7 +57,7 @@ outputs = OutputSelector()
 %1.2 Input Variables%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 attemptRowAdjust = 0; %Try to adjust for wobble from patterning process? 1 for yes
-[resY,resX] = size(c); %for Section 5
+[resY,resX] = size(fluoImg); %for Section 5
 scaleOutputVectors = 1; %for Section 5.1
 trackErrorThreshold = .2; %for Section 4
 numIndices = 30; %for Section 1 and 2 (number of elements in book1)
@@ -729,7 +733,7 @@ if ismember(2,outputs) == 1
     mkdir(blackPath,folderName)
     for f = 1:totalNumFrames        % number of z-slices
         blackOverlay = figure;
-        imshow(e,[])
+        imshow(bkImg,[])
         hold on
 %       quiver(book1(15,f,:),book1(16,f,:),book1(17,f,:),book1(18,f,:),0,'g');
         for i = 1:cMD
@@ -758,7 +762,7 @@ folderName = strcat( 'Centroid_',scheme,' Black Image Overlays');
 mkdir(blackPath, folderName)
 for f = 1:totalNumFrames
 centroidsOnly = figure;
-imshow(e,[])
+imshow(bkImg,[])
 hold on
         for i = 1:cMD
         
@@ -792,7 +796,7 @@ end
 
 if ismember(3,outputs) == 1
 debugImage = figure('units','pixels','outerposition',[0 0 resX resY]);
-imshow(d,[])
+imshow(cellImg,[])
 hold on
 xTemp = squeeze(book1(21,1,:));
 yTemp = squeeze(book1(22,1,:));
@@ -827,7 +831,7 @@ end
 
 if ismember(5,outputs) == 1
 trajOverlay = figure;
-imshow(c,[])
+imshow(fluoImg,[])
 hold on
  for i = 1:cMD
 
@@ -840,7 +844,7 @@ savefile = [trajPath '\Fluorescent Overlay ' scheme '.tif'];
 export_fig(trajOverlay,savefile,'-native');
 
 transmittedOverlay = figure;
-imshow(d,[])
+imshow(cellImg,[])
 hold on
  for i = 1:cMD
         quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[map(i,1:3)]);
@@ -860,7 +864,7 @@ end
 
 if ismember(6,outputs) == 1
 figure
-imshow(c,[])
+imshow(fluoImg,[])
 hold on
  for i = 1:cMD
         if (i/cMD) >= .5
@@ -879,7 +883,7 @@ hold on
 hold off
 
 figure
-imshow(d,[])
+imshow(cellImg,[])
 hold on
  for i = 1:cMD
         if (i/cMD) >= .5
