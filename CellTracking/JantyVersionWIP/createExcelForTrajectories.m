@@ -1,7 +1,3 @@
-% Required input for trajectories.m has columns:
-% Count | Trajectory | Frame | x | y | z | m0 | m1 | m2 | m3 | m4 | NPscore
-% This function creates columns 1 through 4
-
 function final = createExcelForTrajectories(pillarBook)
     final = zeros(1,5);
     for a = 1:size(pillarBook,3)
