@@ -2,8 +2,6 @@
 close all; clear; clc;
 %Analyzing Trajectories from FIJI input
 
-addpath(genpath('JantyVersionWIP'))
-
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 %Section 1.) Inputs and Sorting the Raw Data From Excel File
