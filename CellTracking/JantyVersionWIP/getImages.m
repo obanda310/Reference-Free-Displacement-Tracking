@@ -51,4 +51,6 @@ function [images,meta] = getImages(file)
     date = date(1:10);
     meta.date = datetime(date);
     meta.filetype = filename(end-2:end);
+    meta.filename = name(1:end-4);
+    meta.filepath = path;
 end
