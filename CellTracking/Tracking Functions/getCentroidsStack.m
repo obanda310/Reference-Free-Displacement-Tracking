@@ -60,7 +60,7 @@ function [filtMasks,centroids] = getCentroidsStack(images,metadata)
     parfor i = 1:noImgs
         % Use bwareaopen to eliminate objects in "masks" that have an area
         % smaller than 5 pixels
-        filtMasks(:,:,i) = bwareaopen(masks(:,:,i),round(0.9/pixelSize));
+        filtMasks(:,:,i) = bwareaopen(masks(:,:,i),round((0.9/pixelSize)^2));
         % Use regionprops to find the centroids of all the objects in the
         % new filtered masks, i.e. filtMasks
         c = regionprops(filtMasks(:,:,i),'Centroid');
