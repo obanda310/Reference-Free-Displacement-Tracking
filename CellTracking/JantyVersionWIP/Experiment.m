@@ -39,7 +39,7 @@ classdef Experiment
                 getCentroidsStack(obj.images,obj.metadata);
             % Clear any objects that are not 3-Dimensionally larger than a 
             % threshold value of 20 pixels
-            obj.masks = bwareaopen(masks,20); 
+            obj.masks = bwareaopen(masks,round(0.9/(1000000*obj.metadata.scalingX)^3)); 
         end
         function [roiImgs,roiMasks,roiCell,roiBounds,bkImg] = cropImgs(obj)
             roiGUIHandle = ROI_GUI(obj);
@@ -59,8 +59,12 @@ classdef Experiment
             end
             
             roiCell = imcrop(obj.cellImg,roiBounds);
+            cellFile = [obj.metadata.filepath,obj.metadata.filename,'cell'];
+            imwrite(roiCell,cellFile,'tif');
             
             bkImg = zeros(roiBounds(4)+1,roiBounds(3)+1);
+            blackFile = [obj.metadata.filepath,obj.metadata.filename,'black'];
+            imwrite(bkImg,blackFile,'tif');
         end
     end
 end

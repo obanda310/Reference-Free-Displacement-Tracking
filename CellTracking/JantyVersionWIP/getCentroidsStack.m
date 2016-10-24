@@ -14,7 +14,7 @@ function [filtMasks,centroids] = getCentroidsStack(images,metadata)
     % for-loop below. These sigma values (i.e. sig1 and sig2) were obtained
     % in code written by Peter Kovesi. These values and the remainder of
     % the code perform a "difference of gaussians" filter operation
-    d = 4;
+    d = 1.2/(metadata.scalingX*1000000);
     sig1 = 1/(1+sqrt(2))*d;
     sig2 = sqrt(2) * sig1;
     % For the last image in the z-stack, find the grayscale intensities 
@@ -22,7 +22,7 @@ function [filtMasks,centroids] = getCentroidsStack(images,metadata)
     % Then, average those values across all rows. This average is equal to 
     % the noiseRng. The last image in the z-stack is chosen because it is
     % black and any non-zero intensity in this image is the result of noise
-    noiseRng = mean(prctile(images(:,:,noImgs),95));
+    noiseRng = mean(prctile(images(:,:,noImgs),50));
     Lap = fspecial('laplacian');
     % Enhance contrast, apply a difference of gaussians filter, then a
     % Laplacian filter to each image in the stack
@@ -56,10 +56,11 @@ function [filtMasks,centroids] = getCentroidsStack(images,metadata)
     % of noise; they are only a few pixels large and not in the expected,
     % ordered grid pattern. This next for-loop eliminates these spurious
     % objects.
+    pixelSize = metadata.scalingX*1000000;
     parfor i = 1:noImgs
         % Use bwareaopen to eliminate objects in "masks" that have an area
         % smaller than 5 pixels
-        filtMasks(:,:,i) = bwareaopen(masks(:,:,i),5);
+        filtMasks(:,:,i) = bwareaopen(masks(:,:,i),round(0.9/pixelSize));
         % Use regionprops to find the centroids of all the objects in the
         % new filtered masks, i.e. filtMasks
         c = regionprops(filtMasks(:,:,i),'Centroid');
