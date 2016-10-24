@@ -28,32 +28,32 @@ ppImages8 = roiMasks.*ppImages7;
 ShowStack(ppImages8,experiment.centroids2d)
 
 % Find local maxima in 3D (pixel resolution)
-ppImages9 = imregionalmax(ppImages8);
-
+localMaxima3D = imregionalmax(ppImages8);
 
 %% 2D maxima approach
-%Taking a break from working with 3D maxima because too many data points
-%are lost in the process, and it is seeming like it will not be a good way
-%to eventually identify ellipsoids and their strain/displacement. Will now
-%attempt to create ellipsoids by identifying all local 2D maxima belonging
-%to a single pillar, and tracing the the major axis of individual
-%ellipsoids through local maxima.
+% Taking a break from working with 3D maxima because too many data points
+% are lost in the process, and it is seeming like it will not be a good way
+% to eventually identify ellipsoids and their strain/displacement. Will now
+% attempt to create ellipsoids by identifying all local 2D maxima belonging
+% to a single pillar, and tracing the the major axis of individual
+% ellipsoids through local maxima.
 clear rM cM sM rsM csM ppImages10 subpixMaxima
 clear tempInd tempInd2 tempInd3 tempInd4
 close all
 % Find local maxima in 2D (pixel resolution)
+localMaxima2D = zeros(size(ppImages8));
 for i = 1:noImgs
-    ppImages10(:,:,i) = imregionalmax(ppImages8(:,:,i));
-    
-    %In the event that a frame is empty, the local maxima are the entire
-    %image (0's), this if statement removes these maxima.
-    if ppImages10(:,:,i) == ones(size(ppImages10,1),size(ppImages10,2))
-        ppImages10(:,:,i) = zeros(size(ppImages10,1),size(ppImages10,2));
+    thisMax2D = imregionalmax(ppImages8(:,:,i));    
+    % In the event that a frame is empty, the local maxima are the entire
+    % image (0's), this if statement removes these maxima.
+    if thisMax2D == ones(size(thisMax2D,1),size(thisMax2D,2))
+        thisMax2D = zeros(size(thisMax2D,1),size(thisMax2D,2));
     end
+    localMaxima2D(:,:,i) = thisMax2D;
 end
-[rM,cM,sM] = ind2sub(size(ppImages10),find(ppImages10 == 1));
+[rM,cM,sM] = ind2sub(size(localMaxima2D),find(localMaxima2D == 1));
 
-%Separate maxima by z (frame) and determine indices in rM, cM, sM
+% Separate maxima by z (frame) and determine indices in rM, cM, sM
 for i = 1:noImgs
     if min(find(sM == i)) > 0
         twoDimMaxInd(i,1) = min(find(sM == i));
@@ -61,8 +61,8 @@ for i = 1:noImgs
     end
 end
 
-%use indices to create book of subpixel maxima for use later in linking
-%maxima to pillars
+% Use indices to create book of subpixel maxima for use later in linking
+% maxima to pillars
 for i = 1:noImgs
     if min(find(sM == i)) > 0
         [rsM,csM] = subpix2d(rM(twoDimMaxInd(i,1):twoDimMaxInd(i,2)),cM(twoDimMaxInd(i,1):twoDimMaxInd(i,2)),double(ppImages7(:,:,i)));
@@ -71,7 +71,6 @@ for i = 1:noImgs
         subpixMaxima(1:size(rsM,2),3,i) = i;
     end
 end
-
 
 %clear out-of-bounds results from subpix2d
 
@@ -88,8 +87,6 @@ subpixMaxima(tempInd,1:3,tempInd2) = 0;
 [tempInd, tempInd2] = find(subpixMaxima(:,2,:) < 0);
 subpixMaxima(tempInd,1:3,tempInd2) = 0;
 
-
-
 %view pixel resolution maxima
 figure
 scatter3(rM,cM,sM,'.')
@@ -104,29 +101,29 @@ for i = 1:noImgs
 end
 
 %% Linking objects to pillars
-%The plan is to create several metrics for determining whether a local 2D
-%maxima belongs to a 'pillar' group of maxima by comparing the xy distance
-%between the object of interest and the nearest neighbors on frames before
-%and after.
+% The plan is to create several metrics for determining whether a local 2D
+% maxima belongs to a 'pillar' group of maxima by comparing the xy distance
+% between the object of interest and the nearest neighbors on frames before
+% and after.
 close all
 
-%Set a maximum linking distance in microns that any object can still be
-%considered part of a pillar. Smaller values will speed up code.
+% Set a maximum linking distance in microns that any object can still be
+% considered part of a pillar. Smaller values will speed up code.
 maxLinkDistance = 1;
 maxLD = maxLinkDistance/pixelSize;
 
-%Set a maximum number of frames to look for a linked object before giving
-%up (maxJumpDistance)
+% Set a maximum number of frames to look for a linked object before giving
+% up (maxJumpDistance)
 maxJD = 4;
 
-%Find number of objects per frame in subpixMaxima
+% Find number of objects per frame in subpixMaxima
 for i = 1:size(subpixMaxima,3)
     [lastNZElement,~] = find(subpixMaxima(:,1,i),1,'last');
     twoDimMaxIndSub(i,1) = lastNZElement;
 end
 
 %closest neighbor in frame above
-noPillars = 0
+noPillars = 0;
 ignoreM = 1;
 noProblemPillars = 0;
 for i = 1:size(subpixMaxima,3)
@@ -292,7 +289,7 @@ hold off
 %% Kovesi's function subpix3d
 % % Obtain vectors with coordinates for x,y,z positions of local maxima with
 % % pixel resolution
-% [rM,cM,sM] = ind2sub(size(ppImages9),find(ppImages9 == 1));
+% [rM,cM,sM] = ind2sub(size(localMaxima3D),find(localMaxima3D == 1));
 %
 % % Find subpixel maxima based on initial guesses from imregionalmax on the
 % % original images
