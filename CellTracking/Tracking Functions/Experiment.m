@@ -27,11 +27,13 @@ classdef Experiment
                 w = msgbox('Choose the image of the cells on this gel');
                 waitfor(w);
                 [obj.cellImg,~] = getImages;
+                obj.cellImg = imadjust(uint16(obj.cellImg));
             % If a cellFile input argument is provided, use that as an
             % input for getImages without asking the user to select a file
             % manually
             else
                 [obj.cellImg,~] = getImages(cellFile);
+                obj.cellImg = imadjust(uint16(obj.cellImg));
             end
             
             % Process images and get centroid locations

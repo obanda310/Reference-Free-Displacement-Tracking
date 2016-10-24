@@ -6,12 +6,14 @@ clc;
 %% Get Images and Metadata
 experiment = Experiment;
 images = experiment.images;
+roiCell = experiment.cellImg;
 meta = experiment.metadata;
 noImgs = size(images,3);
 % Scaling is the same in X and Y; convert from meters to microns
 pixelSize = meta.scalingX*1000000;
 
 %% Final Pre-processing Before Finding Local Maxima
+clear roiCell;
 [roiImgs,roiMasks,roiCell,roiBounds,bkImg] = experiment.cropImgs;
 
 %% Finding 3D Local Maxima
@@ -256,6 +258,7 @@ for i = 1:noPillars
         end
     end
 end
+createExcelForTrajectories(pillarBook);
 %% 3D Scatterplot of points color coded by pillar
 figure
 for j = 1:noPillars
