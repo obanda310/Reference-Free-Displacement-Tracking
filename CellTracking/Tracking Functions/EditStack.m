@@ -1,7 +1,7 @@
 % InputStack should be a 3D image matrix where dimensions 1 and 2 contain
 % pixel information in y and x, respectively, and dimension 3 indexes
 % separate images in the stack
-function [OutputStackFinal,cropImages, bounds] = EditStack(InputStack,Original,centroids)
+function [OutputStackFinal,cropImages,bounds] = EditStack(InputStack,Original,centroids)
     
     noImgs = size(InputStack,3);
     bounds = [1,1,size(InputStack,1),size(InputStack,2)];
