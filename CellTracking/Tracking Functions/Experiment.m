@@ -45,6 +45,12 @@ classdef Experiment
             obj.masks = bwareaopen(masks,dotSizeThresh); 
         end
         function [roiImgs,roiMasks,roiCell,roiBounds,bkImg] = cropImgs(obj)
+            % Determine a scale factor for the resolution of outputs to
+            % allow for high resolution overlays of displacement vectors
+            % using the trajectories.m code. The new pixel size should be
+            % 0.0825 microns
+            scaleFactor = (obj.metadata.scalingX*1000000)/0.0825;
+            
             % Use EditStack.m GUI function to select a region of interest
             % and return the bounds of the ROI, as well as the stack of
             % images and masks limited to the selected ROI
@@ -84,14 +90,14 @@ classdef Experiment
                 % We use imadjust so that the features of the images are
                 % visible after being saved
                 thisImg = imadjust(roiImgs(:,:,i));
-                imwrite(thisImg,roiFile,'WriteMode','append');
+                imwrite(imresize(thisImg,scaleFactor),roiFile,'WriteMode','append');
             end
             
             % Save the ROI-cropped cell image with a similar file naming
             % convention to that used in saving the ROI stack.
             roiCell = imcrop(obj.cellImg,roiBounds);
             cellFile = [obj.metadata.filepath,obj.metadata.filename,'cell.tif'];
-            imwrite(roiCell,cellFile,'tif');
+            imwrite(imresize(roiCell,scaleFactor),cellFile,'tif');
             
             % Save an ROI-sized black image with a similar file naming
             % convention to that used in saving the ROI stack. This image
@@ -99,7 +105,7 @@ classdef Experiment
             % generation purposes
             bkImg = uint16(zeros(roiBounds(4)+1,roiBounds(3)+1));
             blackFile = [obj.metadata.filepath,obj.metadata.filename,'black.tif'];
-            imwrite(bkImg,blackFile,'tif');
+            imwrite(imresize(bkImg,scaleFactor),blackFile,'tif');
         end
     end
 end

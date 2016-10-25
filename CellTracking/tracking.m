@@ -15,7 +15,7 @@ pixelSize = meta.scalingX*1000000;
 %% Final Pre-processing Before Finding Local Maxima
 clear roiCell;
 [roiImgs,roiMasks,roiCell,roiBounds,bkImg] = experiment.cropImgs;
-
+scaleFactor = pixelSize/0.0825
 %% Finding 3D Local Maxima
 % Create a gaussian filtered version of original to decrease false local
 % maxima
@@ -25,7 +25,7 @@ sig2 = sqrt(2) * sig1;
 
 % Multiply the gaussian image by the mask image to isolate regions of
 % interest
-ppImages7 = imgaussfilt(roiImgs,sig2);
+ppImages7 = double(imgaussfilt(roiImgs,sig2));
 ppImages8 = roiMasks.*ppImages7;
 ShowStack(ppImages8,experiment.centroids2d)
 
