@@ -37,7 +37,7 @@ classdef Experiment
             end
             
             % Process images and get centroid locations
-            [masks,obj.centroids2d] = ... 
+            [masks] = ... %,obj.centroids2d
                 getCentroidsStack(obj.images,obj.metadata);
             % Clear any objects that are not 2-dimensionally larger than a 
             % threshold value equal to dotSizeThresh
@@ -55,15 +55,17 @@ classdef Experiment
             % and return the bounds of the ROI, as well as the stack of
             % images and masks limited to the selected ROI
             [roiMasks,roiImgs,roiBounds] = ... 
-                EditStack(obj.masks,obj.images,obj.centroids2d);
+                EditStack(obj.masks,obj.images); %,obj.centroids2d
             
             % The ROI image stack is returned as a double, to ensure the
             % images are saved correctly, we convert from double to uint8
             % or uint16, depending on the data type of the original images
             if obj.metadata.colorDepth == 8
                 roiImgs = uint8(roiImgs);
+                dataScale = 255;
             elseif obj.metadata.colorDepth == 16
                 roiImgs = uint16(roiImgs);
+                dataScale = 65535;
             end
             
             % Here we save the ROI image stack
@@ -89,7 +91,9 @@ classdef Experiment
             for i = 1:noImgs
                 % We use imadjust so that the features of the images are
                 % visible after being saved
-                thisImg = imadjust(roiImgs(:,:,i));
+                noiseRng = (double(mean(prctile(roiImgs(:,:,noImgs),95))))/dataScale;
+                highIn = (double(max(max(max(roiImgs(:,:,i))))))/dataScale;
+                thisImg = imgaussfilt(imadjust(roiImgs(:,:,i),[noiseRng,highIn],[]));
                 imwrite(imresize(thisImg,scaleFactor),roiFile,'WriteMode','append');
             end
             

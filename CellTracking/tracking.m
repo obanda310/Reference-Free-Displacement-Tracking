@@ -27,7 +27,7 @@ sig2 = sqrt(2) * sig1;
 % interest
 ppImages7 = double(imgaussfilt(roiImgs,sig2));
 ppImages8 = roiMasks.*ppImages7;
-ShowStack(ppImages8,experiment.centroids2d)
+ShowStack(ppImages8) %,experiment.centroids2d
 
 % Find local maxima in 3D (pixel resolution)
 localMaxima3D = imregionalmax(ppImages8);
@@ -260,34 +260,34 @@ for i = 1:noPillars
 end
 createExcelForTrajectories(pillarBook);
 %% 3D Scatterplot of points color coded by pillar
-figure
-for j = 1:noPillars
-    scatter3(pillarBook(:,1,j),pillarBook(:,2,j),pillarBook(:,3,j),'.')
-    hold on
-end
-hold off
+% figure
+% for j = 1:noPillars
+%     scatter3(pillarBook(:,1,j),pillarBook(:,2,j),pillarBook(:,3,j),'.')
+%     hold on
+% end
+% hold off
 %% 3D Plot of points color coded by pillar and connected
-figure
-for j = 1:noPillars
-    clear tempPillar
-    first = find(pillarBook(:,1,j),1,'first');
-    last = find(pillarBook(:,1,j),1,'last');
-    tempPillar = pillarBook(first:last,:,j);
-    plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
-    hold on
-end
-hold off
+% figure
+% for j = 1:noPillars
+%     clear tempPillar
+%     first = find(pillarBook(:,1,j),1,'first');
+%     last = find(pillarBook(:,1,j),1,'last');
+%     tempPillar = pillarBook(first:last,:,j);
+%     plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
+%     hold on
+% end
+% hold off
 %% 3D Plot of pillars thought to have issues
-figure
-for j = 1:noProblemPillars
-    clear tempPillar
-    first = find(pillarBook(:,1,problemPillars(j,1)),1,'first');
-    last = find(pillarBook(:,1,problemPillars(j,1)),1,'last');
-    tempPillar = pillarBook(first:last,:,problemPillars(j,1));
-    plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
-    hold on
-end
-hold off
+% figure
+% for j = 1:noProblemPillars
+%     clear tempPillar
+%     first = find(pillarBook(:,1,problemPillars(j,1)),1,'first');
+%     last = find(pillarBook(:,1,problemPillars(j,1)),1,'last');
+%     tempPillar = pillarBook(first:last,:,problemPillars(j,1));
+%     plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
+%     hold on
+% end
+% hold off
 
 %% Kovesi's function subpix3d
 % % Obtain vectors with coordinates for x,y,z positions of local maxima with

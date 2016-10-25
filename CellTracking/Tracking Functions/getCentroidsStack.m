@@ -1,6 +1,6 @@
 % Input variable images is a 3D image stack whose dimensions correspond to
 % (rows,columns,z-slice)
-function [filtMasks,centroids] = getCentroidsStack(images,metadata)
+function [filtMasks] = getCentroidsStack(images,metadata) %,centroids
     noImgs = size(images,3);
     % Maximum possible intensity value is 2 raised to the "colorDepth" 
     % power - usually, in our case, 16; i.e. we use 16-bit images. Subtract
@@ -22,7 +22,7 @@ function [filtMasks,centroids] = getCentroidsStack(images,metadata)
     % Then, average those values across all rows. This average is equal to 
     % the noiseRng. The last image in the z-stack is chosen because it is
     % black and any non-zero intensity in this image is the result of noise
-    noiseRng = mean(prctile(images(:,:,noImgs),50));
+    noiseRng = mean(prctile(images(:,:,noImgs),95));
     Lap = fspecial('laplacian');
     % Enhance contrast, apply a difference of gaussians filter, then a
     % Laplacian filter to each image in the stack
@@ -61,12 +61,12 @@ function [filtMasks,centroids] = getCentroidsStack(images,metadata)
         % Use bwareaopen to eliminate objects in "masks" that have an area
         % smaller than 5 pixels
         filtMasks(:,:,i) = bwareaopen(masks(:,:,i),round((0.9/pixelSize)^2));
-        % Use regionprops to find the centroids of all the objects in the
-        % new filtered masks, i.e. filtMasks
-        c = regionprops(filtMasks(:,:,i),'Centroid');
-        % Format the centroid information so that each cell in "centroids"
-        % is a 2-column matrix that has the x and y positions for each
-        % centroid in the image that corresponds to that cell
-        centroids{i} = cat(1,c.Centroid);
+%         % Use regionprops to find the centroids of all the objects in the
+%         % new filtered masks, i.e. filtMasks
+%         c = regionprops(filtMasks(:,:,i),'Centroid');
+%         % Format the centroid information so that each cell in "centroids"
+%         % is a 2-column matrix that has the x and y positions for each
+%         % centroid in the image that corresponds to that cell
+%         centroids{i} = cat(1,c.Centroid);
     end
 end

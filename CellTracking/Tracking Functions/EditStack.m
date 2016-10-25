@@ -1,7 +1,7 @@
 % InputStack should be a 3D image matrix where dimensions 1 and 2 contain
 % pixel information in y and x, respectively, and dimension 3 indexes
 % separate images in the stack
-function [OutputStackFinal,cropImages,bounds] = EditStack(InputStack,Original,centroids)
+function [OutputStackFinal,cropImages,bounds] = EditStack(InputStack,Original) %,centroids
     
     noImgs = size(InputStack,3);
     bounds = [1,1,size(InputStack,1),size(InputStack,2)];
@@ -35,13 +35,13 @@ function [OutputStackFinal,cropImages,bounds] = EditStack(InputStack,Original,ce
         'Position',[.470 .010 .100 .030], ...
         'String','1');
     
-    % Plot Centroids2 over current image
-    handles.pushbuttonPlot = uicontrol( ...
-        'Style','pushbutton', ...
-        'Units','normalized', ...
-        'Position',[.100 .010 .130 .030], ...
-        'String','Plot Centroids', ...
-        'Callback',@plotCircles);
+%     % Plot Centroids2 over current image
+%     handles.pushbuttonPlot = uicontrol( ...
+%         'Style','pushbutton', ...
+%         'Units','normalized', ...
+%         'Position',[.100 .010 .130 .030], ...
+%         'String','Plot Centroids', ...
+%         'Callback',@plotCircles);
     
     % Crop current image and update stack information    
     handles.pushbuttonPlot = uicontrol( ...
@@ -109,19 +109,19 @@ function [OutputStackFinal,cropImages,bounds] = EditStack(InputStack,Original,ce
         guidata(hFig,handles);
     end
 
-    function plotCircles(~,~)
-        handles = guidata(gcf);
-        OutputStack = getappdata(hFig,'MyMatrix');
-        CurrentFrame = round((get(handles.SliderFrame,'Value')));
-        set(handles.Edit1,'String',num2str(CurrentFrame));
-        xs = (centroids{CurrentFrame,1}(:,1));
-        ys = (centroids{CurrentFrame,1}(:,2));
-        imshow(OutputStack(:,:,CurrentFrame),[]);
-        hold on
-        plot(xs,ys,'o')
-        guidata(hFig,handles);
-        hold off
-    end 
+%     function plotCircles(~,~)
+%         handles = guidata(gcf);
+%         OutputStack = getappdata(hFig,'MyMatrix');
+%         CurrentFrame = round((get(handles.SliderFrame,'Value')));
+%         set(handles.Edit1,'String',num2str(CurrentFrame));
+%         xs = (centroids{CurrentFrame,1}(:,1));
+%         ys = (centroids{CurrentFrame,1}(:,2));
+%         imshow(OutputStack(:,:,CurrentFrame),[]);
+%         hold on
+%         plot(xs,ys,'o')
+%         guidata(hFig,handles);
+%         hold off
+%     end 
     
     function cropImage(~,~)
         f = msgbox('Double-Click to crop after making rectangular selection!');

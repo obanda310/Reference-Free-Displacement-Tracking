@@ -1,5 +1,5 @@
 %current scale 3.0769  (x4=12.3076)
-close all; clear; clc;
+close all; clear;
 %Analyzing Trajectories from FIJI input
 
 %--------------------------------------------------------------------------
