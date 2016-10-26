@@ -3,17 +3,19 @@ classdef Experiment
         images
         metadata
         cellImg
+        fluorImg
         masks
         centroids2d
     end
     methods
-        function obj = Experiment(stackFile,cellFile)
+        function obj = Experiment(stackFile,cellFile,fluorFile)
             % If a stackFile input argument is not supplied, ask the user
             % to select an image stack he/she would like to analyze
             if ~exist('stackFile','var') || isempty(stackFile)
-                w = msgbox('Choose the image stack you''d like to analyze');
+                w = msgbox('Choose the image stack you''d like to analyze followed by the original image stack. (HINT: These can be the same file)');
                 waitfor(w);
-                [obj.images,obj.metadata] = getImages;
+                obj.images = getImages;
+                [~,obj.metadata] = getImages;
             % If a stackFile input argument is provided, use that as an
             % input for getImages without asking the user to select a file
             % manually
@@ -24,16 +26,27 @@ classdef Experiment
             % to select the cell image he/she would like to use as an
             % overlay
             if ~exist('cellFile','var') || isempty(cellFile)
-                w = msgbox('Choose the image of the cells on this gel');
+                w = msgbox('Choose the TRANSMITTED image of the cells on this gel');
                 waitfor(w);
-                [obj.cellImg,~] = getImages;
+                obj.cellImg = getImages;
                 obj.cellImg = imadjust(uint16(obj.cellImg));
             % If a cellFile input argument is provided, use that as an
             % input for getImages without asking the user to select a file
             % manually
             else
-                [obj.cellImg,~] = getImages(cellFile);
+                obj.cellImg = getImages(cellFile);
                 obj.cellImg = imadjust(uint16(obj.cellImg));
+            end
+            
+            %Same as above, but for a fluorescent image
+            if ~exist('fluorFile','var') || isempty(fluorFile)
+                w = msgbox('Choose the FLUORESCENT image of the cells on this gel');
+                waitfor(w);
+                obj.fluorImg = getImages;
+                obj.fluorImg = uint16(obj.fluorImg);
+            else
+                obj.fluorImg = getImages(fluorFile);
+                obj.fluorImg = uint16(obj.fluorImg);
             end
             
             % Process images and get centroid locations
@@ -49,7 +62,7 @@ classdef Experiment
             % allow for high resolution overlays of displacement vectors
             % using the trajectories.m code. The new pixel size should be
             % 0.0825 microns
-            scaleFactor = (obj.metadata.scalingX*1000000)/0.0825;
+            scaleFactor = (obj.metadata.scalingX*1000000)/0.165;
             
             % Use EditStack.m GUI function to select a region of interest
             % and return the bounds of the ROI, as well as the stack of
@@ -100,8 +113,12 @@ classdef Experiment
             % Save the ROI-cropped cell image with a similar file naming
             % convention to that used in saving the ROI stack.
             roiCell = imcrop(obj.cellImg,roiBounds);
-            cellFile = [obj.metadata.filepath,obj.metadata.filename,'cell.tif'];
+            cellFile = [obj.metadata.filepath,obj.metadata.filename,'Transmitted Cell Image.tif'];
             imwrite(imresize(roiCell,scaleFactor),cellFile,'tif');
+            
+            roiFluor = imcrop(obj.fluorImg,roiBounds);
+            fluorFile = [obj.metadata.filepath,obj.metadata.filename,'Fluorescent Cell Image.tif'];
+            imwrite(imresize(roiFluor,scaleFactor),fluorFile,'tif');
             
             % Save an ROI-sized black image with a similar file naming
             % convention to that used in saving the ROI stack. This image

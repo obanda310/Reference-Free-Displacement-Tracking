@@ -15,7 +15,7 @@ pixelSize = meta.scalingX*1000000;
 %% Final Pre-processing Before Finding Local Maxima
 clear roiCell;
 [roiImgs,roiMasks,roiCell,roiBounds,bkImg] = experiment.cropImgs;
-scaleFactor = pixelSize/0.0825
+scaleFactor = pixelSize/0.165
 %% Finding 3D Local Maxima
 % Create a gaussian filtered version of original to decrease false local
 % maxima
@@ -247,6 +247,7 @@ pillarBook = zeros(noImgs,5,noPillars);
 for i = 1:noPillars
     [row,frame] = find(subpixMaxima(:,6,:)==i);
     for j = 1:size(row,1)
+        if size(row,1) > 5
         pillarBook(j,1,i) = subpixMaxima(row(j,1),1,frame(j,1));
         pillarBook(j,2,i) = subpixMaxima(row(j,1),2,frame(j,1));
         pillarBook(j,3,i) = subpixMaxima(row(j,1),3,frame(j,1));
@@ -256,8 +257,10 @@ for i = 1:noPillars
         else
             pillarBook(j,5,i) = 0;
         end
+        end
     end
 end
+%%
 createExcelForTrajectories(pillarBook);
 %% 3D Scatterplot of points color coded by pillar
 % figure
@@ -267,16 +270,16 @@ createExcelForTrajectories(pillarBook);
 % end
 % hold off
 %% 3D Plot of points color coded by pillar and connected
-% figure
-% for j = 1:noPillars
-%     clear tempPillar
-%     first = find(pillarBook(:,1,j),1,'first');
-%     last = find(pillarBook(:,1,j),1,'last');
-%     tempPillar = pillarBook(first:last,:,j);
-%     plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
-%     hold on
-% end
-% hold off
+figure
+for j = 1:noPillars
+    clear tempPillar
+    first = find(pillarBook(:,1,j),1,'first');
+    last = find(pillarBook(:,1,j),1,'last');
+    tempPillar = pillarBook(first:last,:,j);
+    plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
+    hold on
+end
+hold off
 %% 3D Plot of pillars thought to have issues
 % figure
 % for j = 1:noProblemPillars

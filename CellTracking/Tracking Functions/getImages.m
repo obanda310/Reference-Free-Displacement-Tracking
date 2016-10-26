@@ -30,6 +30,7 @@ function [images,meta] = getImages(file)
         images(:,:,i) = imageData{i,1};
     end
     %% Read metadata
+    if nargout > 1;
     % Metadata are stored in the second cell in the file cell array
     metadata = file{1,2};
     % Need to use ".get" command to access metadata since the data is
@@ -47,10 +48,11 @@ function [images,meta] = getImages(file)
     meta.sizeX            = str2double(metadata.get('Global Information|Image|SizeX #1'));
     meta.sizeY            = str2double(metadata.get('Global Information|Image|SizeY #1'));
     meta.sizeZ            = str2double(metadata.get('Global Information|Image|SizeZ #1'));
-    date                  = metadata.get('Global Information|Image|AcquisitionDateAndTime #1');
-    date = date(1:10);
+    %date                  = metadata.get('Global Information|Image|AcquisitionDateAndTime #1');
+    %date = date(1:10);
     meta.date = datetime(date);
     meta.filetype = filename(end-2:end);
     meta.filename = name(1:end-4);
     meta.filepath = path;
+    end
 end
