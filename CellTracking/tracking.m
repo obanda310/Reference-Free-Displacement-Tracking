@@ -243,21 +243,28 @@ end
 % end
 %%
 clear pillarBook
-pillarBook = zeros(noImgs,5,noPillars);
+pillarSkip = 0;
 for i = 1:noPillars
     [row,frame] = find(subpixMaxima(:,6,:)==i);
     for j = 1:size(row,1)
-        if size(row,1) > 5
-        pillarBook(j,1,i) = subpixMaxima(row(j,1),1,frame(j,1));
-        pillarBook(j,2,i) = subpixMaxima(row(j,1),2,frame(j,1));
-        pillarBook(j,3,i) = subpixMaxima(row(j,1),3,frame(j,1));
-        pillarBook(j,4,i) = i;
-        if round(pillarBook(j,1,i)) > 0 && round(pillarBook(j,2,i))>0 && round(pillarBook(j,3,i))>0
-            pillarBook(j,5,i) = roiImgs(round(pillarBook(j,1,i)),round(pillarBook(j,2,i)),pillarBook(j,3,i));
+        if size(row,1) > 10
+            pillarBook(j,1,i-pillarSkip) = subpixMaxima(row(j,1),1,frame(j,1));
+            pillarBook(j,2,i-pillarSkip) = subpixMaxima(row(j,1),2,frame(j,1));
+            pillarBook(j,3,i-pillarSkip) = subpixMaxima(row(j,1),3,frame(j,1));
+            pillarBook(j,4,i-pillarSkip) = i-pillarSkip;
+            if round(pillarBook(j,1,i-pillarSkip)) > 0 && round(pillarBook(j,2,i-pillarSkip))>0 && round(pillarBook(j,3,i-pillarSkip))>0
+                pillarBook(j,5,i-pillarSkip) = roiImgs(round(pillarBook(j,1,i-pillarSkip)),round(pillarBook(j,2,i-pillarSkip)),pillarBook(j,3,i-pillarSkip));
+            else
+                pillarBook(j,5,i-pillarSkip) = 0;
+            end
         else
-            pillarBook(j,5,i) = 0;
+            skipCheck = 1;
+            break
         end
-        end
+    end
+    if skipCheck == 1
+        pillarSkip=pillarSkip+1;
+        skipCheck = 0;
     end
 end
 %%
@@ -271,7 +278,7 @@ createExcelForTrajectories(pillarBook);
 % hold off
 %% 3D Plot of points color coded by pillar and connected
 figure
-for j = 1:noPillars
+for j = 1:size(pillarBook,3)
     clear tempPillar
     first = find(pillarBook(:,1,j),1,'first');
     last = find(pillarBook(:,1,j),1,'last');
