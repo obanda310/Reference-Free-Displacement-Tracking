@@ -1,6 +1,6 @@
 % Input variable images is a 3D image stack whose dimensions correspond to
 % (rows,columns,z-slice)
-function [filtMasks,centroids] = getCentroidsStack(images,metadata)
+function [filtMasks] = getCentroidsStack(images,metadata) %,centroids
     noImgs = size(images,3);
     % Maximum possible intensity value is 2 raised to the "colorDepth" 
     % power - usually, in our case, 16; i.e. we use 16-bit images. Subtract
@@ -14,7 +14,7 @@ function [filtMasks,centroids] = getCentroidsStack(images,metadata)
     % for-loop below. These sigma values (i.e. sig1 and sig2) were obtained
     % in code written by Peter Kovesi. These values and the remainder of
     % the code perform a "difference of gaussians" filter operation
-    d = 4;
+    d = 1.2/(metadata.scalingX*1000000);
     sig1 = 1/(1+sqrt(2))*d;
     sig2 = sqrt(2) * sig1;
     % For the last image in the z-stack, find the grayscale intensities 
@@ -56,16 +56,17 @@ function [filtMasks,centroids] = getCentroidsStack(images,metadata)
     % of noise; they are only a few pixels large and not in the expected,
     % ordered grid pattern. This next for-loop eliminates these spurious
     % objects.
+    pixelSize = metadata.scalingX*1000000;
     parfor i = 1:noImgs
         % Use bwareaopen to eliminate objects in "masks" that have an area
         % smaller than 5 pixels
-        filtMasks(:,:,i) = bwareaopen(masks(:,:,i),5);
-        % Use regionprops to find the centroids of all the objects in the
-        % new filtered masks, i.e. filtMasks
-        c = regionprops(filtMasks(:,:,i),'Centroid');
-        % Format the centroid information so that each cell in "centroids"
-        % is a 2-column matrix that has the x and y positions for each
-        % centroid in the image that corresponds to that cell
-        centroids{i} = cat(1,c.Centroid);
+        filtMasks(:,:,i) = bwareaopen(masks(:,:,i),round((0.9/pixelSize)^2));
+%         % Use regionprops to find the centroids of all the objects in the
+%         % new filtered masks, i.e. filtMasks
+%         c = regionprops(filtMasks(:,:,i),'Centroid');
+%         % Format the centroid information so that each cell in "centroids"
+%         % is a 2-column matrix that has the x and y positions for each
+%         % centroid in the image that corresponds to that cell
+%         centroids{i} = cat(1,c.Centroid);
     end
 end

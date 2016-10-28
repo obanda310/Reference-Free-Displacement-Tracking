@@ -1,5 +1,5 @@
 %current scale 3.0769  (x4=12.3076)
-close all; clear; clc;
+close all; clear;
 %Analyzing Trajectories from FIJI input
 
 %--------------------------------------------------------------------------
@@ -36,13 +36,14 @@ elseif strcmp(inputVar,'TrackMate') == 1
     prompt = 'How many pixels per micron? Enter a decimal and press enter: ';
     pixelScale = input(prompt);
 elseif strcmp(inputVar,'Custom Code') == 1
-    xCol = 2;
-    yCol = 3;
+    xCol = 3;
+    yCol = 2;
     fCol = 4;
     tCol = 5;
     intCol = 6;
     totalCol = 6;
-    pixelScale = 1;
+    prompt = 'What was the scale factor print out of tracking.m? Check the command window. Enter a decimal and press enter: ';
+    pixelScale = input(prompt);
     startVar = 0;
 end
     
@@ -524,6 +525,7 @@ progress = 'done cMDBook2'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Notes: Calculates average distance between PSFs in a single pillar.
 %Outputs stored as variable "yDataDiffAverage"
+if ismember(10,outputs) == 1
 close all
 
 intProfiles = zeros(totalNumFrames,numTraj);
@@ -628,11 +630,12 @@ end
 % image(intProfilesNMS3,'cdatamapping','scaled'); colormap(gray);
 
 %imwrite(intProfilesImage,'intProfilesImage.tiff');
+end
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %4.4b Using Intensity Values to Extract Z-Information%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+if ismember(9,outputs) == 1
 cMDBook2(cMDBook2 == 0) = NaN;
 % plottedProfiles = figure
 % for i = 1:numTraj
@@ -699,6 +702,7 @@ findpeaks(yVals(1,:))
 % 
 % close
 % end
+end
 %%
 
 
@@ -739,7 +743,7 @@ if ismember(2,outputs) == 1
     folderName = strcat('Black Image_',scheme,' Quiver Overlays');
     mkdir(blackPath,folderName)
     for f = 1:totalNumFrames        % number of z-slices
-        blackOverlay = figure;
+        blackOverlay = figure('Position',[0 0 1000 1000]);
         imshow(e,[])
         hold on
 %       quiver(book1(15,f,:),book1(16,f,:),book1(17,f,:),book1(18,f,:),0,'g');
@@ -768,7 +772,7 @@ if ismember(4,outputs) == 1
 folderName = strcat( 'Centroid_',scheme,' Black Image Overlays');
 mkdir(blackPath, folderName)
 for f = 1:totalNumFrames
-centroidsOnly = figure;
+centroidsOnly = figure('Position',[0 0 1000 1000]);
 imshow(e,[])
 hold on
         for i = 1:cMD
@@ -802,7 +806,7 @@ end
 % also plots the final displacement quiver field.
 
 if ismember(3,outputs) == 1
-debugImage = figure('units','pixels','outerposition',[0 0 resX resY]);
+debugImage = figure('Position',[0 0 1000 1000]);
 imshow(d,[])
 hold on
 xTemp = squeeze(book1(21,1,:));
@@ -837,20 +841,23 @@ end
 %Notes: 5.5 Saves files, 5.6 does not.
 
 if ismember(5,outputs) == 1
-trajOverlay = figure;
+trajOverlay = figure('Position',[0 0 1000 1000]);
 imshow(c,[])
 hold on
  for i = 1:cMD
 
-        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[map(i,1:3)]);
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),(i^2)/((cMD/1.5)^2),'color',[map(i,1:3)]);
         hold on
     end
 %quiver(book1(27,1,:),book1(28,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 hold off
 savefile = [trajPath '\Fluorescent Overlay ' scheme '.tif'];
 export_fig(trajOverlay,savefile,'-native');
+end
 
-transmittedOverlay = figure;
+%%
+if ismember(5,outputs) == 1
+transmittedOverlay = figure('Position',[0 0 1000 1000]);
 imshow(d,[])
 hold on
  for i = 1:cMD
@@ -870,7 +877,7 @@ end
 %Notes: 5.5 Saves files, 5.6 does not.
 
 if ismember(6,outputs) == 1
-figure
+figure('Position',[0 0 1000 1000])
 imshow(c,[])
 hold on
  for i = 1:cMD
@@ -889,7 +896,7 @@ hold on
 %quiver(book1(27,1,:),book1(28,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
 hold off
 
-figure
+figure('Position',[0 0 1000 1000])
 imshow(d,[])
 hold on
  for i = 1:cMD

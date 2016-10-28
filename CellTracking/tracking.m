@@ -6,14 +6,16 @@ clc;
 %% Get Images and Metadata
 experiment = Experiment;
 images = experiment.images;
+roiCell = experiment.cellImg;
 meta = experiment.metadata;
 noImgs = size(images,3);
 % Scaling is the same in X and Y; convert from meters to microns
 pixelSize = meta.scalingX*1000000;
 
 %% Final Pre-processing Before Finding Local Maxima
+clear roiCell;
 [roiImgs,roiMasks,roiCell,roiBounds,bkImg] = experiment.cropImgs;
-
+scaleFactor = pixelSize/0.165
 %% Finding 3D Local Maxima
 % Create a gaussian filtered version of original to decrease false local
 % maxima
@@ -23,37 +25,37 @@ sig2 = sqrt(2) * sig1;
 
 % Multiply the gaussian image by the mask image to isolate regions of
 % interest
-ppImages7 = imgaussfilt(roiImgs,sig2);
+ppImages7 = double(imgaussfilt(roiImgs,sig2));
 ppImages8 = roiMasks.*ppImages7;
-ShowStack(ppImages8,experiment.centroids2d)
+ShowStack(ppImages8) %,experiment.centroids2d
 
 % Find local maxima in 3D (pixel resolution)
-ppImages9 = imregionalmax(ppImages8);
-
+localMaxima3D = imregionalmax(ppImages8);
 
 %% 2D maxima approach
-%Taking a break from working with 3D maxima because too many data points
-%are lost in the process, and it is seeming like it will not be a good way
-%to eventually identify ellipsoids and their strain/displacement. Will now
-%attempt to create ellipsoids by identifying all local 2D maxima belonging
-%to a single pillar, and tracing the the major axis of individual
-%ellipsoids through local maxima.
+% Taking a break from working with 3D maxima because too many data points
+% are lost in the process, and it is seeming like it will not be a good way
+% to eventually identify ellipsoids and their strain/displacement. Will now
+% attempt to create ellipsoids by identifying all local 2D maxima belonging
+% to a single pillar, and tracing the the major axis of individual
+% ellipsoids through local maxima.
 clear rM cM sM rsM csM ppImages10 subpixMaxima
 clear tempInd tempInd2 tempInd3 tempInd4
 close all
 % Find local maxima in 2D (pixel resolution)
+localMaxima2D = zeros(size(ppImages8));
 for i = 1:noImgs
-    ppImages10(:,:,i) = imregionalmax(ppImages8(:,:,i));
-    
-    %In the event that a frame is empty, the local maxima are the entire
-    %image (0's), this if statement removes these maxima.
-    if ppImages10(:,:,i) == ones(size(ppImages10,1),size(ppImages10,2))
-        ppImages10(:,:,i) = zeros(size(ppImages10,1),size(ppImages10,2));
+    thisMax2D = imregionalmax(ppImages8(:,:,i));    
+    % In the event that a frame is empty, the local maxima are the entire
+    % image (0's), this if statement removes these maxima.
+    if thisMax2D == ones(size(thisMax2D,1),size(thisMax2D,2))
+        thisMax2D = zeros(size(thisMax2D,1),size(thisMax2D,2));
     end
+    localMaxima2D(:,:,i) = thisMax2D;
 end
-[rM,cM,sM] = ind2sub(size(ppImages10),find(ppImages10 == 1));
+[rM,cM,sM] = ind2sub(size(localMaxima2D),find(localMaxima2D == 1));
 
-%Separate maxima by z (frame) and determine indices in rM, cM, sM
+% Separate maxima by z (frame) and determine indices in rM, cM, sM
 for i = 1:noImgs
     if min(find(sM == i)) > 0
         twoDimMaxInd(i,1) = min(find(sM == i));
@@ -61,8 +63,8 @@ for i = 1:noImgs
     end
 end
 
-%use indices to create book of subpixel maxima for use later in linking
-%maxima to pillars
+% Use indices to create book of subpixel maxima for use later in linking
+% maxima to pillars
 for i = 1:noImgs
     if min(find(sM == i)) > 0
         [rsM,csM] = subpix2d(rM(twoDimMaxInd(i,1):twoDimMaxInd(i,2)),cM(twoDimMaxInd(i,1):twoDimMaxInd(i,2)),double(ppImages7(:,:,i)));
@@ -71,7 +73,6 @@ for i = 1:noImgs
         subpixMaxima(1:size(rsM,2),3,i) = i;
     end
 end
-
 
 %clear out-of-bounds results from subpix2d
 
@@ -88,8 +89,6 @@ subpixMaxima(tempInd,1:3,tempInd2) = 0;
 [tempInd, tempInd2] = find(subpixMaxima(:,2,:) < 0);
 subpixMaxima(tempInd,1:3,tempInd2) = 0;
 
-
-
 %view pixel resolution maxima
 figure
 scatter3(rM,cM,sM,'.')
@@ -104,29 +103,29 @@ for i = 1:noImgs
 end
 
 %% Linking objects to pillars
-%The plan is to create several metrics for determining whether a local 2D
-%maxima belongs to a 'pillar' group of maxima by comparing the xy distance
-%between the object of interest and the nearest neighbors on frames before
-%and after.
+% The plan is to create several metrics for determining whether a local 2D
+% maxima belongs to a 'pillar' group of maxima by comparing the xy distance
+% between the object of interest and the nearest neighbors on frames before
+% and after.
 close all
 
-%Set a maximum linking distance in microns that any object can still be
-%considered part of a pillar. Smaller values will speed up code.
+% Set a maximum linking distance in microns that any object can still be
+% considered part of a pillar. Smaller values will speed up code.
 maxLinkDistance = 1;
 maxLD = maxLinkDistance/pixelSize;
 
-%Set a maximum number of frames to look for a linked object before giving
-%up (maxJumpDistance)
+% Set a maximum number of frames to look for a linked object before giving
+% up (maxJumpDistance)
 maxJD = 4;
 
-%Find number of objects per frame in subpixMaxima
+% Find number of objects per frame in subpixMaxima
 for i = 1:size(subpixMaxima,3)
     [lastNZElement,~] = find(subpixMaxima(:,1,i),1,'last');
     twoDimMaxIndSub(i,1) = lastNZElement;
 end
 
 %closest neighbor in frame above
-noPillars = 0
+noPillars = 0;
 ignoreM = 1;
 noProblemPillars = 0;
 for i = 1:size(subpixMaxima,3)
@@ -248,6 +247,7 @@ pillarBook = zeros(noImgs,5,noPillars);
 for i = 1:noPillars
     [row,frame] = find(subpixMaxima(:,6,:)==i);
     for j = 1:size(row,1)
+        if size(row,1) > 5
         pillarBook(j,1,i) = subpixMaxima(row(j,1),1,frame(j,1));
         pillarBook(j,2,i) = subpixMaxima(row(j,1),2,frame(j,1));
         pillarBook(j,3,i) = subpixMaxima(row(j,1),3,frame(j,1));
@@ -257,15 +257,18 @@ for i = 1:noPillars
         else
             pillarBook(j,5,i) = 0;
         end
+        end
     end
 end
+%%
+createExcelForTrajectories(pillarBook);
 %% 3D Scatterplot of points color coded by pillar
-figure
-for j = 1:noPillars
-    scatter3(pillarBook(:,1,j),pillarBook(:,2,j),pillarBook(:,3,j),'.')
-    hold on
-end
-hold off
+% figure
+% for j = 1:noPillars
+%     scatter3(pillarBook(:,1,j),pillarBook(:,2,j),pillarBook(:,3,j),'.')
+%     hold on
+% end
+% hold off
 %% 3D Plot of points color coded by pillar and connected
 figure
 for j = 1:noPillars
@@ -278,21 +281,21 @@ for j = 1:noPillars
 end
 hold off
 %% 3D Plot of pillars thought to have issues
-figure
-for j = 1:noProblemPillars
-    clear tempPillar
-    first = find(pillarBook(:,1,problemPillars(j,1)),1,'first');
-    last = find(pillarBook(:,1,problemPillars(j,1)),1,'last');
-    tempPillar = pillarBook(first:last,:,problemPillars(j,1));
-    plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
-    hold on
-end
-hold off
+% figure
+% for j = 1:noProblemPillars
+%     clear tempPillar
+%     first = find(pillarBook(:,1,problemPillars(j,1)),1,'first');
+%     last = find(pillarBook(:,1,problemPillars(j,1)),1,'last');
+%     tempPillar = pillarBook(first:last,:,problemPillars(j,1));
+%     plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
+%     hold on
+% end
+% hold off
 
 %% Kovesi's function subpix3d
 % % Obtain vectors with coordinates for x,y,z positions of local maxima with
 % % pixel resolution
-% [rM,cM,sM] = ind2sub(size(ppImages9),find(ppImages9 == 1));
+% [rM,cM,sM] = ind2sub(size(localMaxima3D),find(localMaxima3D == 1));
 %
 % % Find subpixel maxima based on initial guesses from imregionalmax on the
 % % original images

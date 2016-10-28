@@ -1,7 +1,7 @@
 % InputStack should be a 3D image matrix where dimensions 1 and 2 contain
 % pixel information in y and x, respectively, and dimension 3 indexes
 % separate images in the stack
-function ShowStack(InputStack,centroids)
+function ShowStack(InputStack) %,centroids
     noImgs = size(InputStack,3);
 
     hFig = figure('Position',[100 100 800 800]);
@@ -32,12 +32,12 @@ function ShowStack(InputStack,centroids)
         'Position',[.470 .010 .100 .030], ...
         'String','1');
 
-    handles.pushbuttonPlot = uicontrol( ...
-        'Style','pushbutton', ...
-        'Units','normalized', ...
-        'Position',[.200 .010 .060 .030], ...
-        'String','Plot Centroids', ...
-        'Callback',@plotCircles);
+%     handles.pushbuttonPlot = uicontrol( ...
+%         'Style','pushbutton', ...
+%         'Units','normalized', ...
+%         'Position',[.200 .010 .060 .030], ...
+%         'String','Plot Centroids', ...
+%         'Callback',@plotCircles);
 
     % Use setappdata to store the image stack and in callbacks, use 
     % getappdata to retrieve it and use it. Check the docs for the calling 
@@ -81,16 +81,16 @@ function ShowStack(InputStack,centroids)
         guidata(hFig,handles);
     end
 
-    function plotCircles(~,~)
-        handles = guidata(gcf);
-        InputStack = getappdata(hFig,'MyMatrix');
-        CurrentFrame = round((get(handles.SliderFrame,'Value')));
-        set(handles.Edit1,'String',num2str(CurrentFrame));
-        xs = (centroids{CurrentFrame,1}(:,1));
-        ys = (centroids{CurrentFrame,1}(:,2));
-        imshow(InputStack(:,:,CurrentFrame),[],'Parent',handles.axes1);
-        hold on
-        plot(xs,ys,'o')
-        guidata(hFig,handles);
-    end 
+%     function plotCircles(~,~)
+%         handles = guidata(gcf);
+%         InputStack = getappdata(hFig,'MyMatrix');
+%         CurrentFrame = round((get(handles.SliderFrame,'Value')));
+%         set(handles.Edit1,'String',num2str(CurrentFrame));
+%         xs = (centroids{CurrentFrame,1}(:,1));
+%         ys = (centroids{CurrentFrame,1}(:,2));
+%         imshow(InputStack(:,:,CurrentFrame),[],'Parent',handles.axes1);
+%         hold on
+%         plot(xs,ys,'o')
+%         guidata(hFig,handles);
+%     end 
 end

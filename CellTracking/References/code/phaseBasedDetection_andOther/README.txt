@@ -1,1 +1,0 @@
-Requires adding the "altmany-export_fig-b894ce6" folder to path in order to run.
