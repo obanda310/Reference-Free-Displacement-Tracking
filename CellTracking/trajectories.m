@@ -846,7 +846,7 @@ imshow(c,[])
 hold on
  for i = 1:cMD
 
-        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),(i^2)/((cMD/1.5)^2),'color',[map(i,1:3)]);
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),(i^1.3)/((cMD/2)^1.3),'color',[map(i,1:3)]);%(i^2)/((cMD/1.5)^2)
         hold on
     end
 %quiver(book1(27,1,:),book1(28,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
@@ -861,7 +861,7 @@ transmittedOverlay = figure('Position',[0 0 1000 1000]);
 imshow(d,[])
 hold on
  for i = 1:cMD
-        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),0,'color',[map(i,1:3)]);
+        quiver(cMDBook2(27,totalNumFrames,:,i),cMDBook2(28,totalNumFrames,:,i),cMDBook2(23,totalNumFrames,:,i),cMDBook2(24,totalNumFrames,:,i),(i^1.3)/((cMD/4)^1.3),'color',[map(i,1:3)]);
         hold on
     end
 %quiver(book1(27,1,:),book1(28,1,:),book1(23,totalNumFrames,:),book1(24,totalNumFrames,:),0,'g');
