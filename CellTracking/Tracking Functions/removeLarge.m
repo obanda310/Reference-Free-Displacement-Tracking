@@ -1,4 +1,3 @@
-
 function [newMasks,subtractPattern] = removeLarge(images,masks)
 subtractPattern = zeros(size(images,1),size(images,2),size(images,3));
 SE = strel('disk',3,0);
