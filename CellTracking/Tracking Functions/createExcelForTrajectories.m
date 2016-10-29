@@ -13,5 +13,17 @@ function final = createExcelForTrajectories(pillarBook)
 
     count = (1:length(final))';
     final = cat(2,count,final);
-    xlswrite('trajectoriesInput.xlsx',final);
+    
+    excelFileName = 'trajectoriesInput.xlsx';
+    % If a file already exists with the name of the Excel spreadsheet 
+    % specified in excelFileName, that file is deleted. This is necessary 
+    % because the file will not simply be overwritten. If the array being
+    % saved currently is smaller in either dimension than the array saved
+    % previously, the elements of the previous array that are outside the
+    % bounds of the current array will remain, and not be deleted or
+    % overwritten.
+    if exist(excelFileName,'file')
+        delete(excelFileName)
+    end
+    xlswrite(excelFileName,final);
 end
