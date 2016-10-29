@@ -68,6 +68,40 @@ function roiGUIHandle = ROI_GUI(experiment)
         'String','1', ...
         'Position',[1000,125,600,20], ...
         'Callback',@roiImgSliderCallback);
+    handles.stackStart = uicontrol( ...
+        'Style','Edit', ...
+        'String','1', ...
+        'Position',[1000,90,60,20], ...
+        'Callback',@newRangeCallback);
+    handles.stackEnd = uicontrol( ...
+        'Style','Edit', ...
+        'String',num2str(noImgs), ...
+        'Position',[1500,90,60,20], ...
+        'Callback',@newRangeCallback);
+    
+    function newRangeCallback(src,~)
+        firstFrame = str2double(get(handles.stackStart,'String'));
+        lastFrame = str2double(get(handles.stackEnd,'String'));
+        
+        set(handles.roiImgSlider,'Min',firstFrame);
+        set(handles.rawImgSlider,'Min',firstFrame);
+        set(handles.roiImgSlider,'Max',lastFrame);
+        set(handles.rawImgSlider,'Max',lastFrame);
+        
+        if src == handles.stackStart
+            set(handles.roiImgSlider,'Value',firstFrame);
+            set(handles.rawImgSlider,'Value',firstFrame);
+        else
+            set(handles.roiImgSlider,'Value',lastFrame);
+            set(handles.rawImgSlider,'Value',lastFrame);
+        end
+        
+        newNoImgs = lastFrame - firstFrame + 1;
+        set(handles.rawImgSlider,'SliderStep',[1/newNoImgs,5/newNoImgs]);
+        set(handles.roiImgSlider,'SliderStep',[1/newNoImgs,5/newNoImgs]);
+        
+        guidata(roiGUIHandle,handles);
+    end
     
     function cropCheckboxCallback(~,~)
         checkStatus = get(handles.cropCheckbox,'Value');
