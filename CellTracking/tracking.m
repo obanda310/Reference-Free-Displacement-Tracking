@@ -1,8 +1,9 @@
-%% This needs its own section
 clear;
 close all;
 clc;
-%%
+
+% Ensures the path to necessary functions is available to the rest of the
+% script
 addpath(genpath('Tracking Functions'));
 addpath(genpath('Kovesi Filters'));
 
@@ -13,11 +14,6 @@ meta = experiment.metadata;
 noImgs = size(images,3);
 % Scaling is the same in X and Y; convert from meters to microns
 pixelSize = meta.scalingX*1000000;
-
-%% Final Pre-processing Before Finding Local Maxima
-clear roiCell;
-[roiImgs,roiMasks,~,~,~] = experiment.cropImgs;
-scaleFactor = pixelSize/0.165;
 
 %% Final Pre-processing Before Finding Local Maxima
 clear roiCell;
