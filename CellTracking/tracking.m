@@ -12,8 +12,12 @@ noImgs = size(images,3);
 % Scaling is the same in X and Y; convert from meters to microns
 pixelSize = meta.scalingX*1000000;
 
+%%
+[newMasks,subtractPatterns] = removeLarge(images,experiment.masks);
+
 %% Final Pre-processing Before Finding Local Maxima
 clear roiCell;
+experiment.masks = newMasks;
 [roiImgs,roiMasks,roiCell,roiBounds,bkImg] = experiment.cropImgs;
 scaleFactor = pixelSize/0.165
 %% Finding 3D Local Maxima
@@ -27,7 +31,7 @@ sig2 = sqrt(2) * sig1;
 % interest
 ppImages7 = double(imgaussfilt(roiImgs,sig2));
 ppImages8 = roiMasks.*ppImages7;
-ShowStack(ppImages8) %,experiment.centroids2d
+% ShowStack(ppImages8) %,experiment.centroids2d
 
 % Find local maxima in 3D (pixel resolution)
 localMaxima3D = imregionalmax(ppImages8);
@@ -89,18 +93,21 @@ subpixMaxima(tempInd,1:3,tempInd2) = 0;
 [tempInd, tempInd2] = find(subpixMaxima(:,2,:) < 0);
 subpixMaxima(tempInd,1:3,tempInd2) = 0;
 
-%view pixel resolution maxima
-figure
-scatter3(rM,cM,sM,'.')
-
-%view subpixel resolution maxima
-figure
-for i = 1:noImgs
-    if min(find(sM == i)) > 0
-        scatter3(subpixMaxima(:,1,i),subpixMaxima(:,2,i),subpixMaxima(:,3,i),'.')
-        hold on
-    end
-end
+%% Viewing pixel/subpixel maxima
+% 
+% close all
+% %view pixel resolution maxima
+% figure
+% scatter3(rM,cM,sM,'.')
+% 
+% %view subpixel resolution maxima
+% figure
+% for i = 1:noImgs
+%     if min(find(sM == i)) > 0
+%         scatter3(subpixMaxima(:,1,i),subpixMaxima(:,2,i),subpixMaxima(:,3,i),'.')
+%         hold on
+%     end
+% end
 
 %% Linking objects to pillars
 % The plan is to create several metrics for determining whether a local 2D
@@ -116,7 +123,7 @@ maxLD = maxLinkDistance/pixelSize;
 
 % Set a maximum number of frames to look for a linked object before giving
 % up (maxJumpDistance)
-maxJD = 4;
+maxJD = 3;
 
 % Find number of objects per frame in subpixMaxima
 for i = 1:size(subpixMaxima,3)
@@ -135,6 +142,7 @@ for i = 1:size(subpixMaxima,3)
         if i == 1
             noPillars = noPillars +1;
             subpixMaxima(j,6,i) = noPillars;
+            subpixMaxima(j,9,i) = 1;
         end
         ignoreN = 0; %end the loop early if this value changes
         for n = 1:maxJD %check all frames within jump distance range
@@ -162,45 +170,74 @@ for i = 1:size(subpixMaxima,3)
                     
                     %assign a later pillar index if the current object has been
                     %previously linked
-                    if subpixMaxima(j,6,i) > 0
+                    if subpixMaxima(j,6,i) > 0 && subpixMaxima(subpixMaxima(j,4,i),6,i+n) == 0
                         subpixMaxima(subpixMaxima(j,4,i),6,i+n) = subpixMaxima(j,6,i);
-                        
+                        subpixMaxima(subpixMaxima(j,4,i),7,i+n) = n;
+                        subpixMaxima(subpixMaxima(j,4,i),9,i+n) = subpixMaxima(j,9,i)+1;
                         %if no match was found, assign a new pillar
-                    else
+                    elseif subpixMaxima(j,6,i) > 0 && subpixMaxima(subpixMaxima(j,4,i),6,i+n) > 0
+                        current = subpixMaxima(j,9,i);
+                        [previousIdx,~] = find(subpixMaxima(:,6,(i+n)-subpixMaxima(subpixMaxima(j,4,i),7,i+n))==subpixMaxima(subpixMaxima(j,4,i),6,i+n));
+                        previous = subpixMaxima(previousIdx(1,1),9,(i+n)-subpixMaxima(subpixMaxima(j,4,i),7,i+n));
+                        if current > previous
+                            subpixMaxima(subpixMaxima(j,4,i),6,i+n) = subpixMaxima(j,6,i);
+                            subpixMaxima(subpixMaxima(j,4,i),7,i+n) = n;
+                            subpixMaxima(subpixMaxima(j,4,i),9,i+n) = subpixMaxima(j,9,i)+1;
+                        end
+                     
+                        %if no pillar exists for current object, assign it
+                        %a pillar and assign it's nearest neighbor a pillar
+                        %as well
+                    elseif subpixMaxima(j,6,i) == 0 && subpixMaxima(subpixMaxima(j,4,i),6,i+n) == 0
                         noPillars = noPillars +1;
                         subpixMaxima(j,6,i) = noPillars;
                         subpixMaxima(subpixMaxima(j,4,i),6,i+n) = subpixMaxima(j,6,i);
+                        subpixMaxima(subpixMaxima(j,4,i),7,i+n) = n;
+                        subpixMaxima(j,9,i) = 1;
+                        subpixMaxima(subpixMaxima(j,4,i),9,i+n) = subpixMaxima(j,9,i)+1;
+                    elseif subpixMaxima(j,6,i) == 0 && subpixMaxima(subpixMaxima(j,4,i),6,i+n) > 0
+                        noPillars = noPillars +1;
+                        subpixMaxima(j,6,i) = noPillars;
+                        current = subpixMaxima(j,9,i);
+                        [previousIdx,~] = find(subpixMaxima(:,6,(i+n)-subpixMaxima(subpixMaxima(j,4,i),7,i+n))==subpixMaxima(subpixMaxima(j,4,i),6,i+n));
+                        previous = subpixMaxima(previousIdx(1,1),9,(i+n)-subpixMaxima(subpixMaxima(j,4,i),7,i+n));
+                        if current > previous
+                            subpixMaxima(subpixMaxima(j,4,i),6,i+n) = subpixMaxima(j,6,i);
+                            subpixMaxima(subpixMaxima(j,4,i),7,i+n) = n;
+                            subpixMaxima(subpixMaxima(j,4,i),9,i+n) = subpixMaxima(j,9,i)+1;
+                        end
                     end
                 end
+                
             end
-            
-            %%%%Try to assign pillar index to current pillar and pillar ahead!
-            
-            %%%%%%%%%%%%%%%%For Finding Pillars assigned in Previous Frames(no longer needed)
-            %             if i>1
-            %                 ignoreM = 0;
-            %                 for m = 1:maxJD % looking back for previous links
-            %                     if m<i && ismember(j,subpixMaxima(:,4,i-m))==1 && ignoreM==0
-            %                         clear tempInd
-            %                         tempInd = find(subpixMaxima(:,4,i-m)==j);
-            %                         for tempCount = 1:size(tempInd,1)
-            %                             ignoreTempCount = 0;
-            %                             if subpixMaxima(tempInd(tempCount,1),8,i-m) == m && ignoreTempCount ==0
-            %                                 subpixMaxima(j,6,i) = subpixMaxima(find(subpixMaxima(:,4,i-m)==j,1,'first'),6,i-m);
-            %                                 subpixMaxima(j,7,i) = size(find(subpixMaxima(:,4,i-m)==j),1);
-            %                                 ignoreM = 1;
-            %                                 ignoreTempCount = 1;
-            %                                 if m>1
-            %                                     noProblemPillars = noProblemPillars+1
-            %                                     problemPillars(noProblemPillars,1) = subpixMaxima(j,6,i);
-            %                                 end
-            %                             end
-            %                         end
-            %                     end
-            %                 end
-            %             end
-            %%%%%%%%%%%%%%%%%%%%%%%%
         end
+        
+        %%%%Try to assign pillar index to current pillar and pillar ahead!
+        
+        %%%%%%%%%%%%%%%%For Finding Pillars assigned in Previous Frames(no longer needed)
+        %             if i>1
+        %                 ignoreM = 0;
+        %                 for m = 1:maxJD % looking back for previous links
+        %                     if m<i && ismember(j,subpixMaxima(:,4,i-m))==1 && ignoreM==0
+        %                         clear tempInd
+        %                         tempInd = find(subpixMaxima(:,4,i-m)==j);
+        %                         for tempCount = 1:size(tempInd,1)
+        %                             ignoreTempCount = 0;
+        %                             if subpixMaxima(tempInd(tempCount,1),8,i-m) == m && ignoreTempCount ==0
+        %                                 subpixMaxima(j,6,i) = subpixMaxima(find(subpixMaxima(:,4,i-m)==j,1,'first'),6,i-m);
+        %                                 subpixMaxima(j,7,i) = size(find(subpixMaxima(:,4,i-m)==j),1);
+        %                                 ignoreM = 1;
+        %                                 ignoreTempCount = 1;
+        %                                 if m>1
+        %                                     noProblemPillars = noProblemPillars+1
+        %                                     problemPillars(noProblemPillars,1) = subpixMaxima(j,6,i);
+        %                                 end
+        %                             end
+        %                         end
+        %                     end
+        %                 end
+        %             end
+        %%%%%%%%%%%%%%%%%%%%%%%%
     end
 end
 
@@ -247,7 +284,7 @@ pillarSkip = 0;
 for i = 1:noPillars
     [row,frame] = find(subpixMaxima(:,6,:)==i);
     for j = 1:size(row,1)
-        if size(row,1) > 10
+        if size(row,1) > 20
             pillarBook(j,1,i-pillarSkip) = subpixMaxima(row(j,1),1,frame(j,1));
             pillarBook(j,2,i-pillarSkip) = subpixMaxima(row(j,1),2,frame(j,1));
             pillarBook(j,3,i-pillarSkip) = subpixMaxima(row(j,1),3,frame(j,1));
@@ -283,7 +320,7 @@ for j = 1:size(pillarBook,3)
     first = find(pillarBook(:,1,j),1,'first');
     last = find(pillarBook(:,1,j),1,'last');
     tempPillar = pillarBook(first:last,:,j);
-    plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
+    plot(tempPillar(:,1),tempPillar(:,2))
     hold on
 end
 hold off
