@@ -14,7 +14,11 @@ classdef Experiment
             if ~exist('stackFile','var') || isempty(stackFile)
                 w = msgbox('Choose the image stack you''d like to analyze followed by the original image stack. (HINT: These can be the same file)');
                 waitfor(w);
+                % Use the images from the image stack you'd like to analyze
                 obj.images = getImages;
+                % Get metadata from the original image stack since metadata
+                % isn't saved when the image stacks are cropped to the
+                % user-selected ROI
                 [~,obj.metadata] = getImages;
             % If a stackFile input argument is provided, use that as an
             % input for getImages without asking the user to select a file
@@ -50,12 +54,13 @@ classdef Experiment
             end
             
             % Process images and get centroid locations
-            [masks] = ... %,obj.centroids2d
-                getCentroidsStack(obj.images,obj.metadata);
+            masks = getCentroidsStack(obj.images,obj.metadata);
             % Clear any objects that are not 2-dimensionally larger than a 
             % threshold value equal to dotSizeThresh
             dotSizeThresh = round(0.9/(1000000*obj.metadata.scalingX)^3);
-            obj.masks = bwareaopen(masks,dotSizeThresh); 
+            masks = bwareaopen(masks,dotSizeThresh);
+            [masks,~] = removeLarge(obj.images,masks);
+            obj.masks = masks;
         end
         function [roiImgs,roiMasks,roiCell,roiBounds,bkImg] = cropImgs(obj)
             % Determine a scale factor for the resolution of outputs to
@@ -67,8 +72,7 @@ classdef Experiment
             % Use EditStack.m GUI function to select a region of interest
             % and return the bounds of the ROI, as well as the stack of
             % images and masks limited to the selected ROI
-            [roiMasks,roiImgs,roiBounds] = ... 
-                EditStack(obj.masks,obj.images); %,obj.centroids2d
+            [roiMasks,roiImgs,roiBounds] = EditStack(obj.masks,obj.images);
             
             % The ROI image stack is returned as a double, to ensure the
             % images are saved correctly, we convert from double to uint8
@@ -87,7 +91,8 @@ classdef Experiment
             % saved in the same folder as the original image stack, with
             % the same name as the original image stack, but with "roi"
             % appended to the end of the name
-            roiFile = [obj.metadata.filepath,obj.metadata.filename,'roi.tif'];
+            roiFile = ...
+                [obj.metadata.filepath,obj.metadata.filename,'roi.tif'];
             % If a file already exists with the name we just specified
             % (i.e. if an ROI has been selected before), that file is
             % deleted. This is necessary because the file will not simply
@@ -116,6 +121,8 @@ classdef Experiment
             cellFile = [obj.metadata.filepath,obj.metadata.filename,'Transmitted Cell Image.tif'];
             imwrite(imresize(roiCell,scaleFactor),cellFile,'tif');
             
+            % Save the ROI-cropped fluorescence image with a similar file 
+            % naming convention to that used in saving the ROI stack.
             roiFluor = imcrop(obj.fluorImg,roiBounds);
             fluorFile = [obj.metadata.filepath,obj.metadata.filename,'Fluorescent Cell Image.tif'];
             imwrite(imresize(roiFluor,scaleFactor),fluorFile,'tif');

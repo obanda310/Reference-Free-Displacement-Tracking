@@ -2,6 +2,9 @@
 clear;
 close all;
 clc;
+%%
+addpath(genpath('Tracking Functions'));
+addpath(genpath('Kovesi Filters'));
 
 %% Get Images and Metadata
 experiment = Experiment;
@@ -12,14 +15,11 @@ noImgs = size(images,3);
 % Scaling is the same in X and Y; convert from meters to microns
 pixelSize = meta.scalingX*1000000;
 
-%%
-[newMasks,subtractPatterns] = removeLarge(images,experiment.masks);
-
 %% Final Pre-processing Before Finding Local Maxima
 clear roiCell;
-experiment.masks = newMasks;
 [roiImgs,roiMasks,roiCell,roiBounds,bkImg] = experiment.cropImgs;
-scaleFactor = pixelSize/0.165
+scaleFactor = pixelSize/0.165;
+
 %% Finding 3D Local Maxima
 % Create a gaussian filtered version of original to decrease false local
 % maxima
@@ -31,7 +31,6 @@ sig2 = sqrt(2) * sig1;
 % interest
 ppImages7 = double(imgaussfilt(roiImgs,sig2));
 ppImages8 = roiMasks.*ppImages7;
-% ShowStack(ppImages8) %,experiment.centroids2d
 
 % Find local maxima in 3D (pixel resolution)
 localMaxima3D = imregionalmax(ppImages8);
