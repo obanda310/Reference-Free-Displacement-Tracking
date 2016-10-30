@@ -161,9 +161,9 @@ end
 createExcelForTrajectories(pBook);
 %% 3D Scatterplot of points color coded by pillar
 figure
-hold on
-for j = 1:size(pBook,3)
+for j = 1:noPillars
     scatter3(pBook(:,1,j),pBook(:,2,j),pBook(:,3,j),'.')
+    hold on
 end
 hold off
 %% 3D Plot of points color coded by pillar and connected

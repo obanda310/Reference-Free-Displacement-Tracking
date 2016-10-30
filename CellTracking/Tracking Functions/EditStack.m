@@ -292,6 +292,7 @@ function [roiMaskStack,roiImgStack,roiBounds] = EditStack(maskStack,originalStac
     
     function acceptandclose(~,~)        
         roiMaskStack = OutputStack(:,:,firstFrame:lastFrame);
+        roiImgStack = roiImgStack(:,:,firstFrame:lastFrame);
         close()
     end
     

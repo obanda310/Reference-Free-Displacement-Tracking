@@ -36,8 +36,8 @@ elseif strcmp(inputVar,'TrackMate') == 1
     prompt = 'How many pixels per micron? Enter a decimal and press enter: ';
     pixelScale = input(prompt);
 elseif strcmp(inputVar,'Custom Code') == 1
-    xCol = 3;
-    yCol = 2;
+    xCol = 2;
+    yCol = 3;
     fCol = 4;
     tCol = 5;
     intCol = 6;
