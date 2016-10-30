@@ -13,9 +13,7 @@ close all; clear;
 %1.1 Loading Data and Background Images for Overlays%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[name,path] = uigetfile('*.xlsx','Select .xlsx File From Particle Tracker Output');
-file = [path,name];
-[num,txt,raw] = xlsread(file);
+
 
 inputVar = InputSelector();
 if strcmp(inputVar,'Mosaic') == 1
@@ -25,6 +23,11 @@ if strcmp(inputVar,'Mosaic') == 1
     tCol = 2;
     totalCol = 12;
     pixelScale = 1;
+    
+    [name,path] = uigetfile('*.xlsx','Select .xlsx File From Particle Tracker Output');
+file = [path,name];
+[num,txt,raw] = xlsread(file);
+    
 elseif strcmp(inputVar,'TrackMate') == 1
     xCol = 6;
     yCol = 7;
@@ -35,6 +38,11 @@ elseif strcmp(inputVar,'TrackMate') == 1
     startVar = 1;
     prompt = 'How many pixels per micron? Enter a decimal and press enter: ';
     pixelScale = input(prompt);
+    
+    [name,path] = uigetfile('*.xlsx','Select .xlsx File From Particle Tracker Output');
+file = [path,name];
+[num,txt,raw] = xlsread(file);
+    
 elseif strcmp(inputVar,'Custom Code') == 1
     xCol = 2;
     yCol = 3;
@@ -45,6 +53,11 @@ elseif strcmp(inputVar,'Custom Code') == 1
     prompt = 'What was the scale factor print out of tracking.m? Check the command window. Enter a decimal and press enter: ';
     pixelScale = input(prompt);
     startVar = 0;
+    
+    [name,path] = uigetfile('*.txt','Select .xlsx File From Particle Tracker Output');
+file = [path,name];
+num = dlmread(file);
+    
 end
     
 [trajFile,trajPath] = uigetfile('*.tif','Select Fluorescent Image for Overlay');

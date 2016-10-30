@@ -14,7 +14,7 @@ function final = createExcelForTrajectories(pillarBook)
     count = (1:length(final))';
     final = cat(2,count,final);
     
-    excelFileName = 'trajectoriesInput.xlsx';
+    excelFileName = 'trajectoriesInput.txt';
     % If a file already exists with the name of the Excel spreadsheet 
     % specified in excelFileName, that file is deleted. This is necessary 
     % because the file will not simply be overwritten. If the array being
@@ -25,5 +25,5 @@ function final = createExcelForTrajectories(pillarBook)
     if exist(excelFileName,'file')
         delete(excelFileName)
     end
-    xlswrite(excelFileName,final);
+    dlmwrite(excelFileName,final);
 end

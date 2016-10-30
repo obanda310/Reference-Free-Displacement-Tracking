@@ -159,14 +159,7 @@ for i = 1:noPillars
 end
 %%
 createExcelForTrajectories(pBook);
-%% 3D Scatterplot of points color coded by pillar
-figure
-hold on
-for j = 1:size(pBook,3)
-    scatter3(pBook(:,1,j),pBook(:,2,j),pBook(:,3,j),'.')
-end
-hold off
-%% 3D Plot of points color coded by pillar and connected
+%% 2D Plot of points color coded by pillar and connected
 figure
 imshow(roiZeros)
 hold on
@@ -179,6 +172,14 @@ for j = 1:size(pBook,3)
     plot(tempPillar(:,1),tempPillar(:,2))
 end
 hold off
+
+%% 3D Scatterplot of points color coded by pillar
+% figure
+% hold on
+% for j = 1:size(pBook,3)
+%     scatter3(pBook(:,1,j),pBook(:,2,j),pBook(:,3,j),'.')
+% end
+% hold off
 
 %% Kovesi's function subpix3d
 % 
