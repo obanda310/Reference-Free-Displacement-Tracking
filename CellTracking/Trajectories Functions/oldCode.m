@@ -167,6 +167,11 @@ for i = 1:numTraj
 end
 end 
 %%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%4.1 Identifying Deviations%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %CURRENTLY DISABLED
 
 % Now that we have a list of rows of trajectories we need to find the
@@ -247,6 +252,40 @@ bookY = zeros(numRowElements+1,max(book1(9,1,:)),totalNumFrames);
     end
 end
 
+
+%Create new start coordinates
+for i = 1:numTraj
+    for f = 1:totalNumFrames
+        if abs(book1(5,f,i)) < trackErrorThreshold
+            book1(3,f,i) = book1(3,f,i);
+            book1(5,f,i) = book1(5,f,i);
+            book1(1,f,i) = book1(1,f,i);
+        else
+            book1(3,f,i) = book1(3,f,i);%+book1(13,f,i);
+            book1(5,f,i) = book1(5,f,i);%-book1(13,f,i);
+            book1(1,f,i) = book1(1,f,i);%-book1(13,f,i);
+        end
+    end
+        if i == 1 || i == 5000 || i == 10000 || i == 15000
+        progress = 'Section 4.1 x'
+    end
+end
+for i = 1:numTraj
+    for f = 1:totalNumFrames
+        if abs(book1(6,f,i)) < trackErrorThreshold
+            book1(4,f,i) = book1(4,f,i);
+            book1(6,f,i) = book1(6,f,i);
+            book1(2,f,i) = book1(2,f,i);
+        else
+            book1(4,f,i) = book1(4,f,i);% +book1(14,f,i); add these to track constant y errors
+            book1(6,f,i) = book1(6,f,i);% -book1(14,f,i); right now they are not necessary
+            book1(2,f,i) = book1(2,f,i);% -book1(14,f,i); 
+        end
+    end
+        if i == 1 || i == 5000 || i == 10000 || i == 15000
+        progress = 'Section 4.1 y'
+    end
+end
 %%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -266,4 +305,51 @@ for f = 1:totalNumFrames        % number of z-slices
     print(savefile,'-dtiff','-r300')
     close
 end
+end
+
+%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%5.6 Plot Overlay on Trajectories and Transmitted Images v2%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Notes: 5.5 Saves files, 5.6 does not.
+
+if ismember(6,outputs) == 1
+    figure('Position',[0 0 1000 1000])
+    imshow(imageFluor,[])
+    hold on
+    for i = 1:cmD
+        if (i/cmD) >= .5
+            blue = 0;
+            green = 1-(((i/cmD)-0.5)/(.5));
+            red = 1 - green ;
+        elseif (i/cmD) < .5
+            blue = ((0.5-(i/cmD))/0.5);
+            green = 1 - blue ;
+            red = 0;
+        end
+        quiver(cm2(27,totalNumFrames,:,i),cm2(28,totalNumFrames,:,i),cm2(23,totalNumFrames,:,i),cm2(24,totalNumFrames,:,i),0,'color',[colorMap(i,1:3)]);
+        hold on
+    end
+    %quiver(book1(10,1,:),book1(11,1,:),book1(12,totalNumFrames,:),book1(13,totalNumFrames,:),0,'g');
+    hold off
+    
+    figure('Position',[0 0 1000 1000])
+    imshow(imageTrans,[])
+    hold on
+    for i = 1:cmD
+        if (i/cmD) >= .5
+            blue = 0;
+            green = 1-(((i/cmD)-0.5)/(.5));
+            red = 1 - green ;
+        elseif (i/cmD) < .5
+            blue = ((0.5-(i/cmD))/0.5);
+            green = 1 - blue ;
+            red = 0;
+        end
+        quiver(cm2(27,totalNumFrames,:,i),cm2(28,totalNumFrames,:,i),cm2(23,totalNumFrames,:,i),cm2(24,totalNumFrames,:,i),0,'color',[colorMap(i,1:3)]);
+        hold on
+    end
+    %quiver(book1(10,1,:),book1(11,1,:),book1(12,totalNumFrames,:),book1(13,totalNumFrames,:),0,'g');
+    hold off
 end
