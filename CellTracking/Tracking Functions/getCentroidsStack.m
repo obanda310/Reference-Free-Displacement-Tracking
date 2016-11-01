@@ -57,7 +57,7 @@ function [filtMasks] = getCentroidsStack(images,metadata) %,centroids
     % ordered grid pattern. This next for-loop eliminates these spurious
     % objects.
     pixelSize = metadata.scalingX*1000000;
-    parfor i = 1:noImgs
+    for i = 1:noImgs
         % Use bwareaopen to eliminate objects in "masks" that have an area
         % smaller than 5 pixels
         filtMasks(:,:,i) = bwareaopen(masks(:,:,i),round((0.9/pixelSize)^2));
