@@ -12,7 +12,8 @@ experiment = Experiment;
 
 % Scaling is the same in X and Y; convert from meters to microns
 pixelSize = experiment.metadata.scalingX*1000000;
-
+scaleFactor = (experiment.metadata.scalingX*1000000)/0.165;
+disp(scaleFactor)
 %% Final Pre-processing Before Finding Local Maxima
 clear roiCell;
 [roiImgs,roiMasks,roiCell,roiBounds,roiZeros] = experiment.cropImgs;
@@ -161,7 +162,7 @@ end
 createExcelForTrajectories(pBook);
 %% 2D Plot of points color coded by pillar and connected
 figure
-imshow(roiZeros)
+%imshow(roiZeros)
 hold on
 clear tempInd1 tempInd2
 for j = 1:size(pBook,3)
@@ -174,12 +175,12 @@ end
 hold off
 
 %% 3D Scatterplot of points color coded by pillar
-% figure
-% hold on
-% for j = 1:size(pBook,3)
-%     scatter3(pBook(:,1,j),pBook(:,2,j),pBook(:,3,j),'.')
-% end
-% hold off
+figure
+hold on
+for j = 1:size(pBook,3)
+    scatter3(pBook(:,1,j),pBook(:,2,j),pBook(:,3,j),'.')
+end
+hold off
 
 %% Kovesi's function subpix3d
 % 
