@@ -287,7 +287,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %4.4b Using Intensity Values to Extract Z-Information%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if ismember(9,outputs) == 0
+if ismember(9,outputs) == 1
     cm2(cm2 == 0) = NaN;
     % plottedProfiles = figure
     % for i = 1:numTraj
@@ -481,7 +481,7 @@ if ismember(5,outputs) == 1
     hold on
     for i = 1:cmD
         
-        quiver(cm2(:,1,i),cm2(:,2,i),cm2(:,5,i),cm2(:,6,i),(i^1.3)/((cmD/2)^1.3),'color',[colorMap(i,1:3)]);%(i^2)/((cmD/1.5)^2)
+        quiver(cm2(:,1,i),cm2(:,2,i),cm2(:,5,i),cm2(:,6,i),0,'color',[colorMap(i,1:3)]);%(i^2)/((cmD/1.5)^2) also (i^1.3)/((cmD/2)^1.3)
         hold on
     end
     %quiver(book1(10,1,:),book1(11,1,:),book1(12,totalNumFrames,:),book1(13,totalNumFrames,:),0,'g');
@@ -496,7 +496,7 @@ if ismember(5,outputs) == 1
     imshow(imageTrans,[])
     hold on
     for i = 1:cmD
-        quiver(cm2(:,1,i),cm2(:,2,i),cm2(:,5,i),cm2(:,6,i),(i^1.3)/((cmD/2)^1.3),'color',[colorMap(i,1:3)]);
+        quiver(cm2(:,1,i),cm2(:,2,i),cm2(:,5,i),cm2(:,6,i),0,'color',[colorMap(i,1:3)]);%(i^1.3)/((cmD/2)^1.3)
         hold on
     end
     %quiver(book1(10,1,:),book1(11,1,:),book1(12,totalNumFrames,:),book1(13,totalNumFrames,:),0,'g');
