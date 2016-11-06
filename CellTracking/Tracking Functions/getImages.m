@@ -5,7 +5,7 @@ function [images,meta] = getImages(file)
         filename = file;
     elseif nargin == 0
         % Choose image stack
-        [name,path] = uigetfile({'*.czi';'*.lsm';'*.tif'});
+        [name,path] = uigetfile({'*.tif';'*.czi';'*.lsm'});
         filename = [path,name];
     end
     
@@ -24,7 +24,7 @@ function [images,meta] = getImages(file)
     % Preallocate 3D image matrix
     images = zeros(imgRows,imgCols,noImgs);
     % Store images in one 3D image matrix (instead of file cell array)
-    parfor i = 1:noImgs
+    for i = 1:noImgs
         % Column 1 in imageData contains the image grayscale intensity 
         % matrices; row index i corresponds to position in z-stack
         images(:,:,i) = imageData{i,1};
@@ -54,5 +54,14 @@ function [images,meta] = getImages(file)
     meta.filetype = filename(end-2:end);
     meta.filename = name(1:end-4);
     meta.filepath = path;
+    if isnan(meta.scalingX)
+        disp('Metadata did not load properly.')
+        disp('Please input data manually below as it is required')
+        prompt = 'What was the scaling in XY? Enter a decimal and press enter: ';
+        meta.scalingX = input(prompt);
+        meta.scalingY = meta.scalingX;
+        prompt = 'What was the color depth of the images? Enter an integer and press enter (ex. 8 for 8bit): ';
+        meta.colorDepth = input(prompt); 
+    end
     end
 end
