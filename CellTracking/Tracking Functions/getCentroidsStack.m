@@ -1,6 +1,7 @@
 % Input variable images is a 3D image stack whose dimensions correspond to
 % (rows,columns,z-slice)
 function [filtMasks] = getCentroidsStack(images,metadata) %,centroids
+    ppOptions = ppSelector();
     noImgs = size(images,3);
     % Maximum possible intensity value is 2 raised to the "colorDepth" 
     % power - usually, in our case, 16; i.e. we use 16-bit images. Subtract
@@ -14,7 +15,7 @@ function [filtMasks] = getCentroidsStack(images,metadata) %,centroids
     % for-loop below. These sigma values (i.e. sig1 and sig2) were obtained
     % in code written by Peter Kovesi. These values and the remainder of
     % the code perform a "difference of gaussians" filter operation
-    d = 1.2/(metadata.scalingX*1000000);
+    d = ppOptions{2}/(metadata.scalingX*1000000);
     sig1 = 1/(1+sqrt(2))*d;
     sig2 = sqrt(2) * sig1;
     % For the last image in the z-stack, find the grayscale intensities 
@@ -22,7 +23,11 @@ function [filtMasks] = getCentroidsStack(images,metadata) %,centroids
     % Then, average those values across all rows. This average is equal to 
     % the noiseRng. The last image in the z-stack is chosen because it is
     % black and any non-zero intensity in this image is the result of noise
+    if ismember(1,ppOptions{1}) == 1
     noiseRng = mean(prctile(images(:,:,noImgs),95));
+    else
+    noiseRng = 0;
+    end
     Lap = fspecial('laplacian');
     % Enhance contrast, apply a difference of gaussians filter, then a
     % Laplacian filter to each image in the stack
@@ -50,17 +55,16 @@ function [filtMasks] = getCentroidsStack(images,metadata) %,centroids
     % mask for each image such that pixels whose intensities are less than
     % the threshold are set equal to zero, while pixels whose intensities
     % are greater than or equal to the threshold are set equal to one.
-    threshold = prctile(lapImages(lapImages>0),25);
+    threshold = prctile(lapImages(lapImages>0),ppOptions{3});
     masks = lapImages>threshold;
     % The images in "masks" have some objects that are clearly the result
     % of noise; they are only a few pixels large and not in the expected,
     % ordered grid pattern. This next for-loop eliminates these spurious
     % objects.
-    pixelSize = metadata.scalingX*1000000;
     for i = 1:noImgs
         % Use bwareaopen to eliminate objects in "masks" that have an area
         % smaller than 5 pixels
-        filtMasks(:,:,i) = bwareaopen(masks(:,:,i),round((0.9/pixelSize)^2));
+        filtMasks(:,:,i) = bwareaopen(masks(:,:,i),round((d)^2)); %xor(,bwareaopen(masks(:,:,i),(round((0.9/pixelSize)^2))*20))
 %         % Use regionprops to find the centroids of all the objects in the
 %         % new filtered masks, i.e. filtMasks
 %         c = regionprops(filtMasks(:,:,i),'Centroid');

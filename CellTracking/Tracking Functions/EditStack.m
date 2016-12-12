@@ -1,7 +1,7 @@
 % InputStack should be a 3D image matrix where dimensions 1 and 2 contain
 % pixel information in y and x, respectively, and dimension 3 indexes
 % separate images in the stack
-function [roiMaskStack,roiImgStack,roiBounds] = EditStack(maskStack,originalStack) %,centroids
+function [roiMaskStack,roiImgStack,roiBounds,redoCheck] = EditStack(maskStack,originalStack,expCheck) %,centroids
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%% Initialize GUI
@@ -17,7 +17,7 @@ function [roiMaskStack,roiImgStack,roiBounds] = EditStack(maskStack,originalStac
     
     firstFrame = 1;
     lastFrame = noImgs;
-    
+    redoCheck = 0;
     % Initialize the OutputStack to be equal to the input mask stack
     OutputStack = maskStack;
     % Initialize the ROI image stack to be equal to the original image
@@ -293,6 +293,26 @@ function [roiMaskStack,roiImgStack,roiBounds] = EditStack(maskStack,originalStac
     function acceptandclose(~,~)        
         roiMaskStack = OutputStack(:,:,firstFrame:lastFrame);
         roiImgStack = roiImgStack(:,:,firstFrame:lastFrame);
+        close()
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%% Redo Preprocessing with New Parameters %%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if expCheck == 1
+    handles.redoPP = uicontrol( ...
+        'Style','pushbutton', ...
+        'Units','normalized', ...
+        'Position',[.100 .00 .125 .020], ...
+        'String','Redo Preprocessing', ...
+        'Callback',@redoPP);
+    end
+    
+        function redoPP(~,~)        
+        roiMaskStack = OutputStack(:,:,firstFrame:lastFrame);
+        roiImgStack = roiImgStack(:,:,firstFrame:lastFrame);
+        redoCheck = 1;
+        disp('Working')
         close()
     end
     
