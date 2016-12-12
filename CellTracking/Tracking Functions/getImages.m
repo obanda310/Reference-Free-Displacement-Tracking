@@ -45,8 +45,8 @@ function [images,meta] = getImages(file)
     meta.scalingX         = str2double(metadata.get('Global Scaling|Distance|Value #1'));
     meta.scalingY         = str2double(metadata.get('Global Scaling|Distance|Value #2'));
     meta.scalingZ         = str2double(metadata.get('Global Scaling|Distance|Value #3'));
-    meta.sizeX            = str2double(metadata.get('Global Information|Image|SizeX #1'));
-    meta.sizeY            = str2double(metadata.get('Global Information|Image|SizeY #1'));
+    meta.sizeX            = size(images,2);
+    meta.sizeY            = size(images,1);
     meta.sizeZ            = str2double(metadata.get('Global Information|Image|SizeZ #1'));
     %date                  = metadata.get('Global Information|Image|AcquisitionDateAndTime #1');
     %date = date(1:10);
@@ -57,11 +57,12 @@ function [images,meta] = getImages(file)
     if isnan(meta.scalingX)
         disp('Metadata did not load properly.')
         disp('Please input data manually below as it is required')
-        prompt = 'What was the scaling in XY? Enter a decimal and press enter: ';
-        meta.scalingX = input(prompt);
+        prompt = 'What was the scaling in XY (pixels/micron)? Enter a decimal and press enter: ';
+        meta.scalingX = 1/(input(prompt)*1000000);
         meta.scalingY = meta.scalingX;
         prompt = 'What was the color depth of the images? Enter an integer and press enter (ex. 8 for 8bit): ';
         meta.colorDepth = input(prompt); 
     end
     end
+    
 end
