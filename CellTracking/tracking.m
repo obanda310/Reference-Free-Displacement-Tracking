@@ -143,6 +143,7 @@ clear pBook tempInd1 tempInd2
 disp('Sorting Linked Dots')
 pBSkip = 0; %Counts the number of skipped Pillars
 pBSkipCheck = 0; %Toggles when a pillar is skipped
+pBook = zeros(size(ppImagesGauss,3),5,noPillars);
 for i = 1:noPillars
     %Find indices of members of current pillar
     [tempInd1,tempInd2] = find(subpixMaxima(:,6,:)==i);
@@ -173,10 +174,13 @@ for i = 1:noPillars
         pBSkipCheck = 0;
     end
 end
+%Truncate PBook
+pBookFinal = pBook(:,:,1:(noPillars-(pBSkip-1)));
+
 disp('Done')
 %%
 disp('Creating Text File for trajectories.m')
-createExcelForTrajectories(pBook);
+createExcelForTrajectories(pBookFinal);
 disp('Done')
 %% 2D Plot of points color coded by pillar and connected
 disp('Plotting Linked Paths')
