@@ -33,7 +33,7 @@ numIndices = 6; %for Section 1 and 2 (number of elements in book1)
 numTraj = max(num(:,dataKey(4,1))); %Number of Trajectories
 totalNumFrames = max(num(:,dataKey(3,1)))+dataKey(8,1); %Maximum number of frames observable for any one object
 book1 = zeros(numIndices,totalNumFrames,numTraj); %Creates book1
-book2 = zeros(numTraj,9); 
+book2 = zeros(numTraj,9);
 %%
 
 for i = 1:numTraj
@@ -91,7 +91,7 @@ disp('done Section 1')
 %2 = Raw Y Centroid Location of Traj in Specified Frame
 %3 = Raw dX Centroid Location of Traj in Specified Frame from First Frame
 %4 = Raw dY Centroid Location of Traj in Specified Frame from First Frame
-%5 = Magnitude of displacement 
+%5 = Magnitude of displacement
 %6 = Intensity in current frame (column 14 from TrackMate output)
 
 %Index List for Book2 - Frame Independent Values
@@ -103,7 +103,7 @@ disp('done Section 1')
 %6 = Value of book1 index 6 (see above) in Last Frame that Traj Appears
 %7 = Value of book1 index 1 (see above) in Last Frame that Traj Appears
 %8 = Value of book1 index 2 (see above) in Last Frame that Traj Appears
-%9 = Maximum Magnitude of displacement 
+%9 = Maximum Magnitude of displacement
 
 for i = 1:numTraj
     book2(i,1) = book1(1,book2(i,3),i);
@@ -162,7 +162,6 @@ for i = 1:numTraj
 end
 
 disp('done Section 4.2')
-
 %%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -296,17 +295,17 @@ if ismember(9,outputs) == 1
     % end
     
     trajOfInterest = 2500;
-%     winSize = 50;
-%     if trajOfInterest > winSize && trajOfInterest < (numTraj-winSize)
-%         lowerLim = trajOfInterest - winSize;
-%         upperLim = trajOfInterest + winSize;
-%     elseif trajOfInterest < winSize
-%         lowerLim = trajOfInterest-(trajOfInterest-1);
-%         upperLim = trajOfInterest*2 + winSize;
-%     elseif trajOfInterest > (numTraj-winSize)
-%         lowerLim = trajOfInterest - winSize - (numTraj-trajOfInterest);
-%         upperLim = trajOfInterest + (trajOfInterest-1);
-%     end
+    %     winSize = 50;
+    %     if trajOfInterest > winSize && trajOfInterest < (numTraj-winSize)
+    %         lowerLim = trajOfInterest - winSize;
+    %         upperLim = trajOfInterest + winSize;
+    %     elseif trajOfInterest < winSize
+    %         lowerLim = trajOfInterest-(trajOfInterest-1);
+    %         upperLim = trajOfInterest*2 + winSize;
+    %     elseif trajOfInterest > (numTraj-winSize)
+    %         lowerLim = trajOfInterest - winSize - (numTraj-trajOfInterest);
+    %         upperLim = trajOfInterest + (trajOfInterest-1);
+    %     end
     
     plottedProfiles = figure
     subplot(2,1,1)
@@ -344,7 +343,7 @@ if ismember(9,outputs) == 1
     imshow(imageBlack)
     hold on
     for i = 1:size(book3,2)
-    scatter(book2(book3(trajOfInterest,i),1),book2(book3(trajOfInterest,i),2),'.','g')
+        scatter(book2(book3(trajOfInterest,i),1),book2(book3(trajOfInterest,i),2),'.','g')
     end
     scatter(book2(trajOfInterest,1),book2(trajOfInterest,2),'o','b')
     
@@ -383,10 +382,10 @@ if ismember(2,outputs) == 1
         blackOverlay = figure('Position',[0 0 1000 1000]);
         imshow(imageBlack,[])
         hold on
- 
+        
         for i = 1:cmD
             quiver(cm1(1,f,:,i),cm1(2,f,:,i),cm1(3,f,:,i),cm1(4,f,:,i),...
-            0,'color',[colorMap(i,1:3)]);
+                0,'color',[colorMap(i,1:3)]);
             hold on
         end
         hold off
@@ -420,7 +419,7 @@ if ismember(4,outputs) == 1
             yTemp = squeeze(squeeze(cm1(2,f,:,i)));
             yTemp = yTemp';
             plot(xTemp,yTemp,'.','MarkerSize',3,'Color',[colorMap(i,1:3)]);
-       
+            
             hold on
         end
         hold on
@@ -462,7 +461,7 @@ if ismember(3,outputs) == 1
             quiver(cm2(:,1,i),cm2(:,2,i),cm2(:,5,i),cm2(:,6,i),0,'color',[colorMap(i,1:3)]);
             hold on
         end
- 
+        
     end
     hold off
     savefile = [filePath '\Debug Image ' colorScheme '.tif'];
@@ -504,3 +503,118 @@ if ismember(5,outputs) == 1
     savefile = [filePath '\Transmitted Overlay ' colorScheme '.tif'];
     export_fig(transmittedOverlay,savefile,'-native');
 end
+
+%%
+clear MeshBook MeshList
+clear book4
+
+book4 = book1;
+book4(~book4) = NaN;
+
+MeshBook = book4(1:2,1:25,1:121);
+MeshBook(2,:,:) = MeshBook(2,:,:)*-1;
+node = 0;
+
+for i = 1:size(MeshBook,2)
+    for j = 1:size(MeshBook,3)
+        node = node + 1;
+        if isnan(MeshBook(1,i,j)) == 1           
+            MeshBook(1,i,j) = MeshBook(1,i-1,j);      
+        end
+        if isnan(MeshBook(2,i,j)) == 1                        
+            MeshBook(2,i,j) = MeshBook(2,i-1,j);
+        end
+        MeshBook(3,i,j) = i;
+        MeshBook(4,i,j) = node;
+        
+        
+        MeshList(2,node) = MeshBook(1,i,j); 
+        MeshList(3,node) = MeshBook(2,i,j);
+        MeshList(4,node) = MeshBook(3,i,j);
+        MeshList(1,node) = MeshBook(4,i,j);
+        
+        MeshList2(2,node) = MeshBook(1,1,j); 
+        MeshList2(3,node) = MeshBook(2,1,j);
+        MeshList2(4,node) = MeshBook(3,i,j);
+        MeshList2(1,node) = MeshBook(4,i,j);
+    end
+end
+
+%Building Elements
+%Start with the first frame
+clear EleList EleList2
+    Element = 0;
+for i = 1:size(MeshBook,3)
+    clear current diff
+    current(1:2,:) = MeshBook(1:2,1,:);
+    diff(1,:) = current(1,:) - MeshBook(1,1,i);
+    diff(2,:) = current(2,:) - MeshBook(2,1,i);
+    diff(3,:) = sqrt(diff(1,:).^2.+diff(2,:).^2);
+    diff(diff<-5) = NaN;
+    diff(diff>22) = NaN;
+    for j = 1:size(diff,2)
+        if isnan(diff(1,j))==1 || isnan(diff(2,j))== 1 || isnan(diff(3,j)) ==1 || diff(3,j) == 0
+            diff(1:3,j) = 0;
+        end
+    end
+    
+    clear current2
+    current2 = find(diff(3,:));
+    
+    if size(current2,2) == 3
+        current3 = diff(1:3,current2);
+         mesh3 = current2(find(current3(3,:)==max(current3(3,:))));
+         mesh4 = current2(find(current3(2,:)==min(current3(2,:))));
+         mesh2 = current2(find(current3(1,:)==min(current3(1,:))));
+        for k = 1:(size(MeshBook,2)-1)
+        Element = Element + 1;
+        
+        EleList(i,1,k) = MeshBook(4,k,i); %5
+        EleList(i,2,k) = MeshBook(4,k,mesh2); %6
+        EleList(i,3,k) = MeshBook(4,k,mesh3); %7
+        EleList(i,4,k) = MeshBook(4,k,mesh4); %8
+        EleList(i,5,k) = MeshBook(4,k+1,i); %1
+        EleList(i,6,k) = MeshBook(4,k+1,mesh2); %2
+        EleList(i,7,k) = MeshBook(4,k+1,mesh3); %3
+        EleList(i,8,k) = MeshBook(4,k+1,mesh4); %4
+
+        EleList(i,9,k) = Element;
+        EleList2(2:9,Element) = EleList(i,1:8,k);
+        EleList2(1,Element) = Element;
+        end
+    end
+        
+    
+end
+%%
+
+meshTxt = fopen('mesh.txt','wt');
+nodesFormat = '<node id=" %d "> %f, %f, %f </node>\n';
+fprintf(meshTxt,'<?xml version="1.0" encoding="ISO-8859-1"?>\n<febio_spec version="2.5">\n<Geometry>\n<Nodes name="Part1">\n');
+fprintf(meshTxt,nodesFormat,MeshList(1:4,:));
+fprintf(meshTxt,'</Nodes>\n<Elements type="hex8" mat="1" name="part1">\n');
+elementsFormat = '<elem id=" %d "> %d, %d, %d, %d, %d, %d, %d, %d </elem>\n';
+fprintf(meshTxt,elementsFormat,EleList2(1:9,:));
+fprintf(meshTxt,'</Elements>\n</Geometry></febio_spec>');
+fclose(meshTxt);
+%%
+%Undeformed Mesh
+
+meshTxt = fopen('meshUD.txt','wt');
+nodesFormat = '<node id=" %d "> %f, %f, %f </node>\n';
+fprintf(meshTxt,'<?xml version="1.0" encoding="ISO-8859-1"?>\n<febio_spec version="2.5">\n<Geometry>\n<Nodes name="Part1">\n');
+fprintf(meshTxt,nodesFormat,MeshList2(1:4,:));
+fprintf(meshTxt,'</Nodes>\n<Elements type="hex8" mat="1" name="part1">\n');
+elementsFormat = '<elem id=" %d "> %d, %d, %d, %d, %d, %d, %d, %d </elem>\n';
+fprintf(meshTxt,elementsFormat,EleList2(1:9,:));
+fprintf(meshTxt,'</Elements>\n</Geometry></febio_spec>');
+fclose(meshTxt);
+
+%%
+figure
+hold on
+for i = 1:size(MeshBook,2)
+    scatter3(MeshBook(1,i,:),MeshBook(2,i,:),i*ones(1,size(MeshBook,3)),'.','g');
+    scatter3(MeshBook(1,1,:),MeshBook(2,1,:),i*ones(1,size(MeshBook,3)),'.','b');
+end
+hold off

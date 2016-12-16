@@ -40,7 +40,7 @@ classdef Experiment
                 % input for getImages without asking the user to select a file
                 % manually
             else
-                obj.cellImg = cellFile;           
+                obj.cellImg = cellFile;
             end
             
             %Same as above, but for a fluorescent image
@@ -50,7 +50,7 @@ classdef Experiment
                 obj.fluorImg = getImages;
                 obj.fluorImg = uint16(obj.fluorImg);
             else
-                obj.fluorImg = fluorFile;                
+                obj.fluorImg = fluorFile;
             end
             
             % Process images and get centroid locations
@@ -59,7 +59,7 @@ classdef Experiment
             % threshold value equal to dotSizeThresh
             dotSizeThreshLB = round(0.9/(1000000*obj.metadata.scalingX)^3);
             masks = bwareaopen(masks,dotSizeThreshLB);
-            [masks,~] = removeLarge(obj.images,masks);
+            %[masks,~] = removeLarge(obj.images,masks);
             obj.masks = masks;
             obj.redo = 0;
         end
@@ -75,7 +75,6 @@ classdef Experiment
             % images and masks limited to the selected ROI
             [roiMasks,roiImgs,roiBounds,redoCheck] = EditStack(obj.masks,obj.images,1);
             if redoCheck == 1
-                disp('exp working')
                 redo = 1;
                 roiCell = 1;
                 bkImg = 1;

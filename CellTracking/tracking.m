@@ -52,7 +52,7 @@ disp('Finding Dots.')
 % Find local maxima in 2D (pixel resolution)
 ppImagesMaxima = zeros(size(ppImagesGaussMask));
 for i = 1:size(roiImgs,3)
-    maxCurrent = imregionalmax(ppImagesGaussMask(:,:,i));    
+    maxCurrent = imregionalmax(ppImagesGaussMask(:,:,i));
     % In the event that a frame is empty, the local maxima are the entire
     % image (0's), this if statement removes these maxima.
     if maxCurrent == ones(size(maxCurrent,1),size(maxCurrent,2))
@@ -96,14 +96,13 @@ subpixMaxima(tempInd1,1:3,tempInd2) = 0;
 %-smaller than 0 in y
 [tempInd1, tempInd2] = find(subpixMaxima(:,2,:) < 0);
 subpixMaxima(tempInd1,1:3,tempInd2) = 0;
-disp('Done.')
 %% Viewing 2D pixel/subpixel maxima
-% 
+%
 % close all
 % %view pixel resolution maxima
 % figure
 % scatter3(maxR,maxC,maxS,'.')
-% 
+%
 % %view subpixel resolution maxima
 % figure
 % for i = 1:size(roiImgs,3)
@@ -119,28 +118,25 @@ disp('Done.')
 % between the object of interest and the nearest neighbors on frames before
 % and after.
 close all
-
+disp('Linking Dots Between Frames.')
 % Set a maximum linking distance in microns that any object can still be
 % considered part of a pillar. Smaller values will speed up code.
 maxLinkDistance = 1;
 maxLD = maxLinkDistance/pixelSize;
-disp('Max Link Distance (Microns)')
-disp(maxLinkDistance)
+disp(['Max Link Distance (Microns): ',num2str(maxLinkDistance)])
 % Set a maximum number of frames to look for a linked object before giving
 % up (maxJumpDistance)
-maxJD = 3;
-disp('Max Jump Distance (Frames)')
-disp(maxJD)
+maxJD = 7;
+disp(['Max Jump Distance (Frames): ',num2str(maxJD)])
 
 % The LinkMaxima function checks for the closest match for an object in
-% later frames. Maxima with multiple matches favor pillars with a greater 
+% later frames. Maxima with multiple matches favor pillars with a greater
 % number of constituents
-disp('Linking Dots Between Frames')
+
 [subpixMaxima,noPillars] = LinkMaxima(subpixMaxima,maxLD,maxJD);
-disp('Done.')
 %% Creating Pillar Book for Easy Export
 clear pBook tempInd1 tempInd2
-disp('Sorting Linked Dots')
+disp('Sorting Linked Dots.')
 pBSkip = 0; %Counts the number of skipped Pillars
 pBSkipCheck = 0; %Toggles when a pillar is skipped
 pBook = zeros(size(ppImagesGauss,3),5,noPillars);
@@ -177,13 +173,11 @@ end
 %Truncate PBook
 pBookFinal = pBook(:,:,1:(noPillars-(pBSkip-1)));
 
-disp('Done')
 %%
-disp('Creating Text File for trajectories.m')
+disp('Creating Text File for trajectories.m.')
 createExcelForTrajectories(pBookFinal);
-disp('Done')
 %% 2D Plot of points color coded by pillar and connected
-disp('Plotting Linked Paths')
+disp('Plotting Linked Paths.')
 figure
 imshow(roiZeros)
 hold on
@@ -196,7 +190,6 @@ for j = 1:size(pBook,3)
     plot(tempPillar(:,1),tempPillar(:,2))
 end
 hold off
-disp('Done')
 
 %% 3D Scatterplot of points color coded by pillar
 % figure
@@ -207,10 +200,10 @@ disp('Done')
 % hold off
 
 %% Kovesi's function subpix3d
-% 
+%
 % % Find local maxima in 3D (pixel resolution)
 % localMaxima3D = imregionalmax(ppImages8);
-% 
+%
 % % Obtain vectors with coordinates for x,y,z positions of local maxima with
 % % pixel resolution
 % [maxR,maxC,maxS] = ind2sub(size(localMaxima3D),find(localMaxima3D == 1));
@@ -297,4 +290,4 @@ disp('Done')
 % end
 % hold off
 %%
-disp('tracking.m is completed')
+disp('tracking.m is completed.')

@@ -2,66 +2,66 @@
 % pixel information in y and x, respectively, and dimension 3 indexes
 % separate images in the stack
 function [roiMaskStack,roiImgStack,roiBounds,redoCheck] = EditStack(maskStack,originalStack,expCheck) %,centroids
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%% Initialize GUI
 
-    % Create GUI figure window
-    hFig = figure('Position',[100 100 800 800]);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%% Initialize GUI
 
-    % noImgs is the number of images in the input stack
-    noImgs = size(maskStack,3);
-    % Initialize the bounds of the ROI to be equal to the size of an entire
-    % image
-    roiBounds = [1,1,size(maskStack,1),size(maskStack,2)];
-    
-    firstFrame = 1;
-    lastFrame = noImgs;
-    redoCheck = 0;
-    % Initialize the OutputStack to be equal to the input mask stack
-    OutputStack = maskStack;
-    % Initialize the ROI image stack to be equal to the original image
-    % stack
-    roiImgStack = originalStack;
-    
-    % Use setappdata to store the image stack and in callbacks, use 
-    % getappdata to retrieve it and use it. Check the docs for the calling 
-    % syntax.
-    % You could use setappdata(0,'MyMatrix',MyMatrix) to store in the base 
-    % workspace. 
-    setappdata(hFig,'MyMatrix',OutputStack);
-    setappdata(hFig,'MyOrigMatrix',roiImgStack);
+% Create GUI figure window
+hFig = figure('Position',[100 100 800 800]);
 
-    % Create axes for the images to be displayed in
-    handles.axes1 = axes( ...
-        'Units','normalized', ...
-        'Position',[0 0 1 1]);
-    
-    % Display 1st frame
-    imshow(OutputStack(:,:,1),[])
+% noImgs is the number of images in the input stack
+noImgs = size(maskStack,3);
+% Initialize the bounds of the ROI to be equal to the size of an entire
+% image
+roiBounds = [1,1,size(maskStack,1),size(maskStack,2)];
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%% Create slider and callback to scroll through image stack
-    
-    % Create slider and listener object for smooth visualization
-    handles.SliderFrame = uicontrol( ...
-        'Style','slider', ...
-        'Units','normalized', ... 
-        'Position',[.300 .060 .400 .020], ...
-        'Min',1, ...
-        'Max',noImgs, ...
-        'Value',1, ...
-        'SliderStep',[1/noImgs 2/noImgs], ...
-        'Callback',@XSliderCallback);
-    % Slider listener calls the XListenerCallback immediately after the
-    % slider position is changed - this is what allows smooth visualization
-    handles.SliderxListener = addlistener( ...
-        handles.SliderFrame,'Value','PostSet',@(s,e) XListenerCallback);
-    
-    % Slider callback; executed when the slider is release or you press
-    % the arrows.
+firstFrame = 1;
+lastFrame = noImgs;
+redoCheck = 0;
+% Initialize the OutputStack to be equal to the input mask stack
+OutputStack = maskStack;
+% Initialize the ROI image stack to be equal to the original image
+% stack
+roiImgStack = originalStack;
+
+% Use setappdata to store the image stack and in callbacks, use
+% getappdata to retrieve it and use it. Check the docs for the calling
+% syntax.
+% You could use setappdata(0,'MyMatrix',MyMatrix) to store in the base
+% workspace.
+setappdata(hFig,'MyMatrix',OutputStack);
+setappdata(hFig,'MyOrigMatrix',roiImgStack);
+
+% Create axes for the images to be displayed in
+handles.axes1 = axes( ...
+    'Units','normalized', ...
+    'Position',[0 0 1 1]);
+
+% Display 1st frame
+imshow(OutputStack(:,:,1),[])
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%% Create slider and callback to scroll through image stack
+
+% Create slider and listener object for smooth visualization
+handles.SliderFrame = uicontrol( ...
+    'Style','slider', ...
+    'Units','normalized', ...
+    'Position',[.300 .060 .400 .020], ...
+    'Min',1, ...
+    'Max',noImgs, ...
+    'Value',1, ...
+    'SliderStep',[1/noImgs 2/noImgs], ...
+    'Callback',@XSliderCallback);
+% Slider listener calls the XListenerCallback immediately after the
+% slider position is changed - this is what allows smooth visualization
+handles.SliderxListener = addlistener( ...
+    handles.SliderFrame,'Value','PostSet',@(s,e) XListenerCallback);
+
+% Slider callback; executed when the slider is release or you press
+% the arrows.
     function XSliderCallback(~,~)
         handles = guidata(gcf);
         % Here retrieve MyMatrix using getappdata.
@@ -71,8 +71,8 @@ function [roiMaskStack,roiImgStack,roiBounds,redoCheck] = EditStack(maskStack,or
         imshow(OutputStack(:,:,CurrentFrame),[]);
         guidata(hFig,handles);
     end
-    
-    % Listener callback, executed when you drag the slider.
+
+% Listener callback, executed when you drag the slider.
     function XListenerCallback
         % Retrieve handles structure. Used to let MATLAB recognize the
         % edit box, slider and all UI components.
@@ -87,43 +87,43 @@ function [roiMaskStack,roiImgStack,roiBounds,redoCheck] = EditStack(maskStack,or
         guidata(hFig,handles);
     end
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%% Allow use to select start and end images in stack
-    
-    % Create label for textbox in which user can select the image number
-    % they would like to be the start of the image stack
-    handles.stackStartLabel = uicontrol( ...
-        'Style','Text', ...
-        'Units','normalized', ...
-        'Position',[.300 .035 .100 .020], ...
-        'String','First Frame');
-    % Create textbox in which user can select the image number they would 
-    % like to be the start of the image stack
-    handles.stackStart = uicontrol( ...
-        'Style','Edit', ...
-        'String','1', ...
-        'Units','normalized', ... 
-        'Position',[.300,.010,.100,.020], ...
-        'Callback',@newRangeCallback);
-    % Create label for textbox in which user can select the image number
-    % they would like to be the end of the image stack
-    handles.stackEndLabel = uicontrol( ...
-        'Style','Text', ...
-        'Units','normalized', ...
-        'Position',[.600 .035 .100 .020], ...
-        'String','Last Frame');
-    % Create textbox in which user can select the image number they would 
-    % like to be the end of the image stack
-    handles.stackEnd = uicontrol( ...
-        'Style','Edit', ...
-        'String',num2str(noImgs), ...
-        'Units','normalized', ... 
-        'Position',[.600,.010,.100,.020], ...
-        'Callback',@newRangeCallback);
-    
-    % Callback will adjust slider range based upon the user-input values
-    % for start frame and end frame. Will also immediately display the
-    % image corresponding to the frame the user just specified.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%% Allow use to select start and end images in stack
+
+% Create label for textbox in which user can select the image number
+% they would like to be the start of the image stack
+handles.stackStartLabel = uicontrol( ...
+    'Style','Text', ...
+    'Units','normalized', ...
+    'Position',[.300 .035 .100 .020], ...
+    'String','First Frame');
+% Create textbox in which user can select the image number they would
+% like to be the start of the image stack
+handles.stackStart = uicontrol( ...
+    'Style','Edit', ...
+    'String','1', ...
+    'Units','normalized', ...
+    'Position',[.300,.010,.100,.020], ...
+    'Callback',@newRangeCallback);
+% Create label for textbox in which user can select the image number
+% they would like to be the end of the image stack
+handles.stackEndLabel = uicontrol( ...
+    'Style','Text', ...
+    'Units','normalized', ...
+    'Position',[.600 .035 .100 .020], ...
+    'String','Last Frame');
+% Create textbox in which user can select the image number they would
+% like to be the end of the image stack
+handles.stackEnd = uicontrol( ...
+    'Style','Edit', ...
+    'String',num2str(noImgs), ...
+    'Units','normalized', ...
+    'Position',[.600,.010,.100,.020], ...
+    'Callback',@newRangeCallback);
+
+% Callback will adjust slider range based upon the user-input values
+% for start frame and end frame. Will also immediately display the
+% image corresponding to the frame the user just specified.
     function newRangeCallback(src,~)
         % Get value from handles.stackStart textbox
         firstFrame = str2double(get(handles.stackStart,'String'));
@@ -141,8 +141,8 @@ function [roiMaskStack,roiImgStack,roiBounds,redoCheck] = EditStack(maskStack,or
         % textbox, set the slider to that frame
         if src == handles.stackStart
             set(handles.SliderFrame,'Value',firstFrame);
-        % Otherwise (i.e. if the user just edited the value in the
-        % handles.stackEnd textbox), set the slider to that frame
+            % Otherwise (i.e. if the user just edited the value in the
+            % handles.stackEnd textbox), set the slider to that frame
         else
             set(handles.SliderFrame,'Value',lastFrame);
         end
@@ -164,62 +164,62 @@ function [roiMaskStack,roiImgStack,roiBounds,redoCheck] = EditStack(maskStack,or
         guidata(hFig,handles);
     end
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%% Show current frame number and allow user to set manually
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%% Show current frame number and allow user to set manually
 
-    % Create label for textbox in which user can set the image number they 
-    % would like to view
-    handles.currentFrameLabel = uicontrol( ...
-        'Style','Text', ...
-        'Units','normalized', ...
-        'Position',[.450 .035 .100 .020], ...
-        'String','Current Frame');
-    % Create textbox in which user can set the image number they would like
-    % to view
-    handles.currentFrameSelect = uicontrol( ...
-        'Style','Edit', ...
-        'Units','normalized', ...
-        'Position',[.450 .010 .100 .020], ...
-        'String','1', ...
-        'Callback',@currentFrameSelectCallback);
-    
-    % Callback will change the slider position to the image number the user
-    % specifies in the handles.currentFrameSelect textbox. Upon moving the
-    % slider, the slider callback functions will update the image being
-    % displayed
+% Create label for textbox in which user can set the image number they
+% would like to view
+handles.currentFrameLabel = uicontrol( ...
+    'Style','Text', ...
+    'Units','normalized', ...
+    'Position',[.450 .035 .100 .020], ...
+    'String','Current Frame');
+% Create textbox in which user can set the image number they would like
+% to view
+handles.currentFrameSelect = uicontrol( ...
+    'Style','Edit', ...
+    'Units','normalized', ...
+    'Position',[.450 .010 .100 .020], ...
+    'String','1', ...
+    'Callback',@currentFrameSelectCallback);
+
+% Callback will change the slider position to the image number the user
+% specifies in the handles.currentFrameSelect textbox. Upon moving the
+% slider, the slider callback functions will update the image being
+% displayed
     function currentFrameSelectCallback(~,~)
         % Get value of user-input frame from the handles.currentFrameSelect
         % textbox
         selectedFrame = str2double(get(handles.currentFrameSelect,'String'));
-        % Set the slider position to the value in the 
+        % Set the slider position to the value in the
         % handles.currentFrameSelect textbox
         set(handles.SliderFrame,'Value',selectedFrame);
         
         guidata(hFig,handles);
     end
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%% Allow user to select ROI sub-section of image stack
-    
-    %%%%%%%%%%%%%%%%%%
-    %%%% CROPPING %%%%
-    %%%%%%%%%%%%%%%%%%
-    
-    % Create button that, when clicked, will use cropImgCallback to allow
-    % the user to select an ROI
-    handles.cropImgButton = uicontrol( ...
-        'Style','pushbutton', ...
-        'Units','normalized', ...
-        'Position',[.100 .035 .060 .020], ...
-        'String','Crop', ...
-        'Callback',@cropImgCallback);
-    
-    % Callback will open a tool to create a resizeable and movable
-    % rectangle for the user to select an ROI
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%% Allow user to select ROI sub-section of image stack
+
+%%%%%%%%%%%%%%%%%%
+%%%% CROPPING %%%%
+%%%%%%%%%%%%%%%%%%
+
+% Create button that, when clicked, will use cropImgCallback to allow
+% the user to select an ROI
+handles.cropImgButton = uicontrol( ...
+    'Style','pushbutton', ...
+    'Units','normalized', ...
+    'Position',[.100 .035 .060 .020], ...
+    'String','Crop', ...
+    'Callback',@cropImgCallback);
+
+% Callback will open a tool to create a resizeable and movable
+% rectangle for the user to select an ROI
     function cropImgCallback(~,~)
         % Instruct user how to select ROI
         f = msgbox('Double-Click to crop after making rectangular selection!');
@@ -228,7 +228,7 @@ function [roiMaskStack,roiImgStack,roiBounds,redoCheck] = EditStack(maskStack,or
         waitfor(f);
         
         OutputStack = getappdata(hFig,'MyMatrix');
-        CurrentFrame = round((get(handles.SliderFrame,'Value')));    
+        CurrentFrame = round((get(handles.SliderFrame,'Value')));
         
         % imcrop allows user to select a rectangular ROI and outputs the
         % bounds of the ROI as four-element vector with the following
@@ -256,18 +256,18 @@ function [roiMaskStack,roiImgStack,roiBounds,redoCheck] = EditStack(maskStack,or
         guidata(hFig,handles);
     end
 
-    %%%%%%%%%%%%%%%%%%%%%%%
-    %%%% UNDO CROPPING %%%%
-    %%%%%%%%%%%%%%%%%%%%%%%
-    
-    % Undo Crop
-    handles.cropImgButton = uicontrol( ...
-        'Style','pushbutton', ...
-        'Units','normalized', ...
-        'Position',[.165 .035 .060 .020], ...
-        'String','Original', ...
-        'Callback',@revert);
-    
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%% UNDO CROPPING %%%%
+%%%%%%%%%%%%%%%%%%%%%%%
+
+% Undo Crop
+handles.cropImgButton = uicontrol( ...
+    'Style','pushbutton', ...
+    'Units','normalized', ...
+    'Position',[.165 .035 .060 .020], ...
+    'String','Original', ...
+    'Callback',@revert);
+
     function revert(~,~)
         handles = guidata(gcf);
         OutputStack = getappdata(hFig,'MyMatrix');
@@ -278,50 +278,49 @@ function [roiMaskStack,roiImgStack,roiBounds,redoCheck] = EditStack(maskStack,or
         imshow(OutputStack(:,:,CurrentFrame),[]);
         guidata(hFig,handles);
     end
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%% FINALIZE CROPPING %%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    handles.cropImgButton = uicontrol( ...
-        'Style','pushbutton', ...
-        'Units','normalized', ...
-        'Position',[.100 .060 .125 .020], ...
-        'String','Accept and Close', ...
-        'Callback',@acceptandclose);
-    
-    function acceptandclose(~,~)        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% FINALIZE CROPPING %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+handles.cropImgButton = uicontrol( ...
+    'Style','pushbutton', ...
+    'Units','normalized', ...
+    'Position',[.100 .060 .125 .020], ...
+    'String','Accept and Close', ...
+    'Callback',@acceptandclose);
+
+    function acceptandclose(~,~)
         roiMaskStack = OutputStack(:,:,firstFrame:lastFrame);
         roiImgStack = roiImgStack(:,:,firstFrame:lastFrame);
         close()
     end
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%% Redo Preprocessing with New Parameters %%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if expCheck == 1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Redo Preprocessing with New Parameters %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if expCheck == 1
     handles.redoPP = uicontrol( ...
         'Style','pushbutton', ...
         'Units','normalized', ...
         'Position',[.100 .00 .125 .020], ...
         'String','Redo Preprocessing', ...
         'Callback',@redoPP);
-    end
-    
-        function redoPP(~,~)        
+end
+
+    function redoPP(~,~)
         roiMaskStack = OutputStack(:,:,firstFrame:lastFrame);
         roiImgStack = roiImgStack(:,:,firstFrame:lastFrame);
         redoCheck = 1;
-        disp('Working')
         close()
     end
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 %     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %     %%%%%%% Plot 2D centroids
-% 
+%
 %     % Plot Centroids2 over current image
 %     handles.cropImgButton = uicontrol( ...
 %         'Style','pushbutton', ...
@@ -329,7 +328,7 @@ function [roiMaskStack,roiImgStack,roiBounds,redoCheck] = EditStack(maskStack,or
 %         'Position',[.100 .010 .130 .030], ...
 %         'String','Plot Centroids', ...
 %         'Callback',@plotCircles);
-%     
+%
 %     function plotCircles(~,~)
 %         handles = guidata(gcf);
 %         OutputStack = getappdata(hFig,'MyMatrix');
@@ -342,11 +341,11 @@ function [roiMaskStack,roiImgStack,roiBounds,redoCheck] = EditStack(maskStack,or
 %         plot(xs,ys,'o')
 %         guidata(hFig,handles);
 %         hold off
-%     end 
-%     
+%     end
+%
 %     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    % IMPORTANT. Update handles structure.
-    guidata(hFig,handles);
-    waitfor(hFig)
+
+% IMPORTANT. Update handles structure.
+guidata(hFig,handles);
+waitfor(hFig)
 end
