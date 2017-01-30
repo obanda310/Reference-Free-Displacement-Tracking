@@ -66,7 +66,7 @@ elseif strcmp(choice,'Custom Code') == 1
     dataKey(2,1) = 3; %yCol
     dataKey(3,1) = 4; %fCol
     dataKey(4,1) = 5; %tCol
-    dataKey(5,1) = 6; %intCol
+    dataKey(5,1) = 7; %intCol
     dataKey(6,1) = 6; %totalCol
     prompt = 'What was the scale factor print out of tracking.m? Check the command window. Enter a decimal and press enter: ';
     dataKey(7,1) = input(prompt); %pixelScale

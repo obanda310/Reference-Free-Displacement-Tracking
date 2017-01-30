@@ -3,35 +3,67 @@
 function y1 = OutputSelector()
 % Create figure
 
-h.f = figure('units','pixels','name','Select Outputs','position',[800,480,300,205],...
+h.f = figure('units','pixels','name','Select Outputs','position',[300,480,750,205],...
     'toolbar','none','menu','none');
 
-mTextBox = uicontrol('style','text','position',[0,190,200,15])
-set(mTextBox,'String','Fitting Intensity Values of Pillars')
-mTextBox = uicontrol('style','text','position',[0,130,250,15])
-set(mTextBox,'String','Plotting Displacement Vectors and Centroids')
+
 
 % Create yes/no checkboxes
+%%%%%%%%%%%%%%%%%%%%%%%%
+%Options for plotting
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+mTextBox = uicontrol('style','text','position',[0,190,250,15])
+set(mTextBox,'String','Plotting Displacement Vectors and Centroids')
+
+h.c(2) = uicontrol('style','checkbox','units','pixels',...
+    'position',[10,110,300,15],'string','Zero-State Displacement Fields on Black Background');
+h.c(3) = uicontrol('style','checkbox','units','pixels',...
+    'position',[10,150,300,15],'string','DEBUGGING:Plotting Corrected X,Y Coordinate Fields');
+h.c(7) = uicontrol('style','checkbox','units','pixels',...
+    'position',[20,130,300,15],'string','No Centroids');
+h.c(8) = uicontrol('style','checkbox','units','pixels',...
+    'position',[110,130,300,15],'string','No Quiver');
+h.c(4) = uicontrol('style','checkbox','units','pixels',...
+    'position',[10,170,300,15],'string','Centroids on Black Background');
+h.c(5) = uicontrol('style','checkbox','units','pixels',...
+    'position',[10,90,300,15],'string','Transmitted/Trajectory Quiver Overlays with Save');
+
+%Unused (old)
+mTextBox = uicontrol('style','text','position',[0,70,150,15])
+set(mTextBox,'String','Old Outputs (Unsupported):')
+
 h.c(1) = uicontrol('style','checkbox','units','pixels',...
     'position',[10,30,300,15],'string','Zero-State Displacement Fields, Old Version');
-h.c(2) = uicontrol('style','checkbox','units','pixels',...
-    'position',[10,50,300,15],'string','Zero-State Displacement Fields on Black Background');
-h.c(3) = uicontrol('style','checkbox','units','pixels',...
-    'position',[10,90,300,15],'string','DEBUGGING:Plotting Corrected X,Y Coordinate Fields');
-h.c(7) = uicontrol('style','checkbox','units','pixels',...
-    'position',[20,70,300,15],'string','No Centroids');
-h.c(8) = uicontrol('style','checkbox','units','pixels',...
-    'position',[110,70,300,15],'string','No Quiver');
-h.c(4) = uicontrol('style','checkbox','units','pixels',...
-    'position',[10,110,300,15],'string','Centroids on Black Background');
-h.c(5) = uicontrol('style','checkbox','units','pixels',...
-    'position',[10,30,300,15],'string','Transmitted/Trajectory Quiver Overlays with Save');
 h.c(6) = uicontrol('style','checkbox','units','pixels',...
-    'position',[10,150,300,15],'string','Transmitted/Trajectory Quiver Overlays without Save');
+    'position',[10,50,300,15],'string','Transmitted/Trajectory Quiver Overlays without Save');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Options for Intensity value operations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+mTextBox = uicontrol('style','text','position',[350,190,200,15])
+set(mTextBox,'String','Fitting Intensity Values of Pillars')
+
 h.c(9) = uicontrol('style','checkbox','units','pixels',...
-    'position',[10,150,300,15],'string','PillarFit');
+    'position',[360,150,300,15],'string','PillarFit');
 h.c(10) = uicontrol('style','checkbox','units','pixels',...
-    'position',[10,170,300,15],'string','PlaneFit');
+    'position',[360,170,300,15],'string','PlaneFit');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Options for Creating FE Meshes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+mTextBox = uicontrol('style','text','position',[550,190,150,15])
+set(mTextBox,'String','Creating Mesh for FE')
+
+h.c(11) = uicontrol('style','checkbox','units','pixels',...
+    'position',[560,170,300,15],'string','Shear Mesh');
+
+
+
+
+
 % Create OK pushbutton
 h.p = uicontrol('style','pushbutton','units','pixels',...
     'position',[40,5,70,20],'string','OK',...
