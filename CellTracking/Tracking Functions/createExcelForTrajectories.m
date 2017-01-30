@@ -1,5 +1,5 @@
 function final = createExcelForTrajectories(pillarBook)
-    final = zeros(1,5);
+    final = zeros(1,7);
     for a = 1:size(pillarBook,3)
         first = find(pillarBook(:,1,a),1,'first'); %these two lines will get rid of zeros in the output excel sheet
         last = find(pillarBook(:,1,a),1,'last');   %
@@ -7,7 +7,9 @@ function final = createExcelForTrajectories(pillarBook)
         frame = pillarBook(first:last,3,a);
         trajectory = pillarBook(first:last,4,a);
         intensity = pillarBook(first:last,5,a);
-        aMat = cat(2,xy,frame,trajectory,intensity);
+        intensityGauss = pillarBook(first:last,6,a);
+        intensityMean = pillarBook(first:last,7,a);
+        aMat = cat(2,xy,frame,trajectory,intensity,intensityGauss,intensityMean);
         final = cat(1,final,aMat);
     end
 
