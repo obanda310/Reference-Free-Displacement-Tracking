@@ -112,6 +112,7 @@ for i = 1:numTraj
     book1(4,book2(i,3):book2(i,4),i) = book1(2,book2(i,3):book2(i,4),i) - book2(i,2);
     book1(5,:,i) = (book1(3,:,i).^2 + book1(4,:,i).^2).^0.5;
     book2(i,10) = i;
+%     book1(7,:,i) = conv(1:38,book1(6,:,i),gausswin(5));
 end
 
 %%
@@ -123,20 +124,36 @@ end
 clear tempDistances
 book3 = zeros(numTraj,50);
 cm3 = zeros(numTraj,50,totalNumFrames);
+cm4 = zeros(numTraj,totalNumFrames);
+interpXq = linspace(1,size(book1,2),size(book1,2)*3);
 maxDistance = (max(max(book1(5,:,:))));
 for i = 1:numTraj
     tempDistances(1:numTraj,1) = ((book2(:,1)-book2(i,1)).^2.+(book2(:,2)-book2(i,2)).^2).^0.5;
     tempDistances(1:numTraj,2) = linspace(1,numTraj,numTraj);
     tempDistances = sortrows(tempDistances);
-    book3(i,1:50) = tempDistances(1:50,2);
+    book3(i,1:50) = tempDistances(1:50,2); %record the closest 50 pillars
+    if book2(i,9) < (maxDistance) %filter by deformation limits here and in following if statement
+        cm4(i,1:totalNumFrames) = book1(6,1:totalNumFrames,i);
+    else
+        cm4(i,1:totalNumFrames) = NaN;
+    end
+ 
     for j = 1:50
-        if book2(book3(i,j),9) < (maxDistance/4)
-            cm3(i,j,1:totalNumFrames) = book1(6,1:totalNumFrames,book3(i,j));
+        if book2(book3(i,j),9) < (maxDistance) % *following if statement*
+            cm3(i,j,1:totalNumFrames) = book1(6,1:totalNumFrames,book3(i,j)); %record intensity value if pillar has low deformation
         else
             cm3(i,j,1:totalNumFrames) = NaN;
         end
     end
 end
+
+cm4(cm4==0) = NaN;
+totalAverage = zeros(1,totalNumFrames);
+for i = 1:totalNumFrames
+totalAverage(1,i) = mean(cm4(:,i),'omitnan');
+end
+totalAverageInterp(1,:) = interp1(linspace(1,size(book1,2),size(book1,2)),conv(totalAverage(1,:),gausswin(6),'same'),interpXq,'spline');
+
 
 %%
 
@@ -286,84 +303,38 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %4.4b Using Intensity Values to Extract Z-Information%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if ismember(9,outputs) == 1
-    cm2(cm2 == 0) = NaN;
-    % plottedProfiles = figure
-    % for i = 1:numTraj
-    % plot(linspace(1,54,54),cMDBook2(30,:,i,18),'.','MarkerSize',5)
-    % hold on
-    % end
-    
-    trajOfInterest = 2500;
-    %     winSize = 50;
-    %     if trajOfInterest > winSize && trajOfInterest < (numTraj-winSize)
-    %         lowerLim = trajOfInterest - winSize;
-    %         upperLim = trajOfInterest + winSize;
-    %     elseif trajOfInterest < winSize
-    %         lowerLim = trajOfInterest-(trajOfInterest-1);
-    %         upperLim = trajOfInterest*2 + winSize;
-    %     elseif trajOfInterest > (numTraj-winSize)
-    %         lowerLim = trajOfInterest - winSize - (numTraj-trajOfInterest);
-    %         upperLim = trajOfInterest + (trajOfInterest-1);
-    %     end
-    
-    plottedProfiles = figure
-    subplot(2,1,1)
-    plot(linspace(1,totalNumFrames,totalNumFrames),book1(6,:,trajOfInterest),'.','MarkerSize',5,'Color',[0 0 0])
-    hold on
-    findpeaks((book1(6,:,trajOfInterest)))
-    
-    currentAverages = zeros(totalNumFrames,1);
-    
-    for i = 1:totalNumFrames
-        errorbar(i,mean(cm3(trajOfInterest,1:50,i),'omitnan'),std(cm3(trajOfInterest,1:50,i),'omitnan'),'.','MarkerSize',5,'Color','r');
-        currentAverages(i,1) = mean(cm3(trajOfInterest,1:50,i),'omitnan');
-    end
-    currentAverages(isnan(currentAverages))=0;
-    findpeaks(currentAverages(:,1))
-    
-    hold on
-    xVals = linspace(1,totalNumFrames,totalNumFrames);
-    fitWeights = zeros(totalNumFrames,1);
-    fitWeights(:,1) = xVals(1,:)+1000;
-    s = fitoptions('Method','NonlinearLeastSquares',...
-        'Lower',[4000,25000,0,0,0,0,0],...
-        'Upper',[6000,35000,15,.1,1,3.14,15],...
-        'StartPoint',[5500,29000,11.5,.015,0.1731,2.2,6.712]);
-    f = fittype('pillarFit2(x,S,iS,iP,P,Pg,Mo,Mf)','options',s);
-    [fitCoef,fitQual] = fit(xVals',currentAverages,f,'weight',fitWeights);
-    fitCoef2 = coeffvalues(fitCoef);
-    yVals = pillarFit(xVals,fitCoef2(1,5),fitCoef2(1,7),fitCoef2(1,6),fitCoef2(1,3),fitCoef2(1,4),fitCoef2(1,2),fitCoef2(1,1));
-    plot(xVals,yVals,'MarkerSize',20,'Color','bl')
-    findpeaks(yVals(1,:))
-    
-    hold off
-    
-    subplot(2,1,2)
-    imshow(imageBlack)
-    hold on
-    for i = 1:size(book3,2)
-        scatter(book2(book3(trajOfInterest,i),1),book2(book3(trajOfInterest,i),2),'.','g')
-    end
-    scatter(book2(trajOfInterest,1),book2(trajOfInterest,2),'o','b')
-    
-    
-    % folderName = strcat( 'Intensity Average Profiles with ',num2str(cmD),' Divisions');
-    % mkdir(blackPath,folderName)
-    % for j = 1:cmD
-    % plottedProfilesErrorBars = figure
-    % for i = 1:totalNumFrames
-    % errorbar(i,mean(cMDBook2(30,i,:,j),'omitnan'),std(cMDBook2(30,i,:,j),'omitnan'),'.','MarkerSize',5)
-    % hold on
-    % end
-    %
-    % axis([0 60 0 40000])
-    % savefile = [blackPath '\' folderName '\Displacement Magnitude Division ' num2str(j) '.tif'];
-    % export_fig(plottedProfilesErrorBars,savefile);
-    %
-    % close
-    % end
+if ismember(9,outputs) == 1    
+
+clear interpBook interpX
+interpBook = zeros(size(book1,3),size(book1,2)*3);
+interpX = linspace(1,size(book1,2),size(book1,2));
+interpXq = linspace(1,size(book1,2),size(book1,2)*3);
+
+for i = 1:numTraj
+    book1(7,:,i) = conv(book1(6,:,i),gausswin(6),'same');
+    interpBook(i,:) = interp1(interpX,book1(7,:,i),interpXq,'spline');
 end
+
+pillarPlot(book1,book2,book3,cm3,imageBlack,totalNumFrames,interpBook,totalAverageInterp)
+
+%     
+%     % folderName = strcat( 'Intensity Average Profiles with ',num2str(cmD),' Divisions');
+%     % mkdir(blackPath,folderName)
+%     % for j = 1:cmD
+%     % plottedProfilesErrorBars = figure
+%     % for i = 1:totalNumFrames
+%     % errorbar(i,mean(cMDBook2(30,i,:,j),'omitnan'),std(cMDBook2(30,i,:,j),'omitnan'),'.','MarkerSize',5)
+%     % hold on
+%     % end
+%     %
+%     % axis([0 60 0 40000])
+%     % savefile = [blackPath '\' folderName '\Displacement Magnitude Division ' num2str(j) '.tif'];
+%     % export_fig(plottedProfilesErrorBars,savefile);
+%     %
+%     % close
+%     % end
+end
+        
 %%
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
@@ -505,6 +476,10 @@ if ismember(5,outputs) == 1
 end
 
 %%
+if ismember(11,outputs) == 1
+
+% Create Mesh from 2D shear data
+
 clear MeshBook MeshList
 clear book4
 
@@ -586,7 +561,8 @@ for i = 1:size(MeshBook,3)
         
     
 end
-%%
+
+%Write the deformed mesh
 
 meshTxt = fopen('mesh.txt','wt');
 nodesFormat = '<node id=" %d "> %f, %f, %f </node>\n';
@@ -597,8 +573,8 @@ elementsFormat = '<elem id=" %d "> %d, %d, %d, %d, %d, %d, %d, %d </elem>\n';
 fprintf(meshTxt,elementsFormat,EleList2(1:9,:));
 fprintf(meshTxt,'</Elements>\n</Geometry></febio_spec>');
 fclose(meshTxt);
-%%
-%Undeformed Mesh
+
+%Write the undeformed Mesh
 
 meshTxt = fopen('meshUD.txt','wt');
 nodesFormat = '<node id=" %d "> %f, %f, %f </node>\n';
@@ -610,7 +586,8 @@ fprintf(meshTxt,elementsFormat,EleList2(1:9,:));
 fprintf(meshTxt,'</Elements>\n</Geometry></febio_spec>');
 fclose(meshTxt);
 
-%%
+%Display the nodes from the deformed mesh
+
 figure
 hold on
 for i = 1:size(MeshBook,2)
@@ -618,3 +595,5 @@ for i = 1:size(MeshBook,2)
     scatter3(MeshBook(1,1,:),MeshBook(2,1,:),i*ones(1,size(MeshBook,3)),'.','b');
 end
 hold off
+
+end
