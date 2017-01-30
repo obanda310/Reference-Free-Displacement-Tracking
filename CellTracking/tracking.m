@@ -39,6 +39,13 @@ ppImagesGaussMask = roiMasks.*ppImagesGauss;
 % Optional:
 % ShowStack(ppImages8) %,experiment.centroids2d
 
+%% A mean filter for an image stack (may or may not be used)
+h = fspecial('average', [5,5]);
+roiImgsMeanFilt = roiImgs;
+for i = 1:size(roiImgs,3)
+    roiImgsMeanFilt(:,:,i) = filter2(h, roiImgs(:,:,i));
+end
+
 %% 2D maxima approach
 % Taking a break from working with 3D maxima because too many data points
 % are lost in the process, and it is seeming like it will not be a good way
@@ -134,6 +141,14 @@ disp(['Max Jump Distance (Frames): ',num2str(maxJD)])
 % number of constituents
 
 [subpixMaxima,noPillars] = LinkMaxima(subpixMaxima,maxLD,maxJD);
+%% Binning Pillars Based on Location
+
+%Rationale: The following section links objects between frames based on
+%proximity. One of the steps is a lookup of potential candidates for making
+%a match. That lookup gets exponentially longer the larger an image stack
+%is. This section should reduce computational time for any given image.
+
+
 %% Creating Pillar Book for Easy Export
 clear pBook tempInd1 tempInd2
 disp('Sorting Linked Dots.')
@@ -154,7 +169,9 @@ for i = 1:noPillars
             
             %if an intensity values is available, record it
             if round(pBook(j,1,i-pBSkip)) > 0 && round(pBook(j,2,i-pBSkip))>0 && round(pBook(j,3,i-pBSkip))>0
-                pBook(j,5,i-pBSkip) = roiImgs(round(pBook(j,2,i-pBSkip)),round(pBook(j,1,i-pBSkip)),pBook(j,3,i-pBSkip));
+                pBook(j,5,i-pBSkip) = roiImgs(round(pBook(j,2,i-pBSkip)),round(pBook(j,1,i-pBSkip)),pBook(j,3,i-pBSkip)); %Intensity value from roiImgs
+                pBook(j,6,i-pBSkip) = ppImagesGauss(round(pBook(j,2,i-pBSkip)),round(pBook(j,1,i-pBSkip)),pBook(j,3,i-pBSkip)); %Intensity value from ppImagesGauss
+                pBook(j,7,i-pBSkip) = roiImgsMeanFilt(round(pBook(j,2,i-pBSkip)),round(pBook(j,1,i-pBSkip)),pBook(j,3,i-pBSkip)); %Intensity value from ppImagesGauss
             else
                 %otherwise set intensity to zero
                 pBook(j,5,i-pBSkip) = 0;
@@ -289,5 +306,6 @@ hold off
 % hold on
 % end
 % hold off
+
 %%
 disp('tracking.m is completed.')
