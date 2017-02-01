@@ -13,7 +13,7 @@ h.f = figure('units','pixels','name','Select Outputs','position',[300,480,750,20
 %Options for plotting
 %%%%%%%%%%%%%%%%%%%%%%%%
 
-mTextBox = uicontrol('style','text','position',[0,190,250,15])
+mTextBox = uicontrol('style','text','position',[0,190,250,15]);
 set(mTextBox,'String','Plotting Displacement Vectors and Centroids')
 
 h.c(2) = uicontrol('style','checkbox','units','pixels',...
@@ -30,7 +30,7 @@ h.c(5) = uicontrol('style','checkbox','units','pixels',...
     'position',[10,90,300,15],'string','Transmitted/Trajectory Quiver Overlays with Save');
 
 %Unused (old)
-mTextBox = uicontrol('style','text','position',[0,70,150,15])
+mTextBox = uicontrol('style','text','position',[0,70,150,15]);
 set(mTextBox,'String','Old Outputs (Unsupported):')
 
 h.c(1) = uicontrol('style','checkbox','units','pixels',...
@@ -42,11 +42,11 @@ h.c(6) = uicontrol('style','checkbox','units','pixels',...
 %Options for Intensity value operations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-mTextBox = uicontrol('style','text','position',[350,190,200,15])
+mTextBox = uicontrol('style','text','position',[350,190,200,15]);
 set(mTextBox,'String','Fitting Intensity Values of Pillars')
 
 h.c(9) = uicontrol('style','checkbox','units','pixels',...
-    'position',[360,150,300,15],'string','PillarFit');
+    'position',[360,150,300,15],'string','Pillar Analysis');
 h.c(10) = uicontrol('style','checkbox','units','pixels',...
     'position',[360,170,300,15],'string','PlaneFit');
 
@@ -54,7 +54,7 @@ h.c(10) = uicontrol('style','checkbox','units','pixels',...
 %Options for Creating FE Meshes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-mTextBox = uicontrol('style','text','position',[550,190,150,15])
+mTextBox = uicontrol('style','text','position',[550,190,150,15]);
 set(mTextBox,'String','Creating Mesh for FE')
 
 h.c(11) = uicontrol('style','checkbox','units','pixels',...

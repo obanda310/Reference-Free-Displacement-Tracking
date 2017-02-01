@@ -1,12 +1,12 @@
 function [colorMap1,colorMap2,divisionsNumber,divisionsSize,map,scheme] = createColorMap(book1,book2)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%4.3 Creating a Color Map for Quiver Plots%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%4.2 Creating a Color Map for Quiver Plots%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 promptColorMap = 'How many colors on color map? Enter an integer and press enter: ';
 divisionsNumber = input(promptColorMap); %color map divisions
-[map,scheme] = brewermap_view(divisionsNumber)
+[map,scheme] = brewermap_view(divisionsNumber);
 divisionsNumber = size(map,1);
 divisionsSize = (max(max(book1(5,:,:))))/divisionsNumber;
 numIndices = size(book1,1);
