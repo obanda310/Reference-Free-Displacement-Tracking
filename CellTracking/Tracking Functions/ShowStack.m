@@ -1,12 +1,16 @@
 % InputStack should be a 3D image matrix where dimensions 1 and 2 contain
 % pixel information in y and x, respectively, and dimension 3 indexes
 % separate images in the stack
-function ShowStack(InputStack) %,centroids
+function ShowStack(InputStack,Subplot) %,centroids
+
     noImgs = size(InputStack,3);
-
+if nargin == 1
     hFig = figure('Position',[100 100 800 800]);
-
     handles.axes1 = axes('Units','normalized','Position',[0 0 1 1]);
+else
+    hFig = subplot(4,3,11);
+end
+
 
     % Create slider and listener object for smooth visualization
     handles.SliderFrame = uicontrol( ...
@@ -63,7 +67,9 @@ function ShowStack(InputStack) %,centroids
         CurrentFrame = round((get(handles.SliderFrame,'Value')));
         set(handles.Edit1,'String',num2str(CurrentFrame));
         % Display appropriate frame.
-        imshow(InputStack(:,:,CurrentFrame),[],'Parent',handles.axes1);
+        %axes(handles.axes1);
+        imshow(InputStack(:,:,CurrentFrame),[]);
+        %imshow(InputStack(:,:,CurrentFrame),[],'Parent',handles.axes1);
         guidata(hFig,handles);
     end
 
@@ -75,8 +81,9 @@ function ShowStack(InputStack) %,centroids
         InputStack = getappdata(hFig,'MyMatrix');
         CurrentFrame = round((get(handles.SliderFrame,'Value')));
         set(handles.Edit1,'String',num2str(CurrentFrame));
-
-        imshow(InputStack(:,:,CurrentFrame),[],'Parent',handles.axes1);
+        %axes(handles.axes1);
+        imshow(InputStack(:,:,CurrentFrame),[]);
+        %imshow(InputStack(:,:,CurrentFrame),[],'Parent',handles.axes1);
 
         guidata(hFig,handles);
     end
