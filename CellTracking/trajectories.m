@@ -10,6 +10,7 @@ close all; clear;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %1.1 Loading Data and Background Images for Overlays%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('1.1 Loading Tracking Outputs')
 
 [num,dataKey] = InputSelector();
 
@@ -22,20 +23,57 @@ imageTrans = imread([filePath,nameTransFile]);
 [nameBlackFile,filePath] = uigetfile('*.tif','Select a Black Image of the Correct Dimensions');
 imageBlack = imread([filePath,nameBlackFile]);
 
+roiStack = getImages();
+
 outputs = OutputSelector();
 
 %%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%1.2 Input Variables%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%1.2 Misc Input Variables%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-numIndices = 6; %for Section 1 and 2 (number of elements in book1)
+disp('1.2 Loading Variables')
+numIndices = 7; %for Section 1 and 2 (number of elements in book1)
 numTraj = max(num(:,dataKey(4,1))); %Number of Trajectories
 totalNumFrames = max(num(:,dataKey(3,1)))+dataKey(8,1); %Maximum number of frames observable for any one object
-book1 = zeros(numIndices,totalNumFrames,numTraj); %Creates book1
-book2 = zeros(numTraj,9);
-%%
 
+%%
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+%Section 2.) Building book1 and book2 from the raw data
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+
+disp('2.1 Creating book1 and book2')
+
+book1 = zeros(numIndices,totalNumFrames,numTraj); 
+book2 = zeros(numTraj,10);
+
+%Notes: The majority of indices are added in later sections, but listed
+%here for reference.
+
+%Index List for Book1 - Frame Dependent Values
+%1 = Raw X Centroid Location of Traj in Specified Frame
+%2 = Raw Y Centroid Location of Traj in Specified Frame
+%3 = Raw dX Centroid Location of Traj in Specified Frame from First Frame
+%4 = Raw dY Centroid Location of Traj in Specified Frame from First Frame
+%5 = Magnitude of displacement
+%6 = Intensity in current frame (column 14 from TrackMate output)
+%7 = Gauss filtered intensity values (created/used in section 4)
+
+%Index List for Book2 - Frame Independent Values
+%1 = Raw X Centroid Location of Traj in First Frame
+%2 = Raw Y Centroid Location of Traj in First Frame
+%3 = First Frame that a Traj Appears
+%4 = Last Frame that a Traj Appears
+%5 = Value of book1 index 5 (see above) in Last Frame that Traj Appears
+%6 = Value of book1 index 6 (see above) in Last Frame that Traj Appears
+%7 = Value of book1 index 1 (see above) in Last Frame that Traj Appears
+%8 = Value of book1 index 2 (see above) in Last Frame that Traj Appears
+%9 = Maximum Magnitude of displacement
+%10= Numeric ID of Pillar
+
+%HANDLING XYZ DATA
 for i = 1:numTraj
     % Here we build a book of pages (3D array) with the data for a single
     % object/trajectory per page. Most of the code is to ensure that each
@@ -70,49 +108,15 @@ for i = 1:numTraj
         disp(['Progress: ' num2str(i) ' of ' num2str(numTraj)])
     end
 end
-disp('done Section 1')
-%Here we use the temporary data stored in 'obj' to build 2 matrices to
-%describe the x and y positions in frame 1 for each object, as well as the
-%displacement from those matrices occurring in successive frames.
 
-%%
-%--------------------------------------------------------------------------
-%--------------------------------------------------------------------------
-%Section 2.) Building book1 from the raw data
-%--------------------------------------------------------------------------
-%--------------------------------------------------------------------------
-
-
-%Notes: The majority of indices are added in later sections, but listed
-%here for reference.
-
-%Index List for Book1 - Frame Dependent Values
-%1 = Raw X Centroid Location of Traj in Specified Frame
-%2 = Raw Y Centroid Location of Traj in Specified Frame
-%3 = Raw dX Centroid Location of Traj in Specified Frame from First Frame
-%4 = Raw dY Centroid Location of Traj in Specified Frame from First Frame
-%5 = Magnitude of displacement
-%6 = Intensity in current frame (column 14 from TrackMate output)
-
-%Index List for Book2 - Frame Independent Values
-%1 = Raw X Centroid Location of Traj in First Frame
-%2 = Raw Y Centroid Location of Traj in First Frame
-%3 = First Frame that a Traj Appears
-%4 = Last Frame that a Traj Appears
-%5 = Value of book1 index 5 (see above) in Last Frame that Traj Appears
-%6 = Value of book1 index 6 (see above) in Last Frame that Traj Appears
-%7 = Value of book1 index 1 (see above) in Last Frame that Traj Appears
-%8 = Value of book1 index 2 (see above) in Last Frame that Traj Appears
-%9 = Maximum Magnitude of displacement
-
+disp('2.2 Storing XY Displacements')
 for i = 1:numTraj
-    book2(i,1) = book1(1,book2(i,3),i);
-    book2(i,2) = book1(2,book2(i,3),i);
-    book1(3,book2(i,3):book2(i,4),i) = book1(1,book2(i,3):book2(i,4),i) - book2(i,1);
-    book1(4,book2(i,3):book2(i,4),i) = book1(2,book2(i,3):book2(i,4),i) - book2(i,2);
-    book1(5,:,i) = (book1(3,:,i).^2 + book1(4,:,i).^2).^0.5;
-    book2(i,10) = i;
-%     book1(7,:,i) = conv(1:38,book1(6,:,i),gausswin(5));
+    book2(i,1) = book1(1,book2(i,3),i); %initial x
+    book2(i,2) = book1(2,book2(i,3),i); %initial y
+    book1(3,book2(i,3):book2(i,4),i) = book1(1,book2(i,3):book2(i,4),i) - book2(i,1); %frame specific dx
+    book1(4,book2(i,3):book2(i,4),i) = book1(2,book2(i,3):book2(i,4),i) - book2(i,2); %frame specific dy
+    book1(5,:,i) = (book1(3,:,i).^2 + book1(4,:,i).^2).^0.5; %frame specific total displacement
+    book2(i,10) = i; %pillar ID
 end
 
 %%
@@ -121,6 +125,9 @@ end
 %Section 3.) Identifying Neighborhood Trajectories for Each Trajectory
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
+
+disp('3.1 Identifying Pillar Neighbor Groups')
+
 clear tempDistances
 book3 = zeros(numTraj,50);
 cm3 = zeros(numTraj,50,totalNumFrames);
@@ -163,12 +170,12 @@ totalAverageInterp(1,:) = interp1(linspace(1,size(book1,2),size(book1,2)),conv(t
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%4.2 Storing the Maximum Displacement Values%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%4.1 Storing the Maximum Displacement Values%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Notes: Some trajectories do not persist all the way to the top frame, and
 %so they would not be visible in the outputs in section 5 unless their
 %maximum value is used for those overlays.
-
+disp('4.1 Storing Maximum Displacement Values')
 for i = 1:numTraj
     
     book2(i,5) = book1(3,book2(i,4),i);
@@ -178,163 +185,100 @@ for i = 1:numTraj
     book2(i,9) = (book2(i,5).^2 + book2(i,6).^2).^0.5;
 end
 
-disp('done Section 4.2')
-%%
 
+
+
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%4.3 Creating a Color Map for Quiver Plots%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%4.2 Creating a Color Map for Quiver Plots%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 [cm1,cm2,cmD,cmDS,colorMap,colorScheme] = createColorMap(book1,book2);
 
+
+
+
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%4.4a Using Intensity Values to Extract Z-Information%%%%%%%%%%%%%%%%%%%%%%
+%4.3 Using Intensity Values to Extract Z-Information%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Notes: Calculates average distance between PSFs in a single pillar.
 %Outputs stored as variable "yDataDiffAverage"
+
+%*****Not really very useful as of 2017*****
+
 if ismember(10,outputs) == 1
-    close all
-    
-    intProfiles = zeros(totalNumFrames,numTraj);
-    
-    sortedArray = zeros(numTraj,3);
-    for i = 1:numTraj
-        sortedArray(i,1) = i;
-        sortedArray(i,2) = book2(i,1);
-        sortedArray(i,3) = book2(i,2);
-    end
-    
-    [sortedArray,sortedArrayIndices] = sortrows(sortedArray,[3, 2]);
-    
-    for i = 1:(numTraj)
-        intProfiles(book2(sortedArray(i,1),3):book2(sortedArray(i,1),4),i) = book1(6,book2(sortedArray(i,1),3):book2(sortedArray(i,1),4),sortedArray(i,1));
-    end
-    %image(intProfiles,'cdatamapping','scaled');
-    %colormap(gray);
-    %imwrite(intProfilesImage,'intProfilesImage.tiff');
-    close;
-    intProfilesPS = phasesym(intProfiles,'minWaveLength',3,'mult',1.5);
-    intProfilesMax = (localmax(intProfilesPS'))' > 0;
-    intProfilesClosed1 = imclose(intProfilesMax, ones(1,20));
-    intProfilesCleaned = bwareaopen(intProfilesClosed1,200);
-    intProfilesClosed2 = imclose(intProfilesCleaned, ones(1,1000));
-    
-    intProfilesLabeled = bwlabel(intProfilesClosed2);
-    
-    intProfilesFitCoefs = zeros(5,5);
-    yData = zeros(numTraj,5);
-    yDataDiffAverage = zeros(1,5);
-    intProfilesFits = figure;
-    image(intProfiles,'cdatamapping','scaled'); colormap(gray);
-    hold on
-    for i = 1:max(max(intProfilesLabeled))
-        [intProfilesCurrentLabely,intProfilesCurrentLabelx] = find((intProfilesLabeled == i).*intProfilesCleaned);
-        intProfilesFitCoefs(1:2,i) = polyfit(intProfilesCurrentLabelx, intProfilesCurrentLabely, 1);
-        xData = linspace(1,numTraj,numTraj);
-        yData(1:numTraj,i) = intProfilesFitCoefs(1,i)*(xData) + intProfilesFitCoefs(2,i);
-        plot(xData,yData(1:numTraj,i))
-        hold on
-        plot(intProfilesCurrentLabelx, intProfilesCurrentLabely,'*','MarkerSize',5);
-        hold on
-    end
-    savefile = [filePath '\Intensity Profile Linear Fits.tif'];
-    export_fig(intProfilesFits,savefile);
-    hold off
-    
-    intProfilesRaw = figure;
-    image(intProfiles,'cdatamapping','scaled'); colormap(gray);
-    savefile = [filePath '\Intensity Profiles 1 Raw.tif'];
-    export_fig(intProfilesRaw,savefile);
-    
-    intProfilesPSfig = figure;
-    image(intProfilesPS,'cdatamapping','scaled'); colormap(gray);
-    savefile = [filePath '\Intensity Profiles 2 Phase Sym.tif'];
-    export_fig(intProfilesPSfig,savefile);
-    
-    intProfilesMaxfig = figure;
-    image(intProfilesMax,'cdatamapping','scaled'); colormap(gray);
-    savefile = [filePath '\Intensity Profiles 3 Max.tif'];
-    export_fig(intProfilesMaxfig,savefile);
-    
-    intProfilesClosedfig1 = figure;
-    image(intProfilesClosed1,'cdatamapping','scaled'); colormap(gray);
-    savefile = [filePath '\Intensity Profiles 4 Closed.tif'];
-    export_fig(intProfilesClosedfig1,savefile);
-    
-    intProfilesCleanedfig = figure;
-    image(intProfilesCleaned,'cdatamapping','scaled'); colormap(gray);
-    savefile = [filePath '\Intensity Profiles 5 Cleaned.tif'];
-    export_fig(intProfilesCleanedfig,savefile);
-    
-    intProfilesClosedfig2 = figure;
-    image(intProfilesClosed2,'cdatamapping','scaled'); colormap(gray);
-    savefile = [filePath '\Intensity Profiles 6 Closed.tif'];
-    export_fig(intProfilesClosedfig2,savefile);
-    
-    intProfilesLabeledfig = figure;
-    image(intProfilesLabeled,'cdatamapping','scaled'); colormap(gray);
-    savefile = [filePath '\Intensity Profiles 7 Labeled.tif'];
-    export_fig(intProfilesLabeledfig,savefile);
-    
-    for i = 2:max(max(intProfilesLabeled))
-        yDataDiffAverage(1,i) = mean(yData(:,i-1)-yData(:,i));
-    end
-    
-    
-    
-    
-    
-    % close;
-    % intProfilesPSM = phasesymmono(intProfiles,'minWaveLength',2,'mult',1.5);
-    % intProfilesPS = phasesym(intProfiles,'minWaveLength',2,'mult',1.5);
-    % intProfilesPCM = phasecongmono(intProfilesPSM);
-    % [intProfilesPC3,trash, orient] = phasecong3(intProfilesPS);
-    % [intProfilesNMS, intProfilesNMSPos] = nonmaxsup(intProfilesPS,intProfilesOrient,1.3);
-    % intProfilesNMS2 = medfilt2(intProfilesNMS, [3 3]) > 0;
-    % intProfilesNMS3 = imclose(intProfilesNMS2, ones(1,200));
-    % intProfilesNMSM = nonmaxsuppts(intProfilesPCM);
-    %
-    % image(intProfilesNMS3,'cdatamapping','scaled'); colormap(gray);
-    
-    %imwrite(intProfilesImage,'intProfilesImage.tiff');
+   planeFit(book1,book2,totalNumFrames,filePath)
 end
+
+
+
+
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%4.4b Using Intensity Values to Extract Z-Information%%%%%%%%%%%%%%%%%%%%%%
+%4.4 Using Intensity Values to Extract Z-Information%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if ismember(9,outputs) == 1    
-
+   
+%Interpolation to increase resolution of intensity data points
 clear interpBook interpX
-interpBook = zeros(size(book1,3),size(book1,2)*3);
+degreeInterp = 3;
+interpBook = zeros(size(book1,3),size(book1,2)*degreeInterp);
 interpX = linspace(1,size(book1,2),size(book1,2));
 interpXq = linspace(1,size(book1,2),size(book1,2)*3);
-
 for i = 1:numTraj
     book1(7,:,i) = conv(book1(6,:,i),gausswin(6),'same');
     interpBook(i,:) = interp1(interpX,book1(7,:,i),interpXq,'spline');
 end
 
-pillarPlot(book1,book2,book3,cm3,imageBlack,totalNumFrames,interpBook,totalAverageInterp)
-
-%     
-%     % folderName = strcat( 'Intensity Average Profiles with ',num2str(cmD),' Divisions');
-%     % mkdir(blackPath,folderName)
-%     % for j = 1:cmD
-%     % plottedProfilesErrorBars = figure
-%     % for i = 1:totalNumFrames
-%     % errorbar(i,mean(cMDBook2(30,i,:,j),'omitnan'),std(cMDBook2(30,i,:,j),'omitnan'),'.','MarkerSize',5)
-%     % hold on
-%     % end
-%     %
-%     % axis([0 60 0 40000])
-%     % savefile = [blackPath '\' folderName '\Displacement Magnitude Division ' num2str(j) '.tif'];
-%     % export_fig(plottedProfilesErrorBars,savefile);
-%     %
-%     % close
-%     % end
+%Find the z-dimension peaks based on intensity
+clear zPeaks
+zPeaks = zeros(numTraj,10);
+for i = 1:numTraj
+    clear pks loc truePeaks
+    [pks,loc] = findpeaks(interpBook(i,:));
+    truePeaks = find(pks>max(pks)/4);
+    zPeaks(i,1:size(loc(truePeaks),2)) = loc(truePeaks); 
+    zPeaks(i,10) = nnz(zPeaks(i,1:9));  
 end
-        
+
+%"Statistically" find problem pillars with incorrect or missing peaks
+zPeakAvgNo = floor(mean(zPeaks(:,10)));
+zPeaksSpacing = zPeaks(:,2:zPeakAvgNo)-zPeaks(:,1:zPeakAvgNo-1);
+zPeaksAvgSpacing = mean(mean(zPeaksSpacing));
+zPeaksStDSpacing = std(mean(zPeaksSpacing));
+%find pillars with spacing outside of mean+/- 10*STD
+zPeaksIssues = find(mean(zPeaksSpacing.*((zPeaksSpacing>(zPeaksAvgSpacing+10*zPeaksStDSpacing))==1 | (zPeaksSpacing<(zPeaksAvgSpacing-10*zPeaksStDSpacing))==1),2));
+
+%Create a list of substitute peaks for pillars with problems
+clear zSubPeaks zAvgClose10 zAvgClose10Interp 
+zAvgClose50 = zeros(size(cm3,1),size(cm3,3));
+zAvgClose50Interp = zeros(size(cm3,1),size(cm3,3)*degreeInterp);
+zAvgClose50(:,:) = mean(cm3(:,1:50,:),2);
+zSubPeaks = zeros(numTraj,10);
+for i = 1:numTraj
+    zAvgClose50Interp(i,:) = interp1(linspace(1,size(book1,2),size(book1,2)),conv(zAvgClose50(i,:),gausswin(6),'same'),interpXq,'spline');
+    clear pks loc truePeaks
+    [pks,loc] = findpeaks(zAvgClose50Interp(i,:));
+    truePeaks = find(pks>max(pks)/4);
+    zSubPeaks(i,1:size(loc(truePeaks),2)) = loc(truePeaks); 
+end
+
+%Replace Problem Pillars 'zPeaksSpacingIssues' with an average pillar
+for i = 1:size(zPeaksIssues,1)
+    zPeaks(zPeaksIssues(i,1),1:zPeakAvgNo) = zSubPeaks(zPeaksIssues(i,1),1:zPeakAvgNo);
+end
+
+if ismember(9,outputs) == 1 
+pillarPlot(book1,book2,book3,cm3,roiStack,totalNumFrames,interpBook,totalAverageInterp);
+end
+      
+
+
+
+
+
+
+
 %%
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
