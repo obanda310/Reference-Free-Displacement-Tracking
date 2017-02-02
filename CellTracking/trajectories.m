@@ -46,7 +46,7 @@ totalNumFrames = max(num(:,dataKey(3,1)))+dataKey(8,1); %Maximum number of frame
 
 disp('2.1 Creating book1 and book2')
 
-book1 = zeros(numIndices,totalNumFrames,numTraj); 
+book1 = zeros(numIndices,totalNumFrames,numTraj);
 book2 = zeros(numTraj,10);
 
 %Notes: The majority of indices are added in later sections, but listed
@@ -144,7 +144,7 @@ for i = 1:numTraj
     else
         cm4(i,1:totalNumFrames) = NaN;
     end
- 
+    
     for j = 1:50
         if book2(book3(i,j),9) < (maxDistance) % *following if statement*
             cm3(i,j,1:totalNumFrames) = book1(6,1:totalNumFrames,book3(i,j)); %record intensity value if pillar has low deformation
@@ -157,7 +157,7 @@ end
 cm4(cm4==0) = NaN;
 totalAverage = zeros(1,totalNumFrames);
 for i = 1:totalNumFrames
-totalAverage(1,i) = mean(cm4(:,i),'omitnan');
+    totalAverage(1,i) = mean(cm4(:,i),'omitnan');
 end
 totalAverageInterp(1,:) = interp1(linspace(1,size(book1,2),size(book1,2)),conv(totalAverage(1,:),gausswin(6),'same'),interpXq,'spline');
 
@@ -208,7 +208,7 @@ end
 %*****Not really very useful as of 2017*****
 
 if ismember(10,outputs) == 1
-   planeFit(book1,book2,totalNumFrames,filePath)
+    planeFit(book1,book2,totalNumFrames,filePath)
 end
 
 
@@ -218,7 +218,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %4.4 Using Intensity Values to Extract Z-Information%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
+
 %Interpolation to increase resolution of intensity data points
 clear interpBook interpX
 degreeInterp = 3;
@@ -237,8 +237,8 @@ for i = 1:numTraj
     clear pks loc truePeaks
     [pks,loc] = findpeaks(interpBook(i,:));
     truePeaks = find(pks>max(pks)/4);
-    zPeaks(i,1:size(loc(truePeaks),2)) = loc(truePeaks); 
-    zPeaks(i,10) = nnz(zPeaks(i,1:9));  
+    zPeaks(i,1:size(loc(truePeaks),2)) = loc(truePeaks);
+    zPeaks(i,10) = nnz(zPeaks(i,1:9));
 end
 
 %"Statistically" find problem pillars with incorrect or missing peaks
@@ -247,10 +247,10 @@ zPeaksSpacing = zPeaks(:,2:zPeakAvgNo)-zPeaks(:,1:zPeakAvgNo-1);
 zPeaksAvgSpacing = mean(mean(zPeaksSpacing));
 zPeaksStDSpacing = std(mean(zPeaksSpacing));
 %find pillars with spacing outside of mean+/- 10*STD
-zPeaksIssues = find(mean(zPeaksSpacing.*((zPeaksSpacing>(zPeaksAvgSpacing+10*zPeaksStDSpacing))==1 | (zPeaksSpacing<(zPeaksAvgSpacing-10*zPeaksStDSpacing))==1),2));
+zPeaksIssues = find(mean(zPeaksSpacing.*((zPeaksSpacing>(zPeaksAvgSpacing+.3*zPeaksAvgSpacing))==1 | (zPeaksSpacing<(zPeaksAvgSpacing-.3*zPeaksAvgSpacing))==1),2));
 
 %Create a list of substitute peaks for pillars with problems
-clear zSubPeaks zAvgClose10 zAvgClose10Interp 
+clear zSubPeaks zAvgClose10 zAvgClose10Interp
 zAvgClose50 = zeros(size(cm3,1),size(cm3,3));
 zAvgClose50Interp = zeros(size(cm3,1),size(cm3,3)*degreeInterp);
 zAvgClose50(:,:) = mean(cm3(:,1:50,:),2);
@@ -260,24 +260,120 @@ for i = 1:numTraj
     clear pks loc truePeaks
     [pks,loc] = findpeaks(zAvgClose50Interp(i,:));
     truePeaks = find(pks>max(pks)/4);
-    zSubPeaks(i,1:size(loc(truePeaks),2)) = loc(truePeaks); 
+    zSubPeaks(i,1:size(loc(truePeaks),2)) = loc(truePeaks);
 end
 
 %Replace Problem Pillars 'zPeaksSpacingIssues' with an average pillar
 for i = 1:size(zPeaksIssues,1)
     zPeaks(zPeaksIssues(i,1),1:zPeakAvgNo) = zSubPeaks(zPeaksIssues(i,1),1:zPeakAvgNo);
 end
-
-if ismember(9,outputs) == 1 
-pillarPlot(book1,book2,book3,cm3,roiStack,totalNumFrames,interpBook,totalAverageInterp);
+%%
+if ismember(9,outputs) == 1
+    pillarPlot(book1,book2,book3,cm3,roiStack,totalNumFrames,interpBook,totalAverageInterp);
 end
-      
+%%
+%Convert zPeaks to a frame value based on previous interpolation
+zPeaks(:,1:end-1) = zPeaks(:,1:end-1)./degreeInterp;
 
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%4.5 Estimating XY Coordinates of Interpolated Z Positions%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+clear zPeaksFrames zPeaksTopWeights zPeaksBottomWeights finalLoc
 
+zPeaksFrames = floor(zPeaks);
+zPeaksTopWeights = zPeaks-zPeaksFrames;
+zPeaksBottomWeights = 1-zPeaksTopWeights;
 
+finalLoc = zeros(numTraj,4,zPeakAvgNo);
+zScale = .4; %microns
 
+for i = 1:numTraj
+    for j = 1:zPeakAvgNo
+        %Structure is (Top Frame Weight Fraction * Top Frame) + (Bottom Frame Weight
+        %Fraction * Bottom Frame) All Divided by the number of parts (the degree of
+        %interpolation stored in 'degreeInterp'). The whole thing is just a
+        %weighted average.
+        
+        %first check if top frame and bottom frame are non-zero
+        %for xPos
+        if book1(1,zPeaksFrames(i,j)+1,i)>0 && book1(1,zPeaksFrames(i,j),i)>0
+            finalLoc(i,1,j) =  (((zPeaksTopWeights(i,j)*degreeInterp)*book1(1,zPeaksFrames(i,j)+1,i))+((zPeaksBottomWeights(i,j)*degreeInterp)*book1(1,zPeaksFrames(i,j),i)))/degreeInterp; %x position
+        else %if both are not nonzero use last available position
+            finalLoc(i,1,j) = book1(1,book2(i,4),i);
+        end
+        %for yPos
+        if book1(2,zPeaksFrames(i,j)+1,i)>0 && book1(2,zPeaksFrames(i,j),i)>0
+            finalLoc(i,2,j) =  (((zPeaksTopWeights(i,j)*degreeInterp)*book1(2,zPeaksFrames(i,j)+1,i))+((zPeaksBottomWeights(i,j)*degreeInterp)*book1(2,zPeaksFrames(i,j),i)))/degreeInterp;%y position
+        else
+            finalLoc(i,2,j) = book1(2,book2(i,4),i);
+        end
+        
+        finalLoc(i,3,j) =  zPeaks(i,j)*.4;%z position
+        finalLoc(i,4,j) = i;
+    end
+    
+end
 
+%%
+figure
+for i = 1:size(finalLoc,3)
+    
+    scatter3(finalLoc(:,1,i),finalLoc(:,2,i),finalLoc(:,3,i));
+    hold on
+end
+hold off
+%%
+figure
+for i = 1:size(finalLoc,3)
+    
+    scatter(finalLoc(:,1,i),finalLoc(:,3,i));
+    hold on
+end
+hold off
+%%
+%Create ZX profile for Ryan
+clear finalLocSorted values order
+for i = 1:zPeakAvgNo
+[values, order] = sort(finalLoc(:,1,i));
+finalLocSorted(:,:,i) = finalLoc(order,:,i);
+end
+
+clear Xs Zs
+
+for j = 1:size(finalLocSorted,3)
+    count1 = 1;
+    count2 = 0;
+    rowStart = 1;
+    for i = 1:size(finalLocSorted,1)
+        if finalLocSorted(i,1,j)<finalLocSorted(rowStart,1,j)+10
+            count2 = count2+1;
+            Xs(count1,count2,j) = finalLocSorted(i,1,j);
+            Zs(count1,count2,j) = finalLocSorted(i,3,j);           
+        else
+            count1 = count1+1;
+            count2 = 1;
+            rowStart = i;
+            Xs(count1,count2,j) = finalLocSorted(i,1,j);
+            Zs(count1,count2,j) = finalLocSorted(i,3,j);
+        end
+    end
+end
+
+Xs(Xs==0) = NaN;
+Zs(Zs==0) = NaN;
+
+Xmeans = mean(Xs,2,'omitnan');
+Zmeans = mean(Zs,2,'omitnan');
+%%
+figure
+for i = 1:size(Xmeans,3)    
+    scatter(Xmeans(:,1,i),Zmeans(:,1,i));
+    hold on
+end
+
+hold off
 
 %%
 %--------------------------------------------------------------------------
@@ -421,123 +517,123 @@ end
 
 %%
 if ismember(11,outputs) == 1
-
-% Create Mesh from 2D shear data
-
-clear MeshBook MeshList
-clear book4
-
-book4 = book1;
-book4(~book4) = NaN;
-
-MeshBook = book4(1:2,1:25,1:121);
-MeshBook(2,:,:) = MeshBook(2,:,:)*-1;
-node = 0;
-
-for i = 1:size(MeshBook,2)
-    for j = 1:size(MeshBook,3)
-        node = node + 1;
-        if isnan(MeshBook(1,i,j)) == 1           
-            MeshBook(1,i,j) = MeshBook(1,i-1,j);      
+    
+    % Create Mesh from 2D shear data
+    
+    clear MeshBook MeshList
+    clear book4
+    
+    book4 = book1;
+    book4(~book4) = NaN;
+    
+    MeshBook = book4(1:2,1:25,1:121);
+    MeshBook(2,:,:) = MeshBook(2,:,:)*-1;
+    node = 0;
+    
+    for i = 1:size(MeshBook,2)
+        for j = 1:size(MeshBook,3)
+            node = node + 1;
+            if isnan(MeshBook(1,i,j)) == 1
+                MeshBook(1,i,j) = MeshBook(1,i-1,j);
+            end
+            if isnan(MeshBook(2,i,j)) == 1
+                MeshBook(2,i,j) = MeshBook(2,i-1,j);
+            end
+            MeshBook(3,i,j) = i;
+            MeshBook(4,i,j) = node;
+            
+            
+            MeshList(2,node) = MeshBook(1,i,j);
+            MeshList(3,node) = MeshBook(2,i,j);
+            MeshList(4,node) = MeshBook(3,i,j);
+            MeshList(1,node) = MeshBook(4,i,j);
+            
+            MeshList2(2,node) = MeshBook(1,1,j);
+            MeshList2(3,node) = MeshBook(2,1,j);
+            MeshList2(4,node) = MeshBook(3,i,j);
+            MeshList2(1,node) = MeshBook(4,i,j);
         end
-        if isnan(MeshBook(2,i,j)) == 1                        
-            MeshBook(2,i,j) = MeshBook(2,i-1,j);
-        end
-        MeshBook(3,i,j) = i;
-        MeshBook(4,i,j) = node;
-        
-        
-        MeshList(2,node) = MeshBook(1,i,j); 
-        MeshList(3,node) = MeshBook(2,i,j);
-        MeshList(4,node) = MeshBook(3,i,j);
-        MeshList(1,node) = MeshBook(4,i,j);
-        
-        MeshList2(2,node) = MeshBook(1,1,j); 
-        MeshList2(3,node) = MeshBook(2,1,j);
-        MeshList2(4,node) = MeshBook(3,i,j);
-        MeshList2(1,node) = MeshBook(4,i,j);
     end
-end
-
-%Building Elements
-%Start with the first frame
-clear EleList EleList2
+    
+    %Building Elements
+    %Start with the first frame
+    clear EleList EleList2
     Element = 0;
-for i = 1:size(MeshBook,3)
-    clear current diff
-    current(1:2,:) = MeshBook(1:2,1,:);
-    diff(1,:) = current(1,:) - MeshBook(1,1,i);
-    diff(2,:) = current(2,:) - MeshBook(2,1,i);
-    diff(3,:) = sqrt(diff(1,:).^2.+diff(2,:).^2);
-    diff(diff<-5) = NaN;
-    diff(diff>22) = NaN;
-    for j = 1:size(diff,2)
-        if isnan(diff(1,j))==1 || isnan(diff(2,j))== 1 || isnan(diff(3,j)) ==1 || diff(3,j) == 0
-            diff(1:3,j) = 0;
+    for i = 1:size(MeshBook,3)
+        clear current diff
+        current(1:2,:) = MeshBook(1:2,1,:);
+        diff(1,:) = current(1,:) - MeshBook(1,1,i);
+        diff(2,:) = current(2,:) - MeshBook(2,1,i);
+        diff(3,:) = sqrt(diff(1,:).^2.+diff(2,:).^2);
+        diff(diff<-5) = NaN;
+        diff(diff>22) = NaN;
+        for j = 1:size(diff,2)
+            if isnan(diff(1,j))==1 || isnan(diff(2,j))== 1 || isnan(diff(3,j)) ==1 || diff(3,j) == 0
+                diff(1:3,j) = 0;
+            end
         end
+        
+        clear current2
+        current2 = find(diff(3,:));
+        
+        if size(current2,2) == 3
+            current3 = diff(1:3,current2);
+            mesh3 = current2(find(current3(3,:)==max(current3(3,:))));
+            mesh4 = current2(find(current3(2,:)==min(current3(2,:))));
+            mesh2 = current2(find(current3(1,:)==min(current3(1,:))));
+            for k = 1:(size(MeshBook,2)-1)
+                Element = Element + 1;
+                
+                EleList(i,1,k) = MeshBook(4,k,i); %5
+                EleList(i,2,k) = MeshBook(4,k,mesh2); %6
+                EleList(i,3,k) = MeshBook(4,k,mesh3); %7
+                EleList(i,4,k) = MeshBook(4,k,mesh4); %8
+                EleList(i,5,k) = MeshBook(4,k+1,i); %1
+                EleList(i,6,k) = MeshBook(4,k+1,mesh2); %2
+                EleList(i,7,k) = MeshBook(4,k+1,mesh3); %3
+                EleList(i,8,k) = MeshBook(4,k+1,mesh4); %4
+                
+                EleList(i,9,k) = Element;
+                EleList2(2:9,Element) = EleList(i,1:8,k);
+                EleList2(1,Element) = Element;
+            end
+        end
+        
+        
     end
     
-    clear current2
-    current2 = find(diff(3,:));
+    %Write the deformed mesh
     
-    if size(current2,2) == 3
-        current3 = diff(1:3,current2);
-         mesh3 = current2(find(current3(3,:)==max(current3(3,:))));
-         mesh4 = current2(find(current3(2,:)==min(current3(2,:))));
-         mesh2 = current2(find(current3(1,:)==min(current3(1,:))));
-        for k = 1:(size(MeshBook,2)-1)
-        Element = Element + 1;
-        
-        EleList(i,1,k) = MeshBook(4,k,i); %5
-        EleList(i,2,k) = MeshBook(4,k,mesh2); %6
-        EleList(i,3,k) = MeshBook(4,k,mesh3); %7
-        EleList(i,4,k) = MeshBook(4,k,mesh4); %8
-        EleList(i,5,k) = MeshBook(4,k+1,i); %1
-        EleList(i,6,k) = MeshBook(4,k+1,mesh2); %2
-        EleList(i,7,k) = MeshBook(4,k+1,mesh3); %3
-        EleList(i,8,k) = MeshBook(4,k+1,mesh4); %4
-
-        EleList(i,9,k) = Element;
-        EleList2(2:9,Element) = EleList(i,1:8,k);
-        EleList2(1,Element) = Element;
-        end
+    meshTxt = fopen('mesh.txt','wt');
+    nodesFormat = '<node id=" %d "> %f, %f, %f </node>\n';
+    fprintf(meshTxt,'<?xml version="1.0" encoding="ISO-8859-1"?>\n<febio_spec version="2.5">\n<Geometry>\n<Nodes name="Part1">\n');
+    fprintf(meshTxt,nodesFormat,MeshList(1:4,:));
+    fprintf(meshTxt,'</Nodes>\n<Elements type="hex8" mat="1" name="part1">\n');
+    elementsFormat = '<elem id=" %d "> %d, %d, %d, %d, %d, %d, %d, %d </elem>\n';
+    fprintf(meshTxt,elementsFormat,EleList2(1:9,:));
+    fprintf(meshTxt,'</Elements>\n</Geometry></febio_spec>');
+    fclose(meshTxt);
+    
+    %Write the undeformed Mesh
+    
+    meshTxt = fopen('meshUD.txt','wt');
+    nodesFormat = '<node id=" %d "> %f, %f, %f </node>\n';
+    fprintf(meshTxt,'<?xml version="1.0" encoding="ISO-8859-1"?>\n<febio_spec version="2.5">\n<Geometry>\n<Nodes name="Part1">\n');
+    fprintf(meshTxt,nodesFormat,MeshList2(1:4,:));
+    fprintf(meshTxt,'</Nodes>\n<Elements type="hex8" mat="1" name="part1">\n');
+    elementsFormat = '<elem id=" %d "> %d, %d, %d, %d, %d, %d, %d, %d </elem>\n';
+    fprintf(meshTxt,elementsFormat,EleList2(1:9,:));
+    fprintf(meshTxt,'</Elements>\n</Geometry></febio_spec>');
+    fclose(meshTxt);
+    
+    %Display the nodes from the deformed mesh
+    
+    figure
+    hold on
+    for i = 1:size(MeshBook,2)
+        scatter3(MeshBook(1,i,:),MeshBook(2,i,:),i*ones(1,size(MeshBook,3)),'.','g');
+        scatter3(MeshBook(1,1,:),MeshBook(2,1,:),i*ones(1,size(MeshBook,3)),'.','b');
     end
-        
+    hold off
     
-end
-
-%Write the deformed mesh
-
-meshTxt = fopen('mesh.txt','wt');
-nodesFormat = '<node id=" %d "> %f, %f, %f </node>\n';
-fprintf(meshTxt,'<?xml version="1.0" encoding="ISO-8859-1"?>\n<febio_spec version="2.5">\n<Geometry>\n<Nodes name="Part1">\n');
-fprintf(meshTxt,nodesFormat,MeshList(1:4,:));
-fprintf(meshTxt,'</Nodes>\n<Elements type="hex8" mat="1" name="part1">\n');
-elementsFormat = '<elem id=" %d "> %d, %d, %d, %d, %d, %d, %d, %d </elem>\n';
-fprintf(meshTxt,elementsFormat,EleList2(1:9,:));
-fprintf(meshTxt,'</Elements>\n</Geometry></febio_spec>');
-fclose(meshTxt);
-
-%Write the undeformed Mesh
-
-meshTxt = fopen('meshUD.txt','wt');
-nodesFormat = '<node id=" %d "> %f, %f, %f </node>\n';
-fprintf(meshTxt,'<?xml version="1.0" encoding="ISO-8859-1"?>\n<febio_spec version="2.5">\n<Geometry>\n<Nodes name="Part1">\n');
-fprintf(meshTxt,nodesFormat,MeshList2(1:4,:));
-fprintf(meshTxt,'</Nodes>\n<Elements type="hex8" mat="1" name="part1">\n');
-elementsFormat = '<elem id=" %d "> %d, %d, %d, %d, %d, %d, %d, %d </elem>\n';
-fprintf(meshTxt,elementsFormat,EleList2(1:9,:));
-fprintf(meshTxt,'</Elements>\n</Geometry></febio_spec>');
-fclose(meshTxt);
-
-%Display the nodes from the deformed mesh
-
-figure
-hold on
-for i = 1:size(MeshBook,2)
-    scatter3(MeshBook(1,i,:),MeshBook(2,i,:),i*ones(1,size(MeshBook,3)),'.','g');
-    scatter3(MeshBook(1,1,:),MeshBook(2,1,:),i*ones(1,size(MeshBook,3)),'.','b');
-end
-hold off
-
 end
