@@ -13,7 +13,7 @@ hFig = figure('Position',[100 100 800 800]);
 noImgs = size(maskStack,3);
 % Initialize the bounds of the ROI to be equal to the size of an entire
 % image
-roiBounds = [1,1,size(maskStack,1),size(maskStack,2)];
+roiBounds = [1,1,size(maskStack,2),size(maskStack,1)];
 
 firstFrame = 1;
 lastFrame = noImgs;

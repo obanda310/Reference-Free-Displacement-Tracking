@@ -128,7 +128,7 @@ close all
 disp('Linking Dots Between Frames.')
 % Set a maximum linking distance in microns that any object can still be
 % considered part of a pillar. Smaller values will speed up code.
-maxLinkDistance = 1;
+maxLinkDistance = .8;
 maxLD = maxLinkDistance/pixelSize;
 disp(['Max Link Distance (Microns): ',num2str(maxLinkDistance)])
 % Set a maximum number of frames to look for a linked object before giving
