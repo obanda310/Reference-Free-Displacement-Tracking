@@ -84,8 +84,8 @@ end
 for i = 1:size(roiImgs,3)
     if min(find(maxZ == i)) > 0
         [maxSubY,maxSubX] = subpix2d(maxY(maxIndices(i,1):maxIndices(i,2)),maxX(maxIndices(i,1):maxIndices(i,2)),double(ppImagesGauss(:,:,i)));
-        subpixMaxima(1:size(maxSubY,2),1,i) = maxSubY(1,:);
-        subpixMaxima(1:size(maxSubY,2),2,i) = maxSubX(1,:);
+        subpixMaxima(1:size(maxSubY,2),1,i) = maxSubX(1,:);
+        subpixMaxima(1:size(maxSubY,2),2,i) = maxSubY(1,:);
         subpixMaxima(1:size(maxSubY,2),3,i) = i;
     end
 end
@@ -93,10 +93,10 @@ end
 %Clear out-of-bounds results from subpix2d
 
 %-greater than x image size
-[tempInd1, tempInd2] = find(subpixMaxima(:,1,:) > size(ppImagesGaussMask,1));
+[tempInd1, tempInd2] = find(subpixMaxima(:,1,:) > size(ppImagesGaussMask,2));
 subpixMaxima(tempInd1,1:3,tempInd2) = 0;
 %-greater than y image size
-[tempInd1, tempInd2] = find(subpixMaxima(:,2,:) > size(ppImagesGaussMask,2));
+[tempInd1, tempInd2] = find(subpixMaxima(:,2,:) > size(ppImagesGaussMask,1));
 subpixMaxima(tempInd1,1:3,tempInd2) = 0;
 %-smaller than 0 in x
 [tempInd1, tempInd2] = find(subpixMaxima(:,1,:) < 0);
@@ -163,8 +163,8 @@ for i = 1:noPillars
     if size(tempInd1,1) > round(size(roiImgs,3)/4)
         %Then for every member of the pillar
         for j = 1:size(tempInd1,1)
-            pBook(j,1,i-pBSkip) = subpixMaxima(tempInd1(j,1),2,tempInd2(j,1)); %record X
-            pBook(j,2,i-pBSkip) = subpixMaxima(tempInd1(j,1),1,tempInd2(j,1)); %record Y
+            pBook(j,1,i-pBSkip) = subpixMaxima(tempInd1(j,1),1,tempInd2(j,1)); %record X
+            pBook(j,2,i-pBSkip) = subpixMaxima(tempInd1(j,1),2,tempInd2(j,1)); %record Y
             pBook(j,3,i-pBSkip) = subpixMaxima(tempInd1(j,1),3,tempInd2(j,1)); %record Z
             pBook(j,4,i-pBSkip) = i-pBSkip; %record new pillar number
             
@@ -249,11 +249,11 @@ figure
 imshow(roiZeros)
 hold on
 clear tempInd1 tempInd2
-for j = 1:size(pBook,3)
+for j = 1:size(pBookFinal,3)
     clear tempPillar
-    tempInd1 = find(pBook(:,1,j),1,'first');
-    tempInd2 = find(pBook(:,1,j),1,'last');
-    tempPillar = pBook(tempInd1:tempInd2,:,j);
+    tempInd1 = find(pBookFinal(:,1,j),1,'first');
+    tempInd2 = find(pBookFinal(:,1,j),1,'last');
+    tempPillar = pBookFinal(tempInd1:tempInd2,:,j);
     plot(tempPillar(:,1),tempPillar(:,2))
 end
 hold off

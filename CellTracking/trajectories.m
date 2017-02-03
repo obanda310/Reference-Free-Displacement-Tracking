@@ -297,7 +297,7 @@ zPeaks(:,1:end-1) = zPeaks(:,1:end-1)./degreeInterp;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %4.5 Estimating XY Coordinates of Interpolated Z Positions%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+if zPeakAvgNo > 2
 clear zPeaksFrames zPeaksTopWeights zPeaksBottomWeights finalLoc
 
 zPeaksFrames = floor(zPeaks);
@@ -333,7 +333,7 @@ for i = 1:numTraj
     
 end
 finalLoc(:,1:2,:) = finalLoc(:,1:2,:)*dataKey(9,1);
-%%
+
 %Show an XYZ representation of the dot positions
 figure
 for i = 1:size(finalLoc,3)
@@ -342,7 +342,7 @@ for i = 1:size(finalLoc,3)
     hold on
 end
 hold off
-%%
+
 %Show an XZ representation of the dot positions
 figure
 for i = 1:size(finalLoc,3)
@@ -351,7 +351,7 @@ for i = 1:size(finalLoc,3)
     hold on
 end
 hold off
-%%
+
 %Create ZX profile for Ryan
 clear finalLocSorted values order
 for i = 1:zPeakAvgNo
@@ -412,7 +412,7 @@ end
 
 avgXZName = 'avgXZ.txt';
 dlmwrite(avgXZName,cat(2,Xmeans,Zmeans));
-%%
+
 %Show a flattened XZ representation of the average dot positions 
 figure
 for i = 1:size(Xmeans,3)    
@@ -422,7 +422,7 @@ for i = 1:size(Xmeans,3)
 end
 
 hold off
-
+end
 %%
 
 
