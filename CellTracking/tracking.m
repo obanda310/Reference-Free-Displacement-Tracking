@@ -16,6 +16,7 @@ pixelSize = experiment.metadata.scalingX*1000000;
 scaleFactor = (experiment.metadata.scalingX*1000000)/0.165;
 disp('Done.')
 disp(scaleFactor)
+disp(pixelSize)
 %% Final Pre-processing Before Finding Local Maxima
 clear roiCell;
 [roiImgs,roiMasks,roiCell,roiBounds,roiZeros,redoCheck] = experiment.cropImgs;
@@ -193,6 +194,55 @@ pBookFinal = pBook(:,:,1:(noPillars-(pBSkip-1)));
 %%
 disp('Creating Text File for trajectories.m.')
 createExcelForTrajectories(pBookFinal);
+parametersObj{1} = experiment.ppOptions;
+parametersObj{2} = maxLinkDistance;
+parametersObj{3} = maxJD;
+parametersObj{4} = pixelSize;
+parametersObj{5} = scaleFactor;
+
+paraTxt = fopen('parameters.txt','wt');
+fprintf(paraTxt,strcat('Original File Name: ', experiment.metadata.filename, '\n'));    
+p1Format = 'Remove Large?';
+    if ismember(2,parametersObj{1,1}{1,1})==1
+    fprintf(paraTxt,p1Format);
+    fprintf(paraTxt,' yes \n');
+    p1Format = 'Remove Large Size(microns squared): %d \n';
+    fprintf(paraTxt,p1Format,parametersObj{1,1}{1,4});
+    else
+        fprintf(paraTxt,p1Format);
+        fprintf(paraTxt,' no \n');
+    end
+    
+    p1Format = 'Approximate Feature Diameter: %0.2f \n';
+    fprintf(paraTxt,p1Format,parametersObj{1,1}{1,2});
+    
+    p1Format = 'Threshold After DoG: %d \n';
+    fprintf(paraTxt,p1Format,parametersObj{1,1}{1,3});
+    
+    p1Format = 'Subtract 95pct Last Frame?';
+    if ismember(1,parametersObj{1,1}{1,1})==1
+    fprintf(paraTxt,p1Format);
+    fprintf(paraTxt,' yes \n');
+    else
+    fprintf(paraTxt,p1Format);
+    fprintf(paraTxt,' no \n');
+    end
+
+
+    
+    p1Format = 'Max Link Distance: %0.2f \n';
+    fprintf(paraTxt,p1Format,parametersObj{2});
+    
+    p1Format = 'Max Jump Distance: %i \n';
+    fprintf(paraTxt,p1Format,parametersObj{3});
+    
+    p1Format = 'Pixel Size: %f \n';
+    fprintf(paraTxt,p1Format,parametersObj{4}); 
+        
+    p1Format = 'Scale Factor: %f \n';
+    fprintf(paraTxt,p1Format,parametersObj{5});
+    
+    fclose(paraTxt);
 %% 2D Plot of points color coded by pillar and connected
 disp('Plotting Linked Paths.')
 figure
