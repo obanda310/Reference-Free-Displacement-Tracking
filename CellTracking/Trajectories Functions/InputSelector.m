@@ -71,6 +71,8 @@ elseif strcmp(choice,'Custom Code') == 1
     prompt = 'What was the scale factor print out of tracking.m? Check the command window. Enter a decimal and press enter: ';
     dataKey(7,1) = input(prompt); %pixelScale
     dataKey(8,1) = 0; %startVar
+    prompt = 'How many pixels per micron? Enter a decimal and press enter: ';
+    dataKey(9,1) = input(prompt);
     
     
     [name,path] = uigetfile('*.txt','Select .xlsx File From Particle Tracker Output');
