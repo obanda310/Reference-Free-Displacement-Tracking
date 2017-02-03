@@ -7,6 +7,7 @@ classdef Experiment
         masks
         centroids2d
         redo
+        ppOptions
     end
     methods
         function obj = Experiment(stackFile,cellFile,fluorFile,metadata)
@@ -54,12 +55,13 @@ classdef Experiment
             end
             
             % Process images and get centroid locations
-            masks = getCentroidsStack(obj.images,obj.metadata);
+            [masks,ppOptions] = getCentroidsStack(obj.images,obj.metadata);
             % Clear any objects that are not 2-dimensionally larger than a
             % threshold value equal to dotSizeThresh
             dotSizeThreshLB = round(0.9/(1000000*obj.metadata.scalingX)^3);
             masks = bwareaopen(masks,dotSizeThreshLB);
             %[masks,~] = removeLarge(obj.images,masks);
+            obj.ppOptions = ppOptions;
             obj.masks = masks;
             obj.redo = 0;
         end
