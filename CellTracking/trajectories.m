@@ -219,6 +219,11 @@ end
 %4.4 Using Intensity Values to Extract Z-Information%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%For use later
+zScale = .4; %microns
+highestObjectInZ = (size(book1,2)-1)* zScale;
+
+
 %Interpolation to increase resolution of intensity data points
 clear interpBook interpX
 degreeInterp = 3;
@@ -236,11 +241,18 @@ zPeaks = zeros(numTraj,10);
 for i = 1:numTraj
     clear pks loc truePeaks
     [pks,loc] = findpeaks(interpBook(i,:));
-    truePeaks = find(pks>max(pks)/4);
+    truePeaks = find(pks>max(pks)*.25);
     zPeaks(i,1:size(loc(truePeaks),2)) = loc(truePeaks);
+    
+    if zPeaks(i,1) <7 % remove false peaks created at bottom limit of image stack
+        zPeaks(i,1:8) = zPeaks(i,2:9);
+    end
+    
     zPeaks(i,10) = nnz(zPeaks(i,1:9));
 end
 
+
+%%
 %"Statistically" find problem pillars with incorrect or missing peaks
 zPeakAvgNo = floor(mean(zPeaks(:,10)));
 zPeaksSpacing = zPeaks(:,2:zPeakAvgNo)-zPeaks(:,1:zPeakAvgNo-1);
@@ -248,7 +260,7 @@ zPeaksAvgSpacing = mean(mean(zPeaksSpacing));
 zPeaksStDSpacing = std(mean(zPeaksSpacing));
 %find pillars with spacing outside of mean+/- 10*STD
 zPeaksIssues = find(mean(zPeaksSpacing.*((zPeaksSpacing>(zPeaksAvgSpacing+.3*zPeaksAvgSpacing))==1 | (zPeaksSpacing<(zPeaksAvgSpacing-.3*zPeaksAvgSpacing))==1),2));
-
+%%
 %Create a list of substitute peaks for pillars with problems
 clear zSubPeaks zAvgClose10 zAvgClose10Interp
 zAvgClose50 = zeros(size(cm3,1),size(cm3,3));
@@ -260,13 +272,19 @@ for i = 1:numTraj
     clear pks loc truePeaks
     [pks,loc] = findpeaks(zAvgClose50Interp(i,:));
     truePeaks = find(pks>max(pks)/4);
+    
     zSubPeaks(i,1:size(loc(truePeaks),2)) = loc(truePeaks);
+    
+    if zPeaks(i,1) <7 % remove false peaks created at bottom limit of image stack
+        zPeaks(i,1:8) = zPeaks(i,2:9);
+    end
 end
 
 %Replace Problem Pillars 'zPeaksSpacingIssues' with an average pillar
 for i = 1:size(zPeaksIssues,1)
     zPeaks(zPeaksIssues(i,1),1:zPeakAvgNo) = zSubPeaks(zPeaksIssues(i,1),1:zPeakAvgNo);
 end
+
 %%
 if ismember(9,outputs) == 1
     pillarPlot(book1,book2,book3,cm3,roiStack,totalNumFrames,interpBook,totalAverageInterp);
@@ -287,7 +305,6 @@ zPeaksTopWeights = zPeaks-zPeaksFrames;
 zPeaksBottomWeights = 1-zPeaksTopWeights;
 
 finalLoc = zeros(numTraj,4,zPeakAvgNo);
-zScale = .4; %microns
 
 for i = 1:numTraj
     for j = 1:zPeakAvgNo
@@ -315,16 +332,18 @@ for i = 1:numTraj
     end
     
 end
-
+finalLoc(:,1:2,:) = finalLoc(:,1:2,:)*dataKey(9,1);
 %%
+%Show an XYZ representation of the dot positions
 figure
 for i = 1:size(finalLoc,3)
     
-    scatter3(finalLoc(:,1,i),finalLoc(:,2,i),finalLoc(:,3,i));
+    scatter3(finalLoc(:,1,i),finalLoc(:,2,i),finalLoc(:,3,i),5);
     hold on
 end
 hold off
 %%
+%Show an XZ representation of the dot positions
 figure
 for i = 1:size(finalLoc,3)
     
@@ -347,7 +366,7 @@ for j = 1:size(finalLocSorted,3)
     count2 = 0;
     rowStart = 1;
     for i = 1:size(finalLocSorted,1)
-        if finalLocSorted(i,1,j)<finalLocSorted(rowStart,1,j)+10
+        if finalLocSorted(i,1,j)<finalLocSorted(rowStart,1,j)+10*dataKey(9,1)
             count2 = count2+1;
             Xs(count1,count2,j) = finalLocSorted(i,1,j);
             Zs(count1,count2,j) = finalLocSorted(i,3,j);           
@@ -366,14 +385,46 @@ Zs(Zs==0) = NaN;
 
 Xmeans = mean(Xs,2,'omitnan');
 Zmeans = mean(Zs,2,'omitnan');
+
+fitFraction =.1;
+leftFit = round(size(Xmeans,1)*fitFraction);
+rightFit = size(Xmeans,1) - leftFit;
+
+
+endsFitData = zeros(leftFit*2,2,zPeakAvgNo);
+for i = 1:zPeakAvgNo
+endsFitData(1:leftFit,1,i) = Xmeans(1:leftFit,1,i);
+endsFitData(1:leftFit,2,i) = Zmeans(1:leftFit,1,i);
+endsFitData(leftFit+1:leftFit*2,1,i) = Xmeans(rightFit+1:end,1,i);
+endsFitData(leftFit+1:leftFit*2,2,i) = Zmeans(rightFit+1:end,1,i);
+end
+
+for i = 1:zPeakAvgNo
+    fitObj{i} = polyfit(endsFitData(:,1,i),endsFitData(:,2,i),1);
+end
+
+%y = polyval(p,x) basic structure
+clear finalZPos
+for i = 1:zPeakAvgNo
+    finalZPos(:,1,i) = (((max(endsFitData(:,2,zPeakAvgNo))-polyval(fitObj{zPeakAvgNo},Xmeans(:,1,zPeakAvgNo))) + Zmeans(:,1,i)))-highestObjectInZ;
+end
+
+
+avgXZName = 'avgXZ.txt';
+dlmwrite(avgXZName,cat(2,Xmeans,Zmeans));
 %%
+%Show a flattened XZ representation of the average dot positions 
 figure
 for i = 1:size(Xmeans,3)    
-    scatter(Xmeans(:,1,i),Zmeans(:,1,i));
+    plot(Xmeans(:,1,i),finalZPos(:,1,i));
     hold on
+    plot(Xmeans(:,1,i),(polyval(fitObj{i},Xmeans(:,1,i)))+(max(endsFitData(:,2,zPeakAvgNo)) - polyval(fitObj{zPeakAvgNo},Xmeans(:,1,zPeakAvgNo)))-highestObjectInZ)
 end
 
 hold off
+
+%%
+
 
 %%
 %--------------------------------------------------------------------------
