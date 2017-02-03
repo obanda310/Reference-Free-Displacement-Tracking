@@ -1,6 +1,6 @@
 % Input variable images is a 3D image stack whose dimensions correspond to
 % (rows,columns,z-slice)
-function [filtMasks] = getCentroidsStack(images,metadata) %,centroids
+function [filtMasks,ppOptions] = getCentroidsStack(images,metadata) %,centroids
 ppOptions = ppSelector();
 noImgs = size(images,3);
 % Maximum possible intensity value is 2 raised to the "colorDepth"
