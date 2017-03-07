@@ -226,10 +226,10 @@ highestObjectInZ = (size(book1,2)-1)* zScale;
 
 %Interpolation to increase resolution of intensity data points
 clear interpBook interpX
-degreeInterp = 3;
+degreeInterp = 12;
 interpBook = zeros(size(book1,3),size(book1,2)*degreeInterp);
 interpX = linspace(1,size(book1,2),size(book1,2));
-interpXq = linspace(1,size(book1,2),size(book1,2)*3);
+interpXq = linspace(1,size(book1,2),size(book1,2)*degreeInterp);
 for i = 1:numTraj
     book1(7,:,i) = conv(book1(6,:,i),gausswin(6),'same');
     interpBook(i,:) = interp1(interpX,book1(7,:,i),interpXq,'spline');
@@ -244,23 +244,53 @@ for i = 1:numTraj
     truePeaks = find(pks>max(pks)*.25);
     zPeaks(i,1:size(loc(truePeaks),2)) = loc(truePeaks);
     
-    if zPeaks(i,1) <7 % remove false peaks created at bottom limit of image stack
-        zPeaks(i,1:8) = zPeaks(i,2:9);
-    end
+%     if zPeaks(i,1) <7 % remove false peaks created at bottom limit of image stack
+%         zPeaks(i,1:8) = zPeaks(i,2:9);
+%     end
     
     zPeaks(i,10) = nnz(zPeaks(i,1:9));
 end
 
+%add a psuedo first peak for data alignment
+% for i = 1:size(zPeaks,1)
+%     if  zPeaks(i,1)>degreeInterp*5
+%         zPeaks(i,2:9) = zPeaks(i,1:8);
+%         zPeaks(i,1) = 1;
+%     end
+% end
 
-%%
+
 %"Statistically" find problem pillars with incorrect or missing peaks
 zPeakAvgNo = floor(mean(zPeaks(:,10)));
-zPeaksSpacing = zPeaks(:,2:zPeakAvgNo)-zPeaks(:,1:zPeakAvgNo-1);
-zPeaksAvgSpacing = mean(mean(zPeaksSpacing));
-zPeaksStDSpacing = std(mean(zPeaksSpacing));
+clear zPeaksSpacing zSpacingIssues
+zPeaksSpacing(1:size(zPeaks,1),1) = 30; %Space filler larger than issue threshold below
+zPeaksSpacing(:,2:zPeakAvgNo+1) = zPeaks(:,3:zPeakAvgNo+2)-zPeaks(:,2:zPeakAvgNo+1);
+for i = 2:size(zPeaksSpacing,2)
+    for j = 1:size(zPeaks,1)
+    if abs(zPeaksSpacing(j,i))<degreeInterp*7
+        zPeaks(j,i) = round(mean(zPeaks(j,i:i+1)));
+        zPeaks(j,(i+1):8)=zPeaks(j,(i+2):9);
+    end
+    end
+end
+
+%Correct shifts in data due to uneven recognition of objects
+zPeaksAverage = mean(zPeaks(:,2:zPeakAvgNo),2);
+% for i = 1:size(zPeaks,1)
+%     if  
+
+%     end
+% end
+
+
+zPeaksSpacing = zPeaks(:,2:zPeakAvgNo+2)-zPeaks(:,1:zPeakAvgNo+1);
+zPeaksSpacing(zPeaksSpacing<0) = NaN;
+zPeaksSpacing(zPeaksSpacing==0) = NaN;
+zPeaksAvgSpacing = mean(mean(zPeaksSpacing,'omitnan'),'omitnan');
+zPeaksStDSpacing = std(mean(zPeaksSpacing,'omitnan'),'omitnan');
 %find pillars with spacing outside of mean+/- 10*STD
-zPeaksIssues = find(mean(zPeaksSpacing.*((zPeaksSpacing>(zPeaksAvgSpacing+.3*zPeaksAvgSpacing))==1 | (zPeaksSpacing<(zPeaksAvgSpacing-.3*zPeaksAvgSpacing))==1),2));
-%%
+
+
 %Create a list of substitute peaks for pillars with problems
 clear zSubPeaks zAvgClose10 zAvgClose10Interp
 zAvgClose50 = zeros(size(cm3,1),size(cm3,3));
@@ -275,24 +305,43 @@ for i = 1:numTraj
     
     zSubPeaks(i,1:size(loc(truePeaks),2)) = loc(truePeaks);
     
-    if zPeaks(i,1) <7 % remove false peaks created at bottom limit of image stack
-        zPeaks(i,1:8) = zPeaks(i,2:9);
-    end
+%     if zPeaks(i,1) <7 % remove false peaks created at bottom limit of image stack
+%         zPeaks(i,1:8) = zPeaks(i,2:9);
+%     end
 end
 
-%Replace Problem Pillars 'zPeaksSpacingIssues' with an average pillar
+[zPeaksIssues,~] = find(zPeaks(:,1:zPeakAvgNo)==0);
+%Replace Problem Pillars 'zPeaksIssues' with an average pillar
 for i = 1:size(zPeaksIssues,1)
     zPeaks(zPeaksIssues(i,1),1:zPeakAvgNo) = zSubPeaks(zPeaksIssues(i,1),1:zPeakAvgNo);
 end
 
+
+zPeaksDifferences = zPeaks(2:end,1:zPeakAvgNo)-zPeaks(1:end-1,1:zPeakAvgNo);
+[a,~] = find(abs(zPeaksDifferences)>((2/zScale)*degreeInterp));
+zPeaksIssues2 = find(histc(a,1:numTraj)>1);
+
+%Replace Problem Pillars 'zPeaksIssues' with an average pillar
+for i = 1:size(zPeaksIssues2,1)
+    zPeaks(zPeaksIssues2(i,1),1:zPeakAvgNo) = zSubPeaks(zPeaksIssues2(i,1),1:zPeakAvgNo);
+end
+
+
+%Convert zPeaks to a frame value based on previous interpolation
+zPeaks(:,1:9) = zPeaks(:,1:9)./degreeInterp;
+
+%Create a layer based on the maximum
+for i = 1:numTraj
+    zPeaks(i,zPeakAvgNo+1) = book2(i,4);
+end
+zPeakAvgNo = zPeakAvgNo +1;
+
+
+
 %%
 if ismember(9,outputs) == 1
-    pillarPlot(book1,book2,book3,cm3,roiStack,totalNumFrames,interpBook,totalAverageInterp);
+    pillarPlot(book1,book2,book3,cm3,roiStack,totalNumFrames,interpBook,degreeInterp);
 end
-%%
-%Convert zPeaks to a frame value based on previous interpolation
-zPeaks(:,1:end-1) = zPeaks(:,1:end-1)./degreeInterp;
-
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %4.5 Estimating XY Coordinates of Interpolated Z Positions%%%%%%%%%%%%%%%%%
@@ -307,7 +356,7 @@ zPeaksBottomWeights = 1-zPeaksTopWeights;
 finalLoc = zeros(numTraj,4,zPeakAvgNo);
 
 for i = 1:numTraj
-    for j = 1:zPeakAvgNo
+    for j = 1:zPeakAvgNo-1
         %Structure is (Top Frame Weight Fraction * Top Frame) + (Bottom Frame Weight
         %Fraction * Bottom Frame) All Divided by the number of parts (the degree of
         %interpolation stored in 'degreeInterp'). The whole thing is just a
@@ -315,45 +364,35 @@ for i = 1:numTraj
         
         %first check if top frame and bottom frame are non-zero
         %for xPos
-        if book1(1,zPeaksFrames(i,j)+1,i)>0 && book1(1,zPeaksFrames(i,j),i)>0
+        if book1(1,zPeaksFrames(i,j)+1,i)>0 && zPeaksFrames(i,j)>0
             finalLoc(i,1,j) =  (((zPeaksTopWeights(i,j)*degreeInterp)*book1(1,zPeaksFrames(i,j)+1,i))+((zPeaksBottomWeights(i,j)*degreeInterp)*book1(1,zPeaksFrames(i,j),i)))/degreeInterp; %x position
         else %if both are not nonzero use last available position
             finalLoc(i,1,j) = book1(1,book2(i,4),i);
         end
         %for yPos
-        if book1(2,zPeaksFrames(i,j)+1,i)>0 && book1(2,zPeaksFrames(i,j),i)>0
+        if book1(2,zPeaksFrames(i,j)+1,i)>0 && zPeaksFrames(i,j)>0
             finalLoc(i,2,j) =  (((zPeaksTopWeights(i,j)*degreeInterp)*book1(2,zPeaksFrames(i,j)+1,i))+((zPeaksBottomWeights(i,j)*degreeInterp)*book1(2,zPeaksFrames(i,j),i)))/degreeInterp;%y position
         else
             finalLoc(i,2,j) = book1(2,book2(i,4),i);
         end
         
-        finalLoc(i,3,j) =  zPeaks(i,j)*.4;%z position
+        finalLoc(i,3,j) =  zPeaks(i,j)*zScale;%z position
         finalLoc(i,4,j) = i;
     end
     
 end
+
+for i = 1:numTraj
+    finalLoc(i,1,zPeakAvgNo) = book1(1,book2(i,4),i);
+    finalLoc(i,2,zPeakAvgNo) = book1(2,book2(i,4),i);
+    finalLoc(i,3,zPeakAvgNo) = zPeaks(i,zPeakAvgNo)*zScale;
+    finalLoc(i,4,zPeakAvgNo) = i;
+end
+
 finalLoc(:,1:2,:) = finalLoc(:,1:2,:)*dataKey(9,1);
 
-%Show an XYZ representation of the dot positions
-figure
-for i = 1:size(finalLoc,3)
-    
-    scatter3(finalLoc(:,1,i),finalLoc(:,2,i),finalLoc(:,3,i),5);
-    hold on
-end
-hold off
-
-%Show an XZ representation of the dot positions
-figure
-for i = 1:size(finalLoc,3)
-    
-    scatter(finalLoc(:,1,i),finalLoc(:,3,i));
-    hold on
-end
-hold off
-
 %Create ZX profile for Ryan
-clear finalLocSorted values order
+clear finalLocSorted values order endFitData
 for i = 1:zPeakAvgNo
 [values, order] = sort(finalLoc(:,1,i));
 finalLocSorted(:,:,i) = finalLoc(order,:,i);
@@ -395,30 +434,54 @@ endsFitData = zeros(leftFit*2,2,zPeakAvgNo);
 for i = 1:zPeakAvgNo
 endsFitData(1:leftFit,1,i) = Xmeans(1:leftFit,1,i);
 endsFitData(1:leftFit,2,i) = Zmeans(1:leftFit,1,i);
-endsFitData(leftFit+1:leftFit*2,1,i) = Xmeans(rightFit+1:end,1,i);
-endsFitData(leftFit+1:leftFit*2,2,i) = Zmeans(rightFit+1:end,1,i);
+endsFitData(leftFit+1:(leftFit*2),1,i) = Xmeans(rightFit+1:end,1,i);
+endsFitData(leftFit+1:(leftFit*2),2,i) = Zmeans(rightFit+1:end,1,i);
 end
+endsFitDataTrunc = endsFitData(1:end-5,:,:);
+
 
 for i = 1:zPeakAvgNo
-    fitObj{i} = polyfit(endsFitData(:,1,i),endsFitData(:,2,i),1);
+    fitObj{i} = polyfit(endsFitDataTrunc(:,1,i),endsFitDataTrunc(:,2,i),1);
 end
 
 %y = polyval(p,x) basic structure
 clear finalZPos
 for i = 1:zPeakAvgNo
-    finalZPos(:,1,i) = (((max(endsFitData(:,2,zPeakAvgNo))-polyval(fitObj{zPeakAvgNo},Xmeans(:,1,zPeakAvgNo))) + Zmeans(:,1,i)))-highestObjectInZ;
+    finalZPos(:,1,i) = (((max(endsFitDataTrunc(:,2,zPeakAvgNo))-polyval(fitObj{zPeakAvgNo},Xmeans(:,1,zPeakAvgNo))) + Zmeans(:,1,i)))-highestObjectInZ;
 end
 
 
 avgXZName = 'avgXZ.txt';
 dlmwrite(avgXZName,cat(2,Xmeans,Zmeans));
 
+
+%%
+%Show an XYZ representation of the dot positions
+figure
+for i = 1:size(finalLoc,3)-1
+    
+    scatter3(size(imageBlack,2)-finalLoc(:,1,i),finalLoc(:,2,i),finalLoc(:,3,i),10);
+    hold on
+end
+hold off
+
+%Show an XZ representation of the dot positions
+figure
+for i = 1:size(finalLoc,3)
+    
+    scatter(finalLoc(:,1,i),finalLoc(:,3,i));
+    hold on
+end
+hold off
+
+%%
 %Show a flattened XZ representation of the average dot positions 
+zReference = max(endsFitDataTrunc(:,2,zPeakAvgNo));
 figure
 for i = 1:size(Xmeans,3)    
     plot(Xmeans(:,1,i),finalZPos(:,1,i));
     hold on
-    plot(Xmeans(:,1,i),(polyval(fitObj{i},Xmeans(:,1,i)))+(max(endsFitData(:,2,zPeakAvgNo)) - polyval(fitObj{zPeakAvgNo},Xmeans(:,1,zPeakAvgNo)))-highestObjectInZ)
+    plot(Xmeans(:,1,i),(polyval(fitObj{i},Xmeans(:,1,i)))+(zReference - polyval(fitObj{zPeakAvgNo},Xmeans(:,1,zPeakAvgNo)))-highestObjectInZ)
 end
 
 hold off
@@ -436,7 +499,10 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%5.2 Drawing Zero-State Displacement Fields on Black Background%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+prompt = ('Use native input (1 for yes/ 0 for no)?');
+nativeInput = input(prompt);
 
+%%
 if ismember(2,outputs) == 1
     folderName = strcat('Black Image_',colorScheme,' Quiver Overlays');
     mkdir(filePath,folderName)
@@ -452,7 +518,11 @@ if ismember(2,outputs) == 1
         end
         hold off
         savefile = [filePath '\' folderName '\Black Background Overlay' colorScheme ' ' num2str(f) '.tif'];
+        if nativeInput == 1
         export_fig(blackOverlay,savefile,'-native');
+        else
+        export_fig(blackOverlay,savefile);            
+        end
         close
     end
 end
@@ -487,7 +557,11 @@ if ismember(4,outputs) == 1
         hold on
         hold off
         savefile = [filePath '\' folderName '\Centroids on Frame ' colorScheme ' ' num2str(f) '.tif'];
+        if nativeInput == 1
         export_fig(centroidsOnly,savefile,'-native');
+        else
+        export_fig(centroidsOnly,savefile);    
+        end
         close
     end
 end
@@ -527,7 +601,11 @@ if ismember(3,outputs) == 1
     end
     hold off
     savefile = [filePath '\Debug Image ' colorScheme '.tif'];
+     if nativeInput == 1
     export_fig(debugImage,savefile,'-native');
+     else
+         export_fig(debugImage,savefile);
+     end
 end
 %%
 
@@ -548,7 +626,11 @@ if ismember(5,outputs) == 1
     %quiver(book1(10,1,:),book1(11,1,:),book1(12,totalNumFrames,:),book1(13,totalNumFrames,:),0,'g');
     hold off
     savefile = [filePath '\Fluorescent Overlay ' colorScheme '.tif'];
+      if nativeInput == 1
     export_fig(trajOverlay,savefile,'-native');
+      else
+          export_fig(trajOverlay,savefile);
+      end
 end
 
 %%
@@ -563,7 +645,11 @@ if ismember(5,outputs) == 1
     %quiver(book1(10,1,:),book1(11,1,:),book1(12,totalNumFrames,:),book1(13,totalNumFrames,:),0,'g');
     hold off
     savefile = [filePath '\Transmitted Overlay ' colorScheme '.tif'];
+     if nativeInput == 1
     export_fig(transmittedOverlay,savefile,'-native');
+     else
+       export_fig(transmittedOverlay,savefile);  
+     end
 end
 
 %%
