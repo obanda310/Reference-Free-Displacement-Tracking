@@ -48,10 +48,10 @@ for i = 1:noImgs
     % Apply a Laplacian filter to the
     lapImages(:,:,i) = imfilter(dogImages,Lap);
 end
-% Determine the 25th percentile pixel intensity value of all images in
+% Determine the ppOptions{3} percentile pixel intensity value of all images in
 % lapImages, considering only positive pixel intensity values (negative
 % intensity values are introduced after performing the filtering steps)
-% This 25th percentile value will be the threshold used to create a
+% This ppOptions{3}th percentile value will be the threshold used to create a
 % mask for each image such that pixels whose intensities are less than
 % the threshold are set equal to zero, while pixels whose intensities
 % are greater than or equal to the threshold are set equal to one.
@@ -71,6 +71,18 @@ for i = 1:noImgs
     else
         filtMasks(:,:,i) = bwareaopen(masks(:,:,i),round((d)^2));
     end %
+    
+    %remove stray objects based on proximity to other objects
+    %should be useful for getting rid of noise generated objects
+    SE = strel('disk',round(0.5/(metadata.scalingX*1000000)),0);
+    if ismember(4,ppOptions{1}) == 1
+        dilatedMask(:,:,i) = imdilate(filtMasks(:,:,i),SE);
+        removeIsolatedMask(:,:,i) = bwareaopen(dilatedMask(:,:,i),round((15*d)^2));
+        filtMasks(:,:,i) = filtMasks(:,:,i) .* removeIsolatedMask(:,:,i);
+    end
+    
+
+    
     %         % Use regionprops to find the centroids of all the objects in the
     %         % new filtered masks, i.e. filtMasks
     %         c = regionprops(filtMasks(:,:,i),'Centroid');
@@ -79,4 +91,7 @@ for i = 1:noImgs
     %         % centroid in the image that corresponds to that cell
     %         centroids{i} = cat(1,c.Centroid);
 end
+%     ShowStack(filtMasks)
+%     ShowStack(dilatedMask)
+%     ShowStack(removeIsolatedMask)
 end

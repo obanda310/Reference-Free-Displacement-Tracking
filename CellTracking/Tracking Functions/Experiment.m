@@ -60,7 +60,9 @@ classdef Experiment
             % threshold value equal to dotSizeThresh
             dotSizeThreshLB = round(0.9/(1000000*obj.metadata.scalingX)^3);
             masks = bwareaopen(masks,dotSizeThreshLB);
-            %[masks,~] = removeLarge(obj.images,masks);
+            if ismember(3,ppOptions{1}) == 1
+            [masks,~] = removeLarge(obj.images,masks);
+            end
             obj.ppOptions = ppOptions;
             obj.masks = masks;
             obj.redo = 0;
@@ -117,7 +119,7 @@ classdef Experiment
                 for i = 1:noImgs
                     % We use imadjust so that the features of the images are
                     % visible after being saved
-                    noiseRng = (double(mean(prctile(roiImgs(:,:,noImgs),95))))/dataScale;
+                    noiseRng = (double(mean(prctile(roiImgs(:,:,noImgs),50))))/dataScale;
                     highIn = (double(max(max(max(roiImgs(:,:,i))))))/dataScale;
                     thisImg = imgaussfilt(imadjust(roiImgs(:,:,i),[noiseRng,highIn],[]));
                     imwrite(imresize(thisImg,scaleFactor),roiFile,'WriteMode','append');
