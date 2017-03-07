@@ -1,4 +1,4 @@
-function trajOfInterest = pillarPlot(book1,book2,book3,cm3,roiStack,totalNumFrames,interpBook,totalAverageInterp)
+function trajOfInterest = pillarPlot(book1,book2,book3,cm3,roiStack,totalNumFrames,interpBook,degreeInterp)
 cm3(cm3 == 0) = NaN;
 
 plottedProfiles = figure('units','pixels','name','Visually Analyzing Z-Axis Deformation and Compression','position',[100,100,1000,750],...
@@ -35,7 +35,7 @@ handles.trajOfInt = uicontrol( ...
         
         %x values for plots
         frameXs = linspace(1,totalNumFrames,totalNumFrames);
-        interpXq = linspace(1,size(book1,2),size(book1,2)*3);
+        interpXq = linspace(1,size(book1,2),size(book1,2)*degreeInterp);
         
         
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
@@ -46,7 +46,7 @@ handles.trajOfInt = uicontrol( ...
         hold off
         %Plots Original Intensity Values
         plot(frameXs,book1(6,:,trajOfInterest),'Color',[0 0 .7]) 
-        axis([0,totalNumFrames,0,max(max(max(book1(6,:,:))))])
+        axis([0,totalNumFrames,0,median((max(book1(6,:,:))))*1.1])
         hold on
         currentAverages = zeros(totalNumFrames,1);
         for i = 1:totalNumFrames
@@ -80,8 +80,8 @@ handles.trajOfInt = uicontrol( ...
         clear realPeaks
         realPeaks = find(interpPeaks>max(interpPeaks)/4);
         plot(interpXq(interpLocs(realPeaks)),interpPeaks(realPeaks),'x','MarkerSize',15,'Color',[0 0 .7]) 
-        axis([0,totalNumFrames,0,max(max(interpBook))])
-        origPeriod = (mean(interpLocs(realPeaks(3:end-1))-interpLocs(realPeaks(2:end-2)))/3)*.4;        
+        axis([0,totalNumFrames,0,median(max(interpBook))*1.1])
+        origPeriod = (mean(interpLocs(realPeaks(3:end-1))-interpLocs(realPeaks(2:end-2)))/degreeInterp)*.4;        
         handles.origPerTextBox = uicontrol('style','text','Units','normalized','position',[.100,.210,.15,.030]);
         origStr = num2str(origPeriod);
         set(handles.origPerTextBox,'String',['Current Pillar Period: ' origStr ''])
@@ -119,7 +119,7 @@ handles.trajOfInt = uicontrol( ...
         clear realPeaks
         realPeaks = find(icaPeaks>max(icaPeaks)/4);
         plot(interpXq(icaLocs(realPeaks)),icaPeaks(realPeaks),'o','MarkerSize',10,'Color',[0 .8 0])
-        meanPeriod = (mean(interpLocs(realPeaks(2:end-1))-interpLocs(realPeaks(1:end-2)))/3)*.4;
+        meanPeriod = (mean(interpLocs(realPeaks(2:end-1))-interpLocs(realPeaks(1:end-2)))/degreeInterp)*.4;
         handles.avgPerTextBox = uicontrol('style','text','Units','normalized','position',[.100,.180,.150,.030]);
         avgPeriod = meanPeriod;
         avgStr = num2str(avgPeriod);
@@ -129,7 +129,7 @@ handles.trajOfInt = uicontrol( ...
         title('Compare Processed Pillar to Processed Average')
         xlabel('Frame')
         ylabel('Intensity')
-        axis([0,totalNumFrames,0,max(max(interpBook))])
+        axis([0,totalNumFrames,0,(median(max(interpBook))*1.1)])
         
         %fit the traj of interest with pillarFit.m
         vals = p_call();
