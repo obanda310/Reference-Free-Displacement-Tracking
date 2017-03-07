@@ -1,4 +1,4 @@
-clear;
+ clear;
 close all;
 clc;
 
@@ -54,7 +54,7 @@ end
 % attempt to create ellipsoids by identifying all local 2D maxima belonging
 % to a single pillar, and tracing the the major axis of individual
 % ellipsoids through local maxima.
-clear maxR maxC maxS maxSubR maxSubC subpixMaxima tempInd1 tempInd2
+clear maxR maxC maxS maxSubR maxSubC subpixMaxima tempInd1 tempInd2 products maxIndices
 close all
 disp('Finding Dots.')
 % Find local maxima in 2D (pixel resolution)
@@ -76,35 +76,69 @@ for i = 1:size(roiImgs,3)
     if min(find(maxZ == i)) > 0
         maxIndices(i,1) = min(find(maxZ == i));
         maxIndices(i,2) = max(find(maxZ == i));
+        maxIndices(i,3) = maxIndices(i,2) - maxIndices(i,1);
     end
 end
 
 % Use indices to create book of subpixel maxima for use later in linking
 % maxima to pillars
+%subpixMaxima = zeros(max(maxIndices(:,3)),3,size(roiImgs,3));
 for i = 1:size(roiImgs,3)
     if min(find(maxZ == i)) > 0
+        clear tempXY tempXY2
+        
+        %find subpixel maxima and store them to a single matrix
         [maxSubY,maxSubX] = subpix2d(maxY(maxIndices(i,1):maxIndices(i,2)),maxX(maxIndices(i,1):maxIndices(i,2)),double(ppImagesGauss(:,:,i)));
-        subpixMaxima(1:size(maxSubY,2),1,i) = maxSubX(1,:);
-        subpixMaxima(1:size(maxSubY,2),2,i) = maxSubY(1,:);
-        subpixMaxima(1:size(maxSubY,2),3,i) = i;
+        tempXY(:,1) = maxSubX;
+        tempXY(:,2) = maxSubY;
+        
+        %remove data that is out of bounds (due to errors in subpix2d
+        %-greater than x image size
+        [tempInd1, ~] = find(tempXY(:,1) > size(ppImagesGaussMask,2));
+        tempXY(tempInd1,1:2) = 0;
+        %-greater than y image size
+        [tempInd1, ~] = find(tempXY(:,2) > size(ppImagesGaussMask,1));
+        tempXY(tempInd1,1:2) = 0;
+        %-smaller than 0 in x
+        [tempInd1, ~] = find(tempXY(:,1) < 0);
+        tempXY(tempInd1,1:2) = 0;
+        %-smaller than 0 in y
+        [tempInd1, ~] = find(tempXY(:,2) < 0);
+        tempXY(tempInd1,1:2) = 0;
+        
+        %remove duplicate points after rounding to the nearest half pixel
+        %Note! The rounding really helps remove duplicate points caused by
+        %subpix2D!!!
+        [tempXY2,~,~] = unique(5*round((tempXY/5),1),'rows');
+        
+        
+        %store filtered points in subpixMaxima
+        subpixMaxima(1:size(tempXY2,1),1,i) = tempXY2(:,1);
+        subpixMaxima(1:size(tempXY2,1),2,i) = tempXY2(:,2);
+        subpixMaxima(1:size(tempXY2,1),3,i) = i;
+        
+        %subpixMaxima(1:size(maxSubY,2),1,i) = maxSubX(1,:);
+        %subpixMaxima(1:size(maxSubY,2),2,i) = maxSubY(1,:);
+        %subpixMaxima(1:size(maxSubY,2),3,i) = i;
     end
 end
+%
+% % %Clear out-of-bounds results from subpix2d
+% % 
+% % %-greater than x image size
+% % [tempInd1, tempInd2] = find(subpixMaxima(:,1,:) > size(ppImagesGaussMask,2));
+% % subpixMaxima(tempInd1,1:3,tempInd2) = 0;
+% % %-greater than y image size
+% % [tempInd1, tempInd2] = find(subpixMaxima(:,2,:) > size(ppImagesGaussMask,1));
+% % subpixMaxima(tempInd1,1:3,tempInd2) = 0;
+% % %-smaller than 0 in x
+% % [tempInd1, tempInd2] = find(subpixMaxima(:,1,:) < 0);
+% % subpixMaxima(tempInd1,1:3,tempInd2) = 0;
+% % %-smaller than 0 in y
+% % [tempInd1, tempInd2] = find(subpixMaxima(:,2,:) < 0);
+% % subpixMaxima(tempInd1,1:3,tempInd2) = 0;
 
-%Clear out-of-bounds results from subpix2d
-
-%-greater than x image size
-[tempInd1, tempInd2] = find(subpixMaxima(:,1,:) > size(ppImagesGaussMask,2));
-subpixMaxima(tempInd1,1:3,tempInd2) = 0;
-%-greater than y image size
-[tempInd1, tempInd2] = find(subpixMaxima(:,2,:) > size(ppImagesGaussMask,1));
-subpixMaxima(tempInd1,1:3,tempInd2) = 0;
-%-smaller than 0 in x
-[tempInd1, tempInd2] = find(subpixMaxima(:,1,:) < 0);
-subpixMaxima(tempInd1,1:3,tempInd2) = 0;
-%-smaller than 0 in y
-[tempInd1, tempInd2] = find(subpixMaxima(:,2,:) < 0);
-subpixMaxima(tempInd1,1:3,tempInd2) = 0;
-%% Viewing 2D pixel/subpixel maxima
+% Viewing 2D pixel/subpixel maxima
 %
 % close all
 % %view pixel resolution maxima
@@ -120,7 +154,7 @@ subpixMaxima(tempInd1,1:3,tempInd2) = 0;
 %     end
 % end
 
-%% Linking objects to pillars
+% Linking objects to pillars
 % The plan is to create several metrics for determining whether a local 2D
 % maxima belongs to a 'pillar' group of maxima by comparing the xy distance
 % between the object of interest and the nearest neighbors on frames before
@@ -129,12 +163,12 @@ close all
 disp('Linking Dots Between Frames.')
 % Set a maximum linking distance in microns that any object can still be
 % considered part of a pillar. Smaller values will speed up code.
-maxLinkDistance = .8;
+maxLinkDistance = 1;
 maxLD = maxLinkDistance/pixelSize;
 disp(['Max Link Distance (Microns): ',num2str(maxLinkDistance)])
 % Set a maximum number of frames to look for a linked object before giving
 % up (maxJumpDistance)
-maxJD = 7;
+maxJD = 5;
 disp(['Max Jump Distance (Frames): ',num2str(maxJD)])
 
 % The LinkMaxima function checks for the closest match for an object in
@@ -148,6 +182,8 @@ disp(['Max Jump Distance (Frames): ',num2str(maxJD)])
 %proximity. One of the steps is a lookup of potential candidates for making
 %a match. That lookup gets exponentially longer the larger an image stack
 %is. This section should reduce computational time for any given image.
+
+% ********WIP******************
 
 
 %% Creating Pillar Book for Easy Export
@@ -190,6 +226,23 @@ for i = 1:noPillars
 end
 %Truncate PBook
 pBookFinal = pBook(:,:,1:(noPillars-(pBSkip-1)));
+
+%%
+% 2D Plot of points color coded by pillar and connected
+disp('Plotting Linked Paths.')
+figure
+imshow(roiZeros)
+hold on
+clear tempInd1 tempInd2
+for j = 1:size(pBookFinal,3)
+    clear tempPillar
+    tempInd1 = find(pBookFinal(:,1,j),1,'first');
+    tempInd2 = find(pBookFinal(:,1,j),1,'last');
+    tempPillar = pBookFinal(tempInd1:tempInd2,:,j);
+    plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
+end
+hold off
+
 
 %%
 disp('Creating Text File for trajectories.m.')
@@ -243,20 +296,6 @@ p1Format = 'Remove Large?';
     fprintf(paraTxt,p1Format,parametersObj{5});
     
     fclose(paraTxt);
-%% 2D Plot of points color coded by pillar and connected
-disp('Plotting Linked Paths.')
-figure
-imshow(roiZeros)
-hold on
-clear tempInd1 tempInd2
-for j = 1:size(pBookFinal,3)
-    clear tempPillar
-    tempInd1 = find(pBookFinal(:,1,j),1,'first');
-    tempInd2 = find(pBookFinal(:,1,j),1,'last');
-    tempPillar = pBookFinal(tempInd1:tempInd2,:,j);
-    plot(tempPillar(:,1),tempPillar(:,2))
-end
-hold off
 
 %% 3D Scatterplot of points color coded by pillar
 % figure
