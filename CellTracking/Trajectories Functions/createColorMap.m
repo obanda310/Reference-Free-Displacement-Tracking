@@ -17,8 +17,12 @@ colorMap2 = zeros(numTraj,size(book2,2),divisionsNumber); %for creating colormap
 maskArray1 = zeros(numIndices,totalNumFrames,numTraj,1);
 maskArray2 = zeros(numTraj,1,1);
 for i = 1:divisionsNumber
-     colorMap1(:,:,:,i) = book1(:,:,:);     
-     maskArray1(1,:,:,1) = book1(5,:,:) < (divisionsSize*i) & book1(5,:,:) > (divisionsSize*(i-1));
+     colorMap1(:,:,:,i) = book1(:,:,:); 
+     if i == divisionsNumber
+     maskArray1(1,:,:,1) = book1(5,:,:) > (divisionsSize*(i-1));
+     else
+         maskArray1(1,:,:,1) = book1(5,:,:) <= (divisionsSize*i) & book1(5,:,:) > (divisionsSize*(i-1));
+     end
      for j = 1:numIndices         
      colorMap1(j,:,:,i) = colorMap1(j,:,:,i).*maskArray1(1,:,:,1);
      end
@@ -26,7 +30,11 @@ end
 disp('done cMDBook1')
 for i = 1:divisionsNumber
      colorMap2(:,:,i) = book2(:,:,:);
-     maskArray2(:,1,1) = book2(:,9) < (divisionsSize*i) & book2(:,9) > (divisionsSize*(i-1));
+     if i == divisionsNumber
+          maskArray2(:,1,1) = book2(:,9) > (divisionsSize*(i-1));
+     else
+     maskArray2(:,1,1) = book2(:,9) <= (divisionsSize*i) & book2(:,9) > (divisionsSize*(i-1));
+     end
      for j = 1:numIndices         
      colorMap2(:,j,i) = colorMap2(:,j,i).*maskArray2(:,1,1);
      end
