@@ -14,16 +14,47 @@ disp('1.1 Loading Tracking Outputs')
 
 [num,dataKey] = InputSelector();
 
-[nameFluorFile,filePath] = uigetfile('*.tif','Select Fluorescent Image for Overlay');
-imageFluor = imread([filePath,nameFluorFile]);
-
-[nameTransFile,filePath] = uigetfile('*.tif','Select Transmitted Image for Overlay');
-imageTrans = imread([filePath,nameTransFile]);
-
 [nameBlackFile,filePath] = uigetfile('*.tif','Select a Black Image of the Correct Dimensions');
 imageBlack = imread([filePath,nameBlackFile]);
 
+w = questdlg('Use a Fluorescent image for overlays?',...
+    'Fluorescent Image (Optional)','Yes','No','No');
+waitfor(w);
+if strcmp(w,'Yes') == 1
+    [nameFluorFile,filePath] = uigetfile('*.tif','Select Fluorescent Image for Overlay');
+    imageFluor = imread([filePath,nameFluorFile]);
+else
+    imageFluor = imageBlack;
+end
+
+w = questdlg('Use a Transmitted image for overlays?',...
+    'Fluorescent Image (Optional)','Yes','No','No');
+waitfor(w);
+if strcmp(w,'Yes') == 1
+    [nameTransFile,filePath] = uigetfile('*.tif','Select Transmitted Image for Overlay');
+    imageTrans = imread([filePath,nameTransFile]);
+else
+    imageTrans = imageBlack;
+end
+
+w = questdlg('Input Binary Cell Outline?',...
+    'Binary Outline','Yes','No','No');
+if strcmp(w,'Yes') == 1
+    [nameAreaFile,filePath] = uigetfile('*.tif','Select a Thresholded Image of the Cell Area');
+    imageArea = imread([filePath,nameAreaFile]);
+else
+    imageArea = imageBlack==0;
+end
+
 roiStack = getImages();
+
+imageBorders = ones(size(imageArea,1),size(imageArea,2));
+bLimits = round(6/dataKey(9,1));
+imageBorders(end-bLimits:end,:) = 0;
+imageBorders(1:bLimits,:) = 0;
+imageBorders(:,end-bLimits:end) = 0;
+imageBorders(:,1:bLimits) = 0;
+
 
 outputs = OutputSelector();
 
@@ -46,8 +77,8 @@ totalNumFrames = max(num(:,dataKey(3,1)))+dataKey(8,1); %Maximum number of frame
 
 disp('2.1 Creating book1 and book2')
 
-book1 = zeros(numIndices,totalNumFrames,numTraj);
-book2 = zeros(numTraj,10);
+% book1 = zeros(numIndices,totalNumFrames,numTraj);
+% book2 = zeros(numTraj,10);
 
 %Notes: The majority of indices are added in later sections, but listed
 %here for reference.
@@ -60,20 +91,29 @@ book2 = zeros(numTraj,10);
 %5 = Magnitude of displacement
 %6 = Intensity in current frame (column 14 from TrackMate output)
 %7 = Gauss filtered intensity values (created/used in section 4)
+%8 = Tilt Corrected dX
+%9 = Tilt Corrected dY
+%10 = Tilt Corrected Magnitude
 
 %Index List for Book2 - Frame Independent Values
 %1 = Raw X Centroid Location of Traj in First Frame
 %2 = Raw Y Centroid Location of Traj in First Frame
 %3 = First Frame that a Traj Appears
 %4 = Last Frame that a Traj Appears
-%5 = Value of book1 index 5 (see above) in Last Frame that Traj Appears
-%6 = Value of book1 index 6 (see above) in Last Frame that Traj Appears
+%5 = Value of book1 index 3 (see above) in Last Frame that Traj Appears
+%6 = Value of book1 index 4 (see above) in Last Frame that Traj Appears
 %7 = Value of book1 index 1 (see above) in Last Frame that Traj Appears
 %8 = Value of book1 index 2 (see above) in Last Frame that Traj Appears
 %9 = Maximum Magnitude of displacement
 %10= Numeric ID of Pillar
+%11= Tilt Corrected Final dx
+%12= Tilt Corrected Final dy
+%13= Tilt Corrected Final Magnitude
+%14= Predicted Top Surface
+%15= Deviation from top Surface
 
 %HANDLING XYZ DATA
+skipCount = 0;
 for i = 1:numTraj
     % Here we build a book of pages (3D array) with the data for a single
     % object/trajectory per page. Most of the code is to ensure that each
@@ -90,24 +130,35 @@ for i = 1:numTraj
         startFrame = min(tempObj(:,dataKey(3,1)))+dataKey(8,1);
         % the last frame that an object appears in
         endFrame = (startFrame+numFrames-1);
-        book2(i,3) = startFrame;
-        book2(i,4) = endFrame;
+        
+        if imageBorders(round(tempObj(1,3)),round(tempObj(1,2)))==0
+            skip = 1;
+            skipCount = skipCount+1;
+        else
+            skip = 0;
+        end
+        
+        if skip == 0
+        book2(i-skipCount,3) = startFrame;
+        book2(i-skipCount,4) = endFrame;
         % this fills in the upper portion of obj matrix with zeros if the first
         % frame is not 0
         
-        book1(1,startFrame:endFrame,i) = tempObj(:,dataKey(1,1)).*dataKey(7,1);
-        book1(2,startFrame:endFrame,i) = tempObj(:,dataKey(2,1)).*dataKey(7,1);
-        book1(6,startFrame:endFrame,i) = tempObj(:,dataKey(5,1));
-    else
-        startFrame = 1;
-        endFrame = 1;
-        book2(i,3) = startFrame;
-        book2(i,4) = endFrame;
+        book1(1,startFrame:endFrame,i-skipCount) = tempObj(:,dataKey(1,1)).*dataKey(7,1);
+        book1(2,startFrame:endFrame,i-skipCount) = tempObj(:,dataKey(2,1)).*dataKey(7,1);
+        book1(6,startFrame:endFrame,i-skipCount) = tempObj(:,dataKey(5,1));
+%     else
+%         startFrame = 1;
+%         endFrame = 1;
+%         book2(i-skipCount,3) = startFrame;
+%         book2(i-skipCount,4) = endFrame;
+         end
     end
     if i == 1 || i == 5000 || i == 10000 || i == 15000 || i==20000 || i==25000
         disp(['Progress: ' num2str(i) ' of ' num2str(numTraj)])
     end
 end
+numTraj = size(book1,3);
 
 disp('2.2 Storing XY Displacements')
 for i = 1:numTraj
@@ -118,6 +169,46 @@ for i = 1:numTraj
     book1(5,:,i) = (book1(3,:,i).^2 + book1(4,:,i).^2).^0.5; %frame specific total displacement
     book2(i,10) = i; %pillar ID
 end
+
+% Tilt Correction
+[noiseBook,sumIndFinal] = tiltCorrection(roiStack,book1,book2,dataKey);
+
+for i = 1:totalNumFrames
+    book1(8,i,:) = ((book1(3,i,:)) - noiseBook(i,2)).*(book1(3,i,:)~=0);
+    book1(9,i,:) = ((book1(4,i,:)) - noiseBook(i,3)).*(book1(4,i,:)~=0);
+    book1(10,i,:) = ((book1(8,i,:).^2)+(book1(9,i,:).^2)).^.5;
+    noiseBook(i,6) = mean(book1(8,i,sumIndFinal));
+    noiseBook(i,7) = mean(book1(9,i,sumIndFinal));
+    noiseBook(i,8) = mean(book1(10,i,sumIndFinal));
+end
+
+errorHist = figure;
+hold on
+histogram(book1(10,:,sumIndFinal),'normalization','probability')
+histogram(book1(5,:,sumIndFinal),'normalization','probability')
+savefile = [filePath '\ErrorHistNoStress.tif'];
+export_fig(errorHist,savefile);
+
+
+errorHist2 = figure;
+hold on
+histogram(book1(10,:,:),'normalization','probability')
+histogram(book1(5,:,:),'normalization','probability')
+savefile = [filePath '\HistDisplacements.tif'];
+export_fig(errorHist2,savefile);
+
+for i = 1:numTraj
+    
+    book2(i,5) = book1(3,book2(i,4),i);
+    book2(i,6) = book1(4,book2(i,4),i);
+    book2(i,7) = book1(1,book2(i,4),i);
+    book2(i,8) = book1(2,book2(i,4),i);
+    book2(i,9) = (book2(i,5).^2 + book2(i,6).^2).^0.5;
+    book2(i,11) = book1(8,book2(i,4),i);
+    book2(i,12) = book1(9,book2(i,4),i);
+    book2(i,13) = (book2(i,5).^2 + book2(i,6).^2).^0.5;
+end
+
 
 %%
 %--------------------------------------------------------------------------
@@ -176,15 +267,7 @@ totalAverageInterp(1,:) = interp1(linspace(1,size(book1,2),size(book1,2)),conv(t
 %so they would not be visible in the outputs in section 5 unless their
 %maximum value is used for those overlays.
 disp('4.1 Storing Maximum Displacement Values')
-for i = 1:numTraj
-    
-    book2(i,5) = book1(3,book2(i,4),i);
-    book2(i,6) = book1(4,book2(i,4),i);
-    book2(i,7) = book1(1,book2(i,4),i);
-    book2(i,8) = book1(2,book2(i,4),i);
-    book2(i,9) = (book2(i,5).^2 + book2(i,6).^2).^0.5;
-end
-
+%moved to previous section
 
 
 
@@ -193,7 +276,7 @@ end
 %4.2 Creating a Color Map for Quiver Plots%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[cm1,cm2,cmD,cmDS,colorMap,colorScheme] = createColorMap(book1,book2);
+[cm1,cm2,cmD,cmDS,colorMap,colorScheme] = createColorMap(book1,book2,outputs);
 
 
 
@@ -244,9 +327,9 @@ for i = 1:numTraj
     truePeaks = find(pks>max(pks)*.25);
     zPeaks(i,1:size(loc(truePeaks),2)) = loc(truePeaks);
     
-%     if zPeaks(i,1) <7 % remove false peaks created at bottom limit of image stack
-%         zPeaks(i,1:8) = zPeaks(i,2:9);
-%     end
+    %     if zPeaks(i,1) <7 % remove false peaks created at bottom limit of image stack
+    %         zPeaks(i,1:8) = zPeaks(i,2:9);
+    %     end
     
     zPeaks(i,10) = nnz(zPeaks(i,1:9));
 end
@@ -267,17 +350,17 @@ zPeaksSpacing(1:size(zPeaks,1),1) = 30; %Space filler larger than issue threshol
 zPeaksSpacing(:,2:zPeakAvgNo+1) = zPeaks(:,3:zPeakAvgNo+2)-zPeaks(:,2:zPeakAvgNo+1);
 for i = 2:size(zPeaksSpacing,2)
     for j = 1:size(zPeaks,1)
-    if abs(zPeaksSpacing(j,i))<degreeInterp*7
-        zPeaks(j,i) = round(mean(zPeaks(j,i:i+1)));
-        zPeaks(j,(i+1):8)=zPeaks(j,(i+2):9);
-    end
+        if abs(zPeaksSpacing(j,i))<degreeInterp*7
+            zPeaks(j,i) = round(mean(zPeaks(j,i:i+1)));
+            zPeaks(j,(i+1):8)=zPeaks(j,(i+2):9);
+        end
     end
 end
 
 %Correct shifts in data due to uneven recognition of objects
 zPeaksAverage = mean(zPeaks(:,2:zPeakAvgNo),2);
 % for i = 1:size(zPeaks,1)
-%     if  
+%     if
 
 %     end
 % end
@@ -295,7 +378,7 @@ zPeaksStDSpacing = std(mean(zPeaksSpacing,'omitnan'),'omitnan');
 clear zSubPeaks zAvgClose10 zAvgClose10Interp
 zAvgClose50 = zeros(size(cm3,1),size(cm3,3));
 zAvgClose50Interp = zeros(size(cm3,1),size(cm3,3)*degreeInterp);
-zAvgClose50(:,:) = mean(cm3(:,1:50,:),2);
+zAvgClose50(:,:) = mean(cm3(:,1:50,:),2,'omitnan');
 zSubPeaks = zeros(numTraj,10);
 for i = 1:numTraj
     zAvgClose50Interp(i,:) = interp1(linspace(1,size(book1,2),size(book1,2)),conv(zAvgClose50(i,:),gausswin(6),'same'),interpXq,'spline');
@@ -305,9 +388,9 @@ for i = 1:numTraj
     
     zSubPeaks(i,1:size(loc(truePeaks),2)) = loc(truePeaks);
     
-%     if zPeaks(i,1) <7 % remove false peaks created at bottom limit of image stack
-%         zPeaks(i,1:8) = zPeaks(i,2:9);
-%     end
+    %     if zPeaks(i,1) <7 % remove false peaks created at bottom limit of image stack
+    %         zPeaks(i,1:8) = zPeaks(i,2:9);
+    %     end
 end
 
 [zPeaksIssues,~] = find(zPeaks(:,1:zPeakAvgNo)==0);
@@ -347,146 +430,150 @@ end
 %4.5 Estimating XY Coordinates of Interpolated Z Positions%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if zPeakAvgNo > 2
-clear zPeaksFrames zPeaksTopWeights zPeaksBottomWeights finalLoc
-
-zPeaksFrames = floor(zPeaks);
-zPeaksTopWeights = zPeaks-zPeaksFrames;
-zPeaksBottomWeights = 1-zPeaksTopWeights;
-
-finalLoc = zeros(numTraj,4,zPeakAvgNo);
-
-for i = 1:numTraj
-    for j = 1:zPeakAvgNo-1
-        %Structure is (Top Frame Weight Fraction * Top Frame) + (Bottom Frame Weight
-        %Fraction * Bottom Frame) All Divided by the number of parts (the degree of
-        %interpolation stored in 'degreeInterp'). The whole thing is just a
-        %weighted average.
-        
-        %first check if top frame and bottom frame are non-zero
-        %for xPos
-        if book1(1,zPeaksFrames(i,j)+1,i)>0 && zPeaksFrames(i,j)>0
-            finalLoc(i,1,j) =  (((zPeaksTopWeights(i,j)*degreeInterp)*book1(1,zPeaksFrames(i,j)+1,i))+((zPeaksBottomWeights(i,j)*degreeInterp)*book1(1,zPeaksFrames(i,j),i)))/degreeInterp; %x position
-        else %if both are not nonzero use last available position
-            finalLoc(i,1,j) = book1(1,book2(i,4),i);
+    clear zPeaksFrames zPeaksTopWeights zPeaksBottomWeights finalLoc
+    
+    zPeaksFrames = floor(zPeaks);
+    zPeaksTopWeights = zPeaks-zPeaksFrames;
+    zPeaksBottomWeights = 1-zPeaksTopWeights;
+    
+    finalLoc = zeros(numTraj,4,zPeakAvgNo);
+    
+    for i = 1:numTraj
+        for j = 1:zPeakAvgNo-1
+            %Structure is (Top Frame Weight Fraction * Top Frame) + (Bottom Frame Weight
+            %Fraction * Bottom Frame) All Divided by the number of parts (the degree of
+            %interpolation stored in 'degreeInterp'). The whole thing is just a
+            %weighted average.
+            
+            %first check if top frame and bottom frame are non-zero
+            %for xPos
+            if book1(1,zPeaksFrames(i,j)+1,i)>0 && zPeaksFrames(i,j)>0
+                finalLoc(i,1,j) =  (((zPeaksTopWeights(i,j)*degreeInterp)*book1(1,zPeaksFrames(i,j)+1,i))+((zPeaksBottomWeights(i,j)*degreeInterp)*book1(1,zPeaksFrames(i,j),i)))/degreeInterp; %x position
+            else %if both are not nonzero use last available position
+                finalLoc(i,1,j) = book1(1,book2(i,4),i);
+            end
+            %for yPos
+            if book1(2,zPeaksFrames(i,j)+1,i)>0 && zPeaksFrames(i,j)>0
+                finalLoc(i,2,j) =  (((zPeaksTopWeights(i,j)*degreeInterp)*book1(2,zPeaksFrames(i,j)+1,i))+((zPeaksBottomWeights(i,j)*degreeInterp)*book1(2,zPeaksFrames(i,j),i)))/degreeInterp;%y position
+            else
+                finalLoc(i,2,j) = book1(2,book2(i,4),i);
+            end
+            
+            finalLoc(i,3,j) =  zPeaks(i,j)*zScale;%z position
+            finalLoc(i,4,j) = i;
         end
-        %for yPos
-        if book1(2,zPeaksFrames(i,j)+1,i)>0 && zPeaksFrames(i,j)>0
-            finalLoc(i,2,j) =  (((zPeaksTopWeights(i,j)*degreeInterp)*book1(2,zPeaksFrames(i,j)+1,i))+((zPeaksBottomWeights(i,j)*degreeInterp)*book1(2,zPeaksFrames(i,j),i)))/degreeInterp;%y position
-        else
-            finalLoc(i,2,j) = book1(2,book2(i,4),i);
+        
+    end
+    
+    for i = 1:numTraj
+        finalLoc(i,1,zPeakAvgNo) = book1(1,book2(i,4),i);
+        finalLoc(i,2,zPeakAvgNo) = book1(2,book2(i,4),i);
+        finalLoc(i,3,zPeakAvgNo) = zPeaks(i,zPeakAvgNo)*zScale;
+        finalLoc(i,4,zPeakAvgNo) = i;
+    end
+    
+    finalLoc(:,1:2,:) = finalLoc(:,1:2,:)*dataKey(9,1);
+    
+    %Create ZX profile for Ryan
+    clear finalLocSorted values order endFitData
+    for i = 1:zPeakAvgNo
+        [values, order] = sort(finalLoc(:,1,i));
+        finalLocSorted(:,:,i) = finalLoc(order,:,i);
+    end
+    
+    clear Xs Zs
+    
+    for j = 1:size(finalLocSorted,3)
+        count1 = 1;
+        count2 = 0;
+        rowStart = 1;
+        for i = 1:size(finalLocSorted,1)
+            if finalLocSorted(i,1,j)<finalLocSorted(rowStart,1,j)+10*dataKey(9,1)
+                count2 = count2+1;
+                Xs(count1,count2,j) = finalLocSorted(i,1,j);
+                Zs(count1,count2,j) = finalLocSorted(i,3,j);
+            else
+                count1 = count1+1;
+                count2 = 1;
+                rowStart = i;
+                Xs(count1,count2,j) = finalLocSorted(i,1,j);
+                Zs(count1,count2,j) = finalLocSorted(i,3,j);
+            end
+        end
+    end
+    
+    Xs(Xs==0) = NaN;
+    Zs(Zs==0) = NaN;
+    
+    Xmeans = mean(Xs,2,'omitnan');
+    Zmeans = mean(Zs,2,'omitnan');
+    
+    fitFraction =.1;
+    leftFit = round(size(Xmeans,1)*fitFraction);
+    rightFit = size(Xmeans,1) - leftFit;
+    
+    
+    endsFitData = zeros(leftFit*2,2,zPeakAvgNo);
+    for i = 1:zPeakAvgNo
+        endsFitData(1:leftFit,1,i) = Xmeans(1:leftFit,1,i);
+        endsFitData(1:leftFit,2,i) = Zmeans(1:leftFit,1,i);
+        endsFitData(leftFit+1:(leftFit*2),1,i) = Xmeans(rightFit+1:end,1,i);
+        endsFitData(leftFit+1:(leftFit*2),2,i) = Zmeans(rightFit+1:end,1,i);
+    end
+    endsFitDataTrunc = endsFitData(1:end-5,:,:);
+    
+    
+    for i = 1:zPeakAvgNo
+        fitObj{i} = polyfit(endsFitDataTrunc(:,1,i),endsFitDataTrunc(:,2,i),1);
+    end
+    
+    %y = polyval(p,x) basic structure
+    clear finalZPos
+    for i = 1:zPeakAvgNo
+        finalZPos(:,1,i) = (((max(endsFitDataTrunc(:,2,zPeakAvgNo))-polyval(fitObj{zPeakAvgNo},Xmeans(:,1,zPeakAvgNo))) + Zmeans(:,1,i)))-highestObjectInZ;
+    end
+    
+    
+    avgXZName = 'avgXZ.txt';
+    dlmwrite(avgXZName,cat(2,Xmeans,Zmeans));
+    
+    
+    %%
+    if ismember(14,outputs) == 1
+        %Show an XYZ representation of the dot positions
+        figure
+        hold on
+        for i = 1:size(finalLoc,3)-1
+            fitobject4{i} = fit([finalLoc(:,2,i),finalLoc(:,1,i)],finalLoc(:,3,i),'poly11');
+            scatter3(finalLoc(:,2,i),finalLoc(:,1,i),finalLoc(:,3,i),10);
+            plot(fitobject4{i})
+        end
+        plot(fitobject3{1})
+        hold off
+        
+        %Show an XZ representation of the dot positions
+        figure
+        for i = 1:size(finalLoc,3)
+            
+            scatter(finalLoc(:,1,i),finalLoc(:,3,i));
+            hold on
+        end
+        hold off
+        
+        %Show a flattened XZ representation of the average dot positions
+        zReference = max(endsFitDataTrunc(:,2,zPeakAvgNo));
+        figure
+        for i = 1:size(Xmeans,3)
+            plot(Xmeans(:,1,i),finalZPos(:,1,i));
+            hold on
+            plot(Xmeans(:,1,i),(polyval(fitObj{i},Xmeans(:,1,i)))+(zReference - polyval(fitObj{zPeakAvgNo},Xmeans(:,1,zPeakAvgNo)))-highestObjectInZ)
         end
         
-        finalLoc(i,3,j) =  zPeaks(i,j)*zScale;%z position
-        finalLoc(i,4,j) = i;
+        hold off
     end
     
 end
 
-for i = 1:numTraj
-    finalLoc(i,1,zPeakAvgNo) = book1(1,book2(i,4),i);
-    finalLoc(i,2,zPeakAvgNo) = book1(2,book2(i,4),i);
-    finalLoc(i,3,zPeakAvgNo) = zPeaks(i,zPeakAvgNo)*zScale;
-    finalLoc(i,4,zPeakAvgNo) = i;
-end
-
-finalLoc(:,1:2,:) = finalLoc(:,1:2,:)*dataKey(9,1);
-
-%Create ZX profile for Ryan
-clear finalLocSorted values order endFitData
-for i = 1:zPeakAvgNo
-[values, order] = sort(finalLoc(:,1,i));
-finalLocSorted(:,:,i) = finalLoc(order,:,i);
-end
-
-clear Xs Zs
-
-for j = 1:size(finalLocSorted,3)
-    count1 = 1;
-    count2 = 0;
-    rowStart = 1;
-    for i = 1:size(finalLocSorted,1)
-        if finalLocSorted(i,1,j)<finalLocSorted(rowStart,1,j)+10*dataKey(9,1)
-            count2 = count2+1;
-            Xs(count1,count2,j) = finalLocSorted(i,1,j);
-            Zs(count1,count2,j) = finalLocSorted(i,3,j);           
-        else
-            count1 = count1+1;
-            count2 = 1;
-            rowStart = i;
-            Xs(count1,count2,j) = finalLocSorted(i,1,j);
-            Zs(count1,count2,j) = finalLocSorted(i,3,j);
-        end
-    end
-end
-
-Xs(Xs==0) = NaN;
-Zs(Zs==0) = NaN;
-
-Xmeans = mean(Xs,2,'omitnan');
-Zmeans = mean(Zs,2,'omitnan');
-
-fitFraction =.1;
-leftFit = round(size(Xmeans,1)*fitFraction);
-rightFit = size(Xmeans,1) - leftFit;
-
-
-endsFitData = zeros(leftFit*2,2,zPeakAvgNo);
-for i = 1:zPeakAvgNo
-endsFitData(1:leftFit,1,i) = Xmeans(1:leftFit,1,i);
-endsFitData(1:leftFit,2,i) = Zmeans(1:leftFit,1,i);
-endsFitData(leftFit+1:(leftFit*2),1,i) = Xmeans(rightFit+1:end,1,i);
-endsFitData(leftFit+1:(leftFit*2),2,i) = Zmeans(rightFit+1:end,1,i);
-end
-endsFitDataTrunc = endsFitData(1:end-5,:,:);
-
-
-for i = 1:zPeakAvgNo
-    fitObj{i} = polyfit(endsFitDataTrunc(:,1,i),endsFitDataTrunc(:,2,i),1);
-end
-
-%y = polyval(p,x) basic structure
-clear finalZPos
-for i = 1:zPeakAvgNo
-    finalZPos(:,1,i) = (((max(endsFitDataTrunc(:,2,zPeakAvgNo))-polyval(fitObj{zPeakAvgNo},Xmeans(:,1,zPeakAvgNo))) + Zmeans(:,1,i)))-highestObjectInZ;
-end
-
-
-avgXZName = 'avgXZ.txt';
-dlmwrite(avgXZName,cat(2,Xmeans,Zmeans));
-
-
-%%
-%Show an XYZ representation of the dot positions
-figure
-for i = 1:size(finalLoc,3)-1
-    
-    scatter3(size(imageBlack,2)-finalLoc(:,1,i),finalLoc(:,2,i),finalLoc(:,3,i),10);
-    hold on
-end
-hold off
-
-%Show an XZ representation of the dot positions
-figure
-for i = 1:size(finalLoc,3)
-    
-    scatter(finalLoc(:,1,i),finalLoc(:,3,i));
-    hold on
-end
-hold off
-
-%%
-%Show a flattened XZ representation of the average dot positions 
-zReference = max(endsFitDataTrunc(:,2,zPeakAvgNo));
-figure
-for i = 1:size(Xmeans,3)    
-    plot(Xmeans(:,1,i),finalZPos(:,1,i));
-    hold on
-    plot(Xmeans(:,1,i),(polyval(fitObj{i},Xmeans(:,1,i)))+(zReference - polyval(fitObj{zPeakAvgNo},Xmeans(:,1,zPeakAvgNo)))-highestObjectInZ)
-end
-
-hold off
-end
-%%
 
 
 %%
@@ -499,8 +586,6 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%5.2 Drawing Zero-State Displacement Fields on Black Background%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-prompt = ('Use native input (1 for yes/ 0 for no)?');
-nativeInput = input(prompt);
 
 %%
 if ismember(2,outputs) == 1
@@ -512,16 +597,16 @@ if ismember(2,outputs) == 1
         hold on
         
         for i = 1:cmD
-            quiver(cm1(1,f,:,i),cm1(2,f,:,i),cm1(3,f,:,i),cm1(4,f,:,i),...
+            quiver(book1(1,f,cm1(cm1(:,i,f)>0,i,f)),book1(2,f,cm1(cm1(:,i,f)>0,i,f)),book1(3,f,cm1(cm1(:,i,f)>0,i,f)),book1(4,f,cm1(cm1(:,i,f)>0,i,f)),...
                 0,'color',[colorMap(i,1:3)]);
             hold on
         end
         hold off
         savefile = [filePath '\' folderName '\Black Background Overlay' colorScheme ' ' num2str(f) '.tif'];
-        if nativeInput == 1
-        export_fig(blackOverlay,savefile,'-native');
+        if ismember(6,outputs) == 1
+            export_fig(blackOverlay,savefile,'-native');
         else
-        export_fig(blackOverlay,savefile);            
+            export_fig(blackOverlay,savefile);
         end
         close
     end
@@ -546,21 +631,21 @@ if ismember(4,outputs) == 1
         hold on
         for i = 1:cmD
             
-            xTemp = squeeze(squeeze(cm1(1,f,:,i)));
-            xTemp = xTemp';
-            yTemp = squeeze(squeeze(cm1(2,f,:,i)));
-            yTemp = yTemp';
-            plot(xTemp,yTemp,'.','MarkerSize',3,'Color',[colorMap(i,1:3)]);
+            xTemp = squeeze(book1(1,f,cm1(cm1(:,i,f)>0,i,f)));
+            
+            yTemp = squeeze(book1(2,f,cm1(cm1(:,i,f)>0,i,f)));
+            
+            plot(xTemp,yTemp,'.','MarkerSize',30,'Color',[colorMap(i,1:3)]);
             
             hold on
         end
         hold on
         hold off
         savefile = [filePath '\' folderName '\Centroids on Frame ' colorScheme ' ' num2str(f) '.tif'];
-        if nativeInput == 1
-        export_fig(centroidsOnly,savefile,'-native');
+        if ismember(6,outputs) == 1
+            export_fig(centroidsOnly,savefile,'-native');
         else
-        export_fig(centroidsOnly,savefile);    
+            export_fig(centroidsOnly,savefile);
         end
         close
     end
@@ -594,18 +679,18 @@ if ismember(3,outputs) == 1
     hold on
     if ismember(8,outputs) == 0
         for i = 1:cmD
-            quiver(cm2(:,1,i),cm2(:,2,i),cm2(:,5,i),cm2(:,6,i),0,'color',[colorMap(i,1:3)]);
+            quiver(book2(cm2(cm2(:,i)>0,i),1),book2(cm2(cm2(:,i)>0,i),2),book2(cm2(cm2(:,i)>0,i),11),book2(cm2(cm2(:,i)>0,i),12),0,'color',[colorMap(i,1:3)]);
             hold on
         end
         
     end
     hold off
     savefile = [filePath '\Debug Image ' colorScheme '.tif'];
-     if nativeInput == 1
-    export_fig(debugImage,savefile,'-native');
-     else
-         export_fig(debugImage,savefile);
-     end
+    if ismember(6,outputs) == 1
+        export_fig(debugImage,savefile,'-native');
+    else
+        export_fig(debugImage,savefile);
+    end
 end
 %%
 
@@ -620,17 +705,17 @@ if ismember(5,outputs) == 1
     hold on
     for i = 1:cmD
         
-        quiver(cm2(:,1,i),cm2(:,2,i),cm2(:,5,i),cm2(:,6,i),0,'color',[colorMap(i,1:3)]);%(i^2)/((cmD/1.5)^2) also (i^1.3)/((cmD/2)^1.3)
+        quiver(book2(cm2(cm2(:,i)>0,i),1),book2(cm2(cm2(:,i)>0,i),2),book2(cm2(cm2(:,i)>0,i),11),book2(cm2(cm2(:,i)>0,i),12),(i^2)/((cmD/1.5)^2),'color',[colorMap(i,1:3)]);%(i^2)/((cmD/1.5)^2) also (i^1.3)/((cmD/2)^1.3)
         hold on
     end
     %quiver(book1(10,1,:),book1(11,1,:),book1(12,totalNumFrames,:),book1(13,totalNumFrames,:),0,'g');
     hold off
     savefile = [filePath '\Fluorescent Overlay ' colorScheme '.tif'];
-      if nativeInput == 1
-    export_fig(trajOverlay,savefile,'-native');
-      else
-          export_fig(trajOverlay,savefile);
-      end
+    if ismember(6,outputs) == 1
+        export_fig(trajOverlay,savefile,'-native');
+    else
+        export_fig(trajOverlay,savefile);
+    end
 end
 
 %%
@@ -639,17 +724,17 @@ if ismember(5,outputs) == 1
     imshow(imageTrans,[])
     hold on
     for i = 1:cmD
-        quiver(cm2(:,1,i),cm2(:,2,i),cm2(:,5,i),cm2(:,6,i),0,'color',[colorMap(i,1:3)]);%(i^1.3)/((cmD/2)^1.3)
+        quiver(book2(cm2(cm2(:,i)>0,i),1),book2(cm2(cm2(:,i)>0,i),2),book2(cm2(cm2(:,i)>0,i),11),book2(cm2(cm2(:,i)>0,i),12),0,'color',[colorMap(i,1:3)]);%(i^1.3)/((cmD/2)^1.3)
         hold on
     end
     %quiver(book1(10,1,:),book1(11,1,:),book1(12,totalNumFrames,:),book1(13,totalNumFrames,:),0,'g');
     hold off
     savefile = [filePath '\Transmitted Overlay ' colorScheme '.tif'];
-     if nativeInput == 1
-    export_fig(transmittedOverlay,savefile,'-native');
-     else
-       export_fig(transmittedOverlay,savefile);  
-     end
+    if ismember(6,outputs) == 1
+        export_fig(transmittedOverlay,savefile,'-native');
+    else
+        export_fig(transmittedOverlay,savefile);
+    end
 end
 
 %%
@@ -774,3 +859,88 @@ if ismember(11,outputs) == 1
     hold off
     
 end
+
+
+%%
+customHeatMap(book1,book2,imageBlack,dataKey,outputs,filePath)
+
+%%
+cmArea = sum(sum(imageArea==0));
+cmCutoff = ceil(2*(mean(mean(book1(10,:,sumIndFinal))))/cmDS);
+for i = 1:totalNumFrames
+    for j = cmCutoff:cmD
+        temp(i,j) = sum(book1(10,i,cm1(cm1(:,j,i)>0,j,i)));
+    end
+end
+sumDisp = sum(sum(temp));
+averageDisp = sumDisp/cmArea;
+
+areaTxt = fopen('Area-Disp Relationship.txt','wt');
+fprintf(areaTxt,strcat('Cell Area in Sq. Pixels: ', num2str(cmArea) , '\n'));
+fprintf(areaTxt,strcat('Sum of Displacements in Linear Pixels: ', num2str(sumDisp) , '\n'));
+fprintf(areaTxt,strcat('Ratio: ', num2str(averageDisp) , '\n'));
+fclose(areaTxt);
+
+
+%%
+[fitTiltPlaneMicrons,fitTiltPlanePixels] = tiltPlane(noiseBook,dataKey,imageArea);
+[topSurface ,fitSurface] = findSurface(book1,book2,cm2,cmCutoff,imageArea,imageBorders);
+
+%%
+figure
+%plot the filter pillars at the top frame that they reach
+scatter3(0,0,0)
+hold on
+scatter3(topSurface(:,3),topSurface(:,2),topSurface(:,4));
+plot(fitSurface{1})
+%plot(fitTiltPlanePixels)
+hold off
+%%
+figure
+imshow(imageArea)
+hold on
+scatter(topSurface(:,3),topSurface(:,2),5,'r')
+hold off
+
+%% Calculate Z-Displacement at Surface (Quick Method)
+clear cellSurface
+for i = 1:numTraj
+book2(i,14) = feval(fitSurface{1},book1(2,book2(i,4),i),book1(1,book2(i,4),i));
+book2(i,15) = 0;
+end
+
+cellSurface = zeros(1,1);
+for i = 1:numTraj
+    %if it is under the cell
+    if imageArea(round(book2(i,1)),round(book2(i,2)))==0 && imageArea(round(book2(i,7)),round(book2(i,8)))==0       
+        cellSurface = cat(1,cellSurface,i);
+    end
+end
+%shift cells up 1 to get rid of initial zero
+cellSurface(1,:) = [];
+
+for i = 1:size(cellSurface,1)
+book2(cellSurface(i,1),15) = book2(cellSurface(i,1),4)-book2(cellSurface(i,1),14);
+end
+
+interpSurface{1} = fit([(book2(:,2) + book2(:,12)),(book2(:,1) + book2(:,11))],(book2(:,14)+book2(:,15)),'lowess','Span',.005);
+interpSurface{2} = fit([(book2(:,2) + book2(:,12)),(book2(:,1) + book2(:,11))],book2(:,4),'lowess','Span',.05);
+
+%%
+close all
+figure
+quiver3(book2(:,2),book2(:,1),book2(:,14),book2(:,12),book2(:,11),book2(:,15))
+hold on
+plot3(0,0,0)
+plot(interpSurface{1})
+hold off
+%%
+
+figure
+hold on
+quiver3(book2(:,2),book2(:,1),book2(:,14),book2(:,12),book2(:,11),book2(:,15))
+plot(interpSurface{2})
+plot3(0,0,0)
+
+%%
+disp('Trajectories Program has Completed Successfully')
