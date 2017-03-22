@@ -31,12 +31,12 @@ h.c(5) = uicontrol('style','checkbox','units','pixels',...
 
 %Unused (old)
 mTextBox = uicontrol('style','text','position',[0,70,150,15]);
-set(mTextBox,'String','Old Outputs (Unsupported):')
+set(mTextBox,'String','Vector/Centroids Settings:')
 
 h.c(1) = uicontrol('style','checkbox','units','pixels',...
-    'position',[10,30,300,15],'string','Zero-State Displacement Fields, Old Version');
+    'position',[10,30,300,15],'string','Use Default Colormap','Value',1);
 h.c(6) = uicontrol('style','checkbox','units','pixels',...
-    'position',[10,50,300,15],'string','Transmitted/Trajectory Quiver Overlays without Save');
+    'position',[10,50,300,15],'string','Use "Native" Image Size');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Options for Intensity value operations
@@ -49,7 +49,8 @@ h.c(9) = uicontrol('style','checkbox','units','pixels',...
     'position',[360,150,300,15],'string','Pillar Analysis');
 h.c(10) = uicontrol('style','checkbox','units','pixels',...
     'position',[360,170,300,15],'string','PlaneFit');
-
+h.c(14) = uicontrol('style','checkbox','units','pixels',...
+    'position',[360,130,300,15],'string','Profile Fits');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Options for Creating FE Meshes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,7 +61,18 @@ set(mTextBox,'String','Creating Mesh for FE')
 h.c(11) = uicontrol('style','checkbox','units','pixels',...
     'position',[560,170,300,15],'string','Shear Mesh');
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Options for Creating Heat Maps
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+mTextBox = uicontrol('style','text','position',[350,100,200,15]);
+set(mTextBox,'String','Heat Maps Through Z')
+
+h.c(12) = uicontrol('style','checkbox','units','pixels',...
+    'position',[360,80,300,15],'string','Normal');
+
+h.c(13) = uicontrol('style','checkbox','units','pixels',...
+    'position',[360,60,300,15],'string','GaussBlurred');
 
 
 
