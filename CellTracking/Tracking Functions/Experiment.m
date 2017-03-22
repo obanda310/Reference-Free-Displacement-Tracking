@@ -14,14 +14,16 @@ classdef Experiment
             % If a stackFile input argument is not supplied, ask the user
             % to select an image stack he/she would like to analyze
             if ~exist('stackFile','var') || isempty(stackFile)
-                w = msgbox('Choose the image stack you''d like to analyze followed by the original image stack. (HINT: These can be the same file)');
+                w = msgbox('Choose the image stack you''d like to analyze.');
                 waitfor(w);
                 % Use the images from the image stack you'd like to analyze
-                obj.images = getImages;
+                [obj.images,obj.metadata] = getImages;
+                
+                % OR
                 % Get metadata from the original image stack since metadata
                 % isn't saved when the image stacks are cropped to the
                 % user-selected ROI
-                [~,obj.metadata] = getImages;
+                %[~,obj.metadata] = getImages;
                 % If a stackFile input argument is provided, use that as an
                 % input for getImages without asking the user to select a file
                 % manually
@@ -33,10 +35,15 @@ classdef Experiment
             % to select the cell image he/she would like to use as an
             % overlay
             if ~exist('cellFile','var') || isempty(cellFile)
-                w = msgbox('Choose the TRANSMITTED image of the cells on this gel');
+                w = questdlg('Create a companion TRANSMITTED image of the cells on this gel? If yes, select starting image',...
+                    'Transmitted Image (Optional)','Yes','No','No');
                 waitfor(w);
-                obj.cellImg = getImages;
-                obj.cellImg = imadjust(uint16(obj.cellImg));
+                if strcmp(w,'Yes') == 1
+                    obj.cellImg = getImages;
+                    obj.cellImg = imadjust(uint16(obj.cellImg));
+                else
+                    obj.cellImg = NaN;
+                end
                 % If a cellFile input argument is provided, use that as an
                 % input for getImages without asking the user to select a file
                 % manually
@@ -46,10 +53,15 @@ classdef Experiment
             
             %Same as above, but for a fluorescent image
             if ~exist('fluorFile','var') || isempty(fluorFile)
-                w = msgbox('Choose the FLUORESCENT image of the cells on this gel');
+                w = questdlg('Create a companion FLOURESCENT image of the cells on this gel? If yes, select starting image',...
+                    'Fluorescent Image (Optional)','Yes','No','No');
                 waitfor(w);
-                obj.fluorImg = getImages;
-                obj.fluorImg = uint16(obj.fluorImg);
+                if strcmp(w,'Yes') == 1
+                    obj.fluorImg = getImages;
+                    obj.fluorImg = uint16(obj.fluorImg);
+                else
+                    obj.fluorImg = NaN;
+                end
             else
                 obj.fluorImg = fluorFile;
             end
@@ -61,7 +73,7 @@ classdef Experiment
             dotSizeThreshLB = round(0.9/(1000000*obj.metadata.scalingX)^3);
             masks = bwareaopen(masks,dotSizeThreshLB);
             if ismember(3,ppOptions{1}) == 1
-            [masks,~] = removeLarge(obj.images,masks);
+                [masks,~] = removeLarge(obj.images,masks);
             end
             obj.ppOptions = ppOptions;
             obj.masks = masks;
@@ -125,17 +137,24 @@ classdef Experiment
                     imwrite(imresize(thisImg,scaleFactor),roiFile,'WriteMode','append');
                 end
                 
+                % If it exists...
                 % Save the ROI-cropped cell image with a similar file naming
                 % convention to that used in saving the ROI stack.
-                roiCell = imcrop(obj.cellImg,[roiBounds(1,1),roiBounds(1,2),roiBounds(1,3),roiBounds(1,4)]);
-                cellFile = [obj.metadata.filepath,obj.metadata.filename,'Transmitted Cell Image.tif'];
-                imwrite(imresize(roiCell,scaleFactor),cellFile,'tif');
+                if isnan(obj.cellImg) == 0
+                    roiCell = imcrop(obj.cellImg,[roiBounds(1,1),roiBounds(1,2),roiBounds(1,3),roiBounds(1,4)]);
+                    cellFile = [obj.metadata.filepath,obj.metadata.filename,'Transmitted Cell Image.tif'];
+                    imwrite(imresize(roiCell,scaleFactor),cellFile,'tif');
+                else
+                    roiCell = 'No Input Selected';
+                end
                 
                 % Save the ROI-cropped fluorescence image with a similar file
                 % naming convention to that used in saving the ROI stack.
-                roiFluor = imcrop(obj.fluorImg,[roiBounds(1,1),roiBounds(1,2),roiBounds(1,3),roiBounds(1,4)]);
-                fluorFile = [obj.metadata.filepath,obj.metadata.filename,'Fluorescent Cell Image.tif'];
-                imwrite(imresize(roiFluor,scaleFactor),fluorFile,'tif');
+                if isnan(obj.fluorImg) == 0
+                    roiFluor = imcrop(obj.fluorImg,[roiBounds(1,1),roiBounds(1,2),roiBounds(1,3),roiBounds(1,4)]);
+                    fluorFile = [obj.metadata.filepath,obj.metadata.filename,'Fluorescent Cell Image.tif'];
+                    imwrite(imresize(roiFluor,scaleFactor),fluorFile,'tif');
+                end
                 
                 % Save an ROI-sized black image with a similar file naming
                 % convention to that used in saving the ROI stack. This image
