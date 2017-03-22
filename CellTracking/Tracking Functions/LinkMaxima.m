@@ -39,6 +39,8 @@ end
 
 numPillars = 0;
 for i = 1:size(SPM,3)
+    A = strcat('Linking Frame ',num2str(i));
+    disp(A)
     for j = 1:(TDMIS(i,1))
         
         
@@ -94,8 +96,8 @@ for i = 1:size(SPM,3)
                     neighborOptions = find(neighborAngles==min(neighborAngles));
                     nearUpNeighbor = nearUpNeighbors(neighborOptions(1,1),1);
                     
-                    disp = sqrt((SPM(j,1,i)-SPM(j,10,i)).^2 +(SPM(j,2,i)-SPM(j,11,i)).^2);
-                    if min(neighborAngles) > 10 && disp>5 %(optional: ...&& tempDistances(nearUpNeighbor,1) > 2)
+                    displacement = sqrt((SPM(j,1,i)-SPM(j,10,i)).^2 +(SPM(j,2,i)-SPM(j,11,i)).^2);
+                    if min(neighborAngles) > 10 && displacement>10 %(optional: ...&& tempDistances(nearUpNeighbor,1) > 2)
                         skip = 1;
                     end
                     
@@ -108,8 +110,8 @@ for i = 1:size(SPM,3)
                     P1 = SPM(j,1:2,i);
                     P2 = SPM(nearUpNeighbors(1,1),1:2,i+n);
                     neighborAngle = (180/pi)*atan2(abs(det([P2-P0;P1-P0])),dot(P2-P0,P1-P0)); 
-                    disp = sqrt((SPM(j,1,i)-SPM(j,10,i)).^2 +(SPM(j,2,i)-SPM(j,11,i)).^2);
-                    if neighborAngle > 15 && disp>5 %(optional: ...&& tempDistances(nearUpNeighbor,1) > 2)
+                    displacement = sqrt((SPM(j,1,i)-SPM(j,10,i)).^2 +(SPM(j,2,i)-SPM(j,11,i)).^2);
+                    if neighborAngle > 15 && displacement>10 %(optional: ...&& tempDistances(nearUpNeighbor,1) > 2)
                         skip = 1;
                     end
                     
