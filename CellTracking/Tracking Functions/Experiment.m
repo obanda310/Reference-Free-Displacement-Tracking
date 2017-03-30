@@ -10,6 +10,8 @@ classdef Experiment
         ppOptions
     end
     methods
+        
+        %FOR LOADING IMAGES INTO AN EXPERIMENT
         function obj = Experiment(stackFile,cellFile,fluorFile,metadata)
             % If a stackFile input argument is not supplied, ask the user
             % to select an image stack he/she would like to analyze
@@ -65,21 +67,38 @@ classdef Experiment
             else
                 obj.fluorImg = fluorFile;
             end
-            
-            % Process images and get centroid locations
-            [masks,ppOptions] = getCentroidsStack(obj.images,obj.metadata);
-            % Clear any objects that are not 2-dimensionally larger than a
-            % threshold value equal to dotSizeThresh
-            dotSizeThreshLB = round(0.9/(1000000*obj.metadata.scalingX)^3);
-            masks = bwareaopen(masks,dotSizeThreshLB);
-            if ismember(3,ppOptions{1}) == 1
-                [masks,~] = removeLarge(obj.images,masks);
-            end
-            obj.ppOptions = ppOptions;
-            obj.masks = masks;
-            obj.redo = 0;
         end
-        function [roiImgs,roiMasks,roiCell,roiBounds,bkImg,redo] = cropImgs(obj)
+        
+        
+        %FOR PRE-PREPROCESSING DATA FOR FINDING CENTERS
+        function [ppOptions,roiMasks] = preprocess(obj)
+            % Process images and get centroid locations
+            [roiMasks,ppOptions] = preprocess(obj.images,obj.metadata);
+        end
+        
+        %FOR TRUNCATING DATA BEFORE PREPROCESSING
+        function [roiImgs,roiFluor,roiCell,roiBounds] = cropImgs(obj)
+            % Use EditStack.m to crop the original image stack
+            [roiImgs,~,roiBounds,~] = EditStack(obj.images,obj.images,1);
+            
+            %crop the transmitted image
+            if isnan(obj.cellImg) == 0
+                roiCell = imcrop(obj.cellImg,[roiBounds(1,1),roiBounds(1,2),roiBounds(1,3),roiBounds(1,4)]);
+            else
+                roiCell = NaN;
+            end
+            
+            %Crop the fluorescent image
+            if isnan(obj.fluorImg) == 0
+                roiFluor = imcrop(obj.fluorImg,[roiBounds(1,1),roiBounds(1,2),roiBounds(1,3),roiBounds(1,4)]);
+            else
+                roiFluor = NaN;
+            end
+        end
+        
+        
+        %FOR VIEWING PREPROCESSED MASKS AND TRUNCATING DATA
+        function [roiImgs,roiMasks,roiCell,roiBounds,bkImg,redo] = cropImgs2(obj)
             % Determine a scale factor for the resolution of outputs to
             % allow for high resolution overlays of displacement vectors
             % using the trajectories.m code. The new pixel size should be

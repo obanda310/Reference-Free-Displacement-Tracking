@@ -10,25 +10,31 @@ addpath(genpath('Kovesi Filters'));
 %% Get Images and Metadata
 disp('Creating Pre-Processed Images.')
 experiment = Experiment;
-
 % Scaling is the same in X and Y; convert from meters to microns
 pixelSize = experiment.metadata.scalingX*1000000;
 scaleFactor = (experiment.metadata.scalingX*1000000)/0.165;
 disp('Done.')
 disp(scaleFactor)
 disp(pixelSize)
+%% Initial Image cropping (cannot be undone except by restarting script)
+[experiment.images,experiment.fluorImg,experiment.cellImg,roiBounds1] = experiment.cropImgs;
+
 %% Final Pre-processing Before Finding Local Maxima
 clear roiCell;
-[roiImgs,roiMasks,roiCell,roiBounds,roiZeros,redoCheck] = experiment.cropImgs;
+[experiment.ppOptions,experiment.masks] = experiment.preprocess;
+[roiImgs,roiMasks,roiCell,roiBounds,roiZeros,redoCheck] = experiment.cropImgs2;
 
 while redoCheck == 1
     experiment = Experiment(experiment.images,experiment.cellImg,experiment.fluorImg,experiment.metadata);
+    [experiment.ppOptions,experiment.masks] = experiment.preprocess;
     pixelSize = experiment.metadata.scalingX*1000000;
     scaleFactor = (experiment.metadata.scalingX*1000000)/0.165;
     disp('Scale Factor:')
     disp(scaleFactor)
-    [roiImgs,roiMasks,roiCell,roiBounds,roiZeros,redoCheck] = experiment.cropImgs;
+    [roiImgs,roiMasks,roiCell,roiBounds,roiZeros,redoCheck] = experiment.cropImgs2;
 end
+
+
 % Create a gaussian filtered version of original to decrease false local
 % maxima
 ppImagesGauss = double(imgaussfilt(roiImgs,1.75));
@@ -36,10 +42,6 @@ ppImagesGauss = double(imgaussfilt(roiImgs,1.75));
 % Multiply the gaussian image by the mask image to isolate regions of
 % interest
 ppImagesGaussMask = roiMasks.*ppImagesGauss;
-
-% Optional:
-% ShowStack(ppImages8) %,experiment.centroids2d
-
 %% A mean filter for an image stack (resulting data may or may not be used in trajectories.m)
 h = fspecial('average', [5,5]);
 roiImgsMeanFilt = roiImgs;
