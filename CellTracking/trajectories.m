@@ -42,6 +42,7 @@ w = questdlg('Input Binary Cell Outline?',...
 if strcmp(w,'Yes') == 1
     [nameAreaFile,filePath] = uigetfile('*.tif','Select a Thresholded Image of the Cell Area');
     imageArea = imread([filePath,nameAreaFile]);
+    imageArea = imresize(imageArea,(size(imageBlack,1)/size(imageArea,1)));
 else
     imageArea = imageBlack==0;
 end
@@ -49,11 +50,11 @@ end
 roiStack = getImages();
 
 imageBorders = ones(size(imageArea,1),size(imageArea,2));
-bLimits = round(6/dataKey(9,1));
-imageBorders(end-bLimits:end,:) = 0;
-imageBorders(1:bLimits,:) = 0;
-imageBorders(:,end-bLimits:end) = 0;
-imageBorders(:,1:bLimits) = 0;
+% bLimits = round(6/dataKey(9,1));
+% imageBorders(end-bLimits:end,:) = 0;
+% imageBorders(1:bLimits,:) = 0;
+% imageBorders(:,end-bLimits:end) = 0;
+% imageBorders(:,1:bLimits) = 0;
 
 
 outputs = OutputSelector();
@@ -131,7 +132,7 @@ for i = 1:numTraj
         % the last frame that an object appears in
         endFrame = (startFrame+numFrames-1);
         
-        if imageBorders(round(tempObj(1,3)),round(tempObj(1,2)))==0
+        if imageBorders(round(tempObj(1,3)*dataKey(7,1)),round(tempObj(1,2)*dataKey(7,1)))==0
             skip = 1;
             skipCount = skipCount+1;
         else
@@ -152,7 +153,7 @@ for i = 1:numTraj
 %         endFrame = 1;
 %         book2(i-skipCount,3) = startFrame;
 %         book2(i-skipCount,4) = endFrame;
-         end
+        end
     end
     if i == 1 || i == 5000 || i == 10000 || i == 15000 || i==20000 || i==25000
         disp(['Progress: ' num2str(i) ' of ' num2str(numTraj)])
@@ -171,7 +172,7 @@ for i = 1:numTraj
 end
 
 % Tilt Correction
-[noiseBook,sumIndFinal] = tiltCorrection(roiStack,book1,book2,dataKey);
+[noiseBook,sumIndFinal] = tiltCorrection(roiStack,imageTrans,book1,book2);
 
 for i = 1:totalNumFrames
     book1(8,i,:) = ((book1(3,i,:)) - noiseBook(i,2)).*(book1(3,i,:)~=0);
@@ -540,17 +541,17 @@ if zPeakAvgNo > 2
     
     %%
     if ismember(14,outputs) == 1
+        %%
         %Show an XYZ representation of the dot positions
         figure
         hold on
         for i = 1:size(finalLoc,3)-1
-            fitobject4{i} = fit([finalLoc(:,2,i),finalLoc(:,1,i)],finalLoc(:,3,i),'poly11');
+            fitobject4{i} = fit([finalLoc(:,2,i),finalLoc(:,1,i)],finalLoc(:,3,i),'lowess','Span',0.05);
             scatter3(finalLoc(:,2,i),finalLoc(:,1,i),finalLoc(:,3,i),10);
             plot(fitobject4{i})
         end
-        plot(fitobject3{1})
         hold off
-        
+        %%
         %Show an XZ representation of the dot positions
         figure
         for i = 1:size(finalLoc,3)
@@ -705,7 +706,7 @@ if ismember(5,outputs) == 1
     hold on
     for i = 1:cmD
         
-        quiver(book2(cm2(cm2(:,i)>0,i),1),book2(cm2(cm2(:,i)>0,i),2),book2(cm2(cm2(:,i)>0,i),11),book2(cm2(cm2(:,i)>0,i),12),(i^2)/((cmD/1.5)^2),'color',[colorMap(i,1:3)]);%(i^2)/((cmD/1.5)^2) also (i^1.3)/((cmD/2)^1.3)
+        quiver(book2(cm2(cm2(:,i)>0,i),1),book2(cm2(cm2(:,i)>0,i),2),book2(cm2(cm2(:,i)>0,i),11),book2(cm2(cm2(:,i)>0,i),12),0,'color',[colorMap(i,1:3)]);%(i^2)/((cmD/1.5)^2) also (i^1.3)/((cmD/2)^1.3) ...(i^2)/((cmD/1.5)^2)
         hold on
     end
     %quiver(book1(10,1,:),book1(11,1,:),book1(12,totalNumFrames,:),book1(13,totalNumFrames,:),0,'g');
@@ -884,6 +885,9 @@ fclose(areaTxt);
 
 %%
 [fitTiltPlaneMicrons,fitTiltPlanePixels] = tiltPlane(noiseBook,dataKey,imageArea);
+
+%%
+clear topSurface fitSurface
 [topSurface ,fitSurface] = findSurface(book1,book2,cm2,cmCutoff,imageArea,imageBorders);
 
 %%
@@ -899,7 +903,7 @@ hold off
 figure
 imshow(imageArea)
 hold on
-scatter(topSurface(:,3),topSurface(:,2),5,'r')
+scatter(topSurface(:,2),topSurface(:,3),5,'r')
 hold off
 
 %% Calculate Z-Displacement at Surface (Quick Method)
@@ -912,7 +916,7 @@ end
 cellSurface = zeros(1,1);
 for i = 1:numTraj
     %if it is under the cell
-    if imageArea(round(book2(i,1)),round(book2(i,2)))==0 && imageArea(round(book2(i,7)),round(book2(i,8)))==0       
+    if imageArea(round(book2(i,2)),round(book2(i,1)))==0 && imageArea(round(book2(i,8)),round(book2(i,7)))==0       
         cellSurface = cat(1,cellSurface,i);
     end
 end
@@ -923,24 +927,53 @@ for i = 1:size(cellSurface,1)
 book2(cellSurface(i,1),15) = book2(cellSurface(i,1),4)-book2(cellSurface(i,1),14);
 end
 
-interpSurface{1} = fit([(book2(:,2) + book2(:,12)),(book2(:,1) + book2(:,11))],(book2(:,14)+book2(:,15)),'lowess','Span',.005);
-interpSurface{2} = fit([(book2(:,2) + book2(:,12)),(book2(:,1) + book2(:,11))],book2(:,4),'lowess','Span',.05);
+
+%interpSurface{1} = fit([(book2(:,2) + book2(:,12)),(book2(:,1) + book2(:,11))],(book2(:,14)+book2(:,15)),'lowess','Span',.01);
+
+%% Calculate Z-Displacement at Surface (Quick Method 2)
+for i = 1:numTraj
+book2(i,14) = feval(fitSurface{1},book1(2,book2(i,4),i),book1(1,book2(i,4),i));
+book2(i,15) = book2(i,4)-book2(i,14);
+end
+
+
+%interpSurface{1} = fit([(book2(:,2) + book2(:,12)),(book2(:,1) + book2(:,11))],(book2(:,14)+book2(:,15)),'lowess','Span',.005);
 
 %%
+% close all
+% figure
+% quiver3(book2(:,2),book2(:,1),book2(:,14),book2(:,12),book2(:,11),book2(:,15))
+% hold on
+% plot3(0,0,0)
+% plot(interpSurface{1})
+% xlim([0 size(roiStack,1)])
+% ylim([0 size(roiStack,2)])
+% zlim([0 size(roiStack,3)])
+% hold off
+
+%%
+
+%% Calculate Z-Displacement at Surface (Quick Method 2 in microns)
+
+interpSurface{1} = fit([(book2(:,2) + book2(:,12))*dataKey(9,1),(book2(:,1) + book2(:,11))*dataKey(9,1)],(book2(:,14)+book2(:,15))*0.4,'lowess','Span',.005);
+
 close all
 figure
-quiver3(book2(:,2),book2(:,1),book2(:,14),book2(:,12),book2(:,11),book2(:,15))
+quiver3(book2(:,2)*dataKey(9,1),book2(:,1)*dataKey(9,1),book2(:,14)*0.4,book2(:,12)*dataKey(9,1),book2(:,11)*dataKey(9,1),book2(:,15)*0.4,'r')
 hold on
 plot3(0,0,0)
 plot(interpSurface{1})
+xlim([0 size(roiStack,1)]*dataKey(9,1))
+ylim([0 size(roiStack,2)]*dataKey(9,1))
+zlim([0 size(roiStack,3)]*0.4)
 hold off
 %%
-
-figure
-hold on
-quiver3(book2(:,2),book2(:,1),book2(:,14),book2(:,12),book2(:,11),book2(:,15))
-plot(interpSurface{2})
-plot3(0,0,0)
+% 
+% figure
+% hold on
+% quiver3(book2(:,2),book2(:,1),book2(:,14),book2(:,12),book2(:,11),book2(:,15))
+% plot(interpSurface{2})
+% plot3(0,0,0)
 
 %%
 disp('Trajectories Program has Completed Successfully')
