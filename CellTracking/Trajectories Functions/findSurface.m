@@ -14,9 +14,9 @@ topSurface = zeros(1,1);
 
 for i = 1:size(topSurfaceCand,1)
     %if it is under the cell
-    if imageArea(round(book2(topSurfaceCand(i,1),1)),round(book2(topSurfaceCand(i,1),2)))~=0 && imageArea(round(book2(topSurfaceCand(i,1),7)),round(book2(topSurfaceCand(i,1),8)))~=0
+    if imageArea(round(book2(topSurfaceCand(i,1),2)),round(book2(topSurfaceCand(i,1),1)))~=0 && imageArea(round(book2(topSurfaceCand(i,1),8)),round(book2(topSurfaceCand(i,1),7)))~=0
         %if it is near the image border
-        if imageBorders(round(book2(topSurfaceCand(i,1),1)),round(book2(topSurfaceCand(i,1),2)))~=0 && imageBorders(round(book2(topSurfaceCand(i,1),7)),round(book2(topSurfaceCand(i,1),8)))~=0
+        if imageBorders(round(book2(topSurfaceCand(i,1),2)),round(book2(topSurfaceCand(i,1),1)))~=0 && imageBorders(round(book2(topSurfaceCand(i,1),8)),round(book2(topSurfaceCand(i,1),7)))~=0
             topSurface = cat(1,topSurface,topSurfaceCand(i,1));
         end
     end
