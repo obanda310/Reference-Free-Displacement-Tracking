@@ -1,4 +1,4 @@
-function final = createExcelForTrajectories(pillarBook)
+function final = createTxtForTrajectories(pillarBook)
     final = zeros(1,7);
     for a = 1:size(pillarBook,3)
         first = find(pillarBook(:,1,a),1,'first'); %these two lines will get rid of zeros in the output excel sheet
@@ -16,7 +16,7 @@ function final = createExcelForTrajectories(pillarBook)
     count = (1:length(final))';
     final = cat(2,count,final);
     
-    excelFileName = 'trajectoriesInput.txt';
+    txtFileName = 'trajectoriesInput.txt';
     % If a file already exists with the name of the Excel spreadsheet 
     % specified in excelFileName, that file is deleted. This is necessary 
     % because the file will not simply be overwritten. If the array being
@@ -24,8 +24,8 @@ function final = createExcelForTrajectories(pillarBook)
     % previously, the elements of the previous array that are outside the
     % bounds of the current array will remain, and not be deleted or
     % overwritten.
-    if exist(excelFileName,'file')
-        delete(excelFileName)
+    if exist(txtFileName,'file')
+        delete(txtFileName)
     end
-    dlmwrite(excelFileName,final);
+    dlmwrite(txtFileName,final);
 end
