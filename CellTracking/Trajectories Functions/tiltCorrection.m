@@ -1,11 +1,17 @@
-function [noiseBook,sumIndFinal] = tiltCorrection(roiStack,book1,book2,dataKey)
+function [noiseBook,sumIndFinal] = tiltCorrection(roiStack,imageTrans,book1,book2)
 % Tilt Correction
 close all
 totalNumFrames = size(book1,2);
-sumImages = zeros(size(roiStack,1),size(roiStack,2));
-for i = 2:totalNumFrames
-    sumImages(:,:) = sumImages + roiStack(:,:,i);
-end
+% sumImages = zeros(size(roiStack,1),size(roiStack,2));
+% for i = 2:totalNumFrames
+%     sumImages(:,:) = sumImages + roiStack(:,:,i);
+% end
+% sumImgScale = max(max(sumImages))/65536;
+%uint16(sumImages/sumImgScale);
+sumImages = uint16(squeeze(max(permute(roiStack, [3,1,2]))));
+transImgScale = 65536/mean(prctile(imageTrans,95));
+imageTrans = 65536-(imageTrans*transImgScale); %invert (should make opaque objects brighter)
+sumImages = sumImages+imageTrans; %combine dots and cells
 sumImgScale = max(max(sumImages))/65536;
 sumImages = uint16(sumImages/sumImgScale);
 imshow(sumImages,[]);
@@ -15,7 +21,7 @@ w = msgbox('Select a location with low displacements and double-click to continu
 [~,sumBounds] = imcrop(sumImages);
 close
 
-sumBounds = sumBounds*dataKey(7,1);
+sumBounds = sumBounds;
 sumBounds(1,3:4) = sumBounds(1,1:2) + sumBounds(1,3:4);
 sumIndX  = (book2(:,1)>sumBounds(1,1) & book2(:,1)<sumBounds(1,3));
 sumIndY  = (book2(:,2)>sumBounds(1,2) & book2(:,2)<sumBounds(1,4));
