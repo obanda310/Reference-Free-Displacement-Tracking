@@ -1,0 +1,19 @@
+1. Load one stack of images and transpose the dimension of x and y
+   
+   for k=1:frs
+   im(:,:,k)=imread(strcat(filestem,num2str(i,'%02.0f'),'.tif'),k);
+   end
+   im=permute(im, [2,1,3]);
+   filestem should be a string, which provide the path and file root for the image file. 
+2. Run "bpass3dMB" to filter the transposed stack of images. The reason for running 
+   "bpass3dMB" is explained in "feature3dMB". 
+   res=bpass3dMB(im, lnoise, lobject,inputv ,varargin)
+   lnoise=[1 1 lobject(3)/lobject(1)]; lobject is the size for setting the mimimum separation between features, 
+which is a 3-vector; inputv is to indicate whether there is input for noclip or nopad and if no inputs for both,
+inputv can be set as [0 0] 
+
+3. Run "feature3dMB" 
+   r=feature3dMB(res, diameter,masksz, xyzmax,inputv, sep, masscut, threshold)
+   Diameter is the same parameter as lobject; masksz is the size of mask, which is a 3-vector; xyzmax is the size of
+the 3D images [nx, ny, nz]; inputv indicates whether we have inputs for sep, masscut, threshold. Whether there is inputs for them is indicated in the logical input for inputv. Inputv contains 3 logical input. For example [0,1,0] 
+indicates we have an input for masscut.
