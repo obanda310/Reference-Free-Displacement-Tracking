@@ -1,14 +1,22 @@
 % InputStack should be a 3D image matrix where dimensions 1 and 2 contain
 % pixel information in y and x, respectively, and dimension 3 indexes
 % separate images in the stack
-function ShowStack(InputStack,Subplot) %,centroids
+function ShowStack(InputStack,Subplot,A) %,centroids
 
     noImgs = size(InputStack,3);
 if nargin == 1
     hFig = figure('Position',[100 100 800 800]);
     handles.axes1 = axes('Units','normalized','Position',[0 0 1 1]);
-else
+    noScale = 0;
+elseif nargin == 2
     hFig = subplot(4,3,11);
+    noScale = 0;
+elseif nargin == 3
+    hFig = figure('Position',[100 100 800 800]);
+    handles.axes1 = axes('Units','normalized','Position',[0 0 1 1]);
+    noScale = 1;
+    lb = uint16(1);
+    ub = uint16(65000);
 end
 
 
@@ -51,7 +59,12 @@ end
     setappdata(hFig,'MyMatrix',InputStack);
 
     % Display 1st frame
+    if noScale == 0 
     imshow(InputStack(:,:,1),[])
+    else
+    imshow(InputStack(:,:,1),[lb ub])
+    
+    end
 
     % IMPORTANT. Update handles structure.
     guidata(hFig,handles);
@@ -68,7 +81,11 @@ end
         set(handles.Edit1,'String',num2str(CurrentFrame));
         % Display appropriate frame.
         %axes(handles.axes1);
+        if noScale == 0 
         imshow(InputStack(:,:,CurrentFrame),[]);
+        else
+        imshow(InputStack(:,:,CurrentFrame),[lb ub])
+        end
         %imshow(InputStack(:,:,CurrentFrame),[],'Parent',handles.axes1);
         guidata(hFig,handles);
     end
@@ -82,7 +99,11 @@ end
         CurrentFrame = round((get(handles.SliderFrame,'Value')));
         set(handles.Edit1,'String',num2str(CurrentFrame));
         %axes(handles.axes1);
+                if noScale == 0 
         imshow(InputStack(:,:,CurrentFrame),[]);
+        else
+        imshow(InputStack(:,:,CurrentFrame),[lb ub])
+        end
         %imshow(InputStack(:,:,CurrentFrame),[],'Parent',handles.axes1);
 
         guidata(hFig,handles);
