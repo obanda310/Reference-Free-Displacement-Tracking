@@ -12,10 +12,11 @@ disp('Creating Pre-Processed Images.')
 experiment = Experiment;
 % Scaling is the same in X and Y; convert from meters to microns
 pixelSize = experiment.metadata.scalingX*1000000;
-scaleFactor = (experiment.metadata.scalingX*1000000)/0.165;
+scaleFactor = (experiment.metadata.scalingX*1000000)/0.1625;
 disp('Done.')
 disp(scaleFactor)
 disp(pixelSize)
+
 %% Initial Image cropping (cannot be undone except by restarting script)
 [experiment.images,experiment.fluorImg,experiment.cellImg,roiBounds1] = experiment.cropImgs;
 
@@ -42,6 +43,26 @@ ppImagesGauss = double(imgaussfilt(roiImgs,1.75));
 % Multiply the gaussian image by the mask image to isolate regions of
 % interest
 ppImagesGaussMask = roiMasks.*ppImagesGauss;
+
+%%
+ppImagesMask = roiMasks.*double(roiImgs);
+%%
+for i = 1:size(roiMasks,3)
+    temp = roiMasks(:,:,i);
+    low = mean(mean(temp(temp>0)));
+    
+    high = max(max(roiMasks(:,:,i)));
+    temp(temp>0) = high*(1);
+    temp = (temp/high)*(i^2/size(roiMasks,3)^2);
+    
+roiMasks2(:,:,i) = temp;
+end
+maxMasks = permute(max(permute(roiMasks2,[3 1 2])),[2 3 1]);
+pillarView = figure;
+imshow(maxMasks,[])
+filePath = cd;
+savefile = [filePath '\Tracking_pillarView.tif'];
+export_fig(pillarView,savefile,'-native');
 %% A mean filter for an image stack (resulting data may or may not be used in trajectories.m)
 h = fspecial('average', [5,5]);
 roiImgsMeanFilt = roiImgs;
@@ -53,37 +74,54 @@ end
 clear subpixMaxima
 for i = 1:size(roiImgs,3)
     clear temp
-    currentImg = ppImagesGaussMask(:,:,i);
-temp = feature2D(currentImg,1,round((experiment.ppOptions{2})/pixelSize),50,45);
+    currentImg = roiMasks(:,:,i);
+temp = feature2D(currentImg,1,round((experiment.ppOptions{2})/pixelSize),0,1);
+
+if temp == -1
+else
 subpixMaxima(1:size(temp,1),1,i) = temp(:,1);
 subpixMaxima(1:size(temp,1),2,i) = temp(:,2);
 subpixMaxima(1:size(temp,1),3,i) = i;
 end
+end
 
+%% Object Detection Plot
+detections = figure;
+imshow(roiZeros)
+hold on
+for i = 1:size(subpixMaxima,3) %size(subpixMaxima,3)-10
+    scatter3(subpixMaxima(:,1,i),subpixMaxima(:,2,i),subpixMaxima(:,3,i),'.')
+end
+hold off
+
+filePath = cd;
+savefile = [filePath '\Tracking_Unlinked Detections.tif'];
+export_fig(detections,savefile,'-native');
 %%
 % Linking objects to pillars
 % The plan is to create several metrics for determining whether a local 2D
 % maxima belongs to a 'pillar' group of maxima by comparing the xy distance
 % between the object of interest and the nearest neighbors on frames before
 % and after.
-close all
+
 disp('Linking Dots Between Frames.')
 % Set a maximum linking distance in microns that any object can still be
 % considered part of a pillar. Smaller values will speed up code.
-maxLinkDistance = 1;
+maxLinkDistance = 1.8;
 maxLD = maxLinkDistance/pixelSize;
 disp(['Max Link Distance (Microns): ',num2str(maxLinkDistance)])
 % Set a maximum number of frames to look for a linked object before giving
 % up (maxJumpDistance)
-maxJD = 5;
+maxJD = 3;
 disp(['Max Jump Distance (Frames): ',num2str(maxJD)])
 
 % The LinkMaxima function checks for the closest match for an object in
 % later frames. Maxima with multiple matches favor pillars with a greater
 % number of constituents
 
-[subpixMaxima,noPillars] = LinkMaxima(subpixMaxima,maxLD,maxJD);
-%% Binning Pillars Based on Location
+[subpixMaxima2,noPillars] = LinkMaxima(subpixMaxima,maxLD,maxJD);
+%[subpixMaxima2,noPillars,nunBook] = LinkMaxima2(subpixMaxima,maxLD,maxJD);
+% Binning Pillars Based on Location
 
 %Rationale: The following section links objects between frames based on
 %proximity. One of the steps is a lookup of potential candidates for making
@@ -92,8 +130,8 @@ disp(['Max Jump Distance (Frames): ',num2str(maxJD)])
 
 % ********WIP******************
 
-
-%% Creating Pillar Book for Easy Export
+%
+% Creating Pillar Book for Easy Export
 clear pBook tempInd1 tempInd2
 disp('Sorting Linked Dots.')
 pBSkip = 0; %Counts the number of skipped Pillars
@@ -104,14 +142,14 @@ for i = 1:noPillars
         disp(strcat('Sorted ',num2str(i),' of ', num2str(noPillars)))
     end
     %Find indices of members of current pillar
-    [tempInd1,tempInd2] = find(subpixMaxima(:,6,:)==i);
+    [tempInd1,tempInd2] = find(subpixMaxima2(:,6,:)==i);
     %If the pillar is longer than threshold pillar size
     if size(tempInd1,1) > round(size(roiImgs,3)/4)
         %Then for every member of the pillar
         for j = 1:size(tempInd1,1)
-            pBook(j,1,i-pBSkip) = subpixMaxima(tempInd1(j,1),1,tempInd2(j,1)); %record X
-            pBook(j,2,i-pBSkip) = subpixMaxima(tempInd1(j,1),2,tempInd2(j,1)); %record Y
-            pBook(j,3,i-pBSkip) = subpixMaxima(tempInd1(j,1),3,tempInd2(j,1)); %record Z
+            pBook(j,1,i-pBSkip) = subpixMaxima2(tempInd1(j,1),1,tempInd2(j,1)); %record X
+            pBook(j,2,i-pBSkip) = subpixMaxima2(tempInd1(j,1),2,tempInd2(j,1)); %record Y
+            pBook(j,3,i-pBSkip) = subpixMaxima2(tempInd1(j,1),3,tempInd2(j,1)); %record Z
             pBook(j,4,i-pBSkip) = i-pBSkip; %record new pillar number
             
             %if an intensity values is available, record it
@@ -134,13 +172,27 @@ for i = 1:noPillars
         pBSkipCheck = 0;
     end
 end
-%Truncate PBook
-pBookFinal = pBook(:,:,1:(noPillars-(pBSkip-1)));
 
-%%
-% 2D Plot of points color coded by pillar and connected
+%Truncate PBook
+pBookFinal = pBook(:,:,1:(noPillars-(pBSkip)));
+
+%
+%2D Plot of points color coded by pillar and connected
 disp('Plotting Linked Paths.')
-figure
+detections2 = figure;
+imshow(maxMasks)
+hold on
+clear tempInd1 tempInd2
+for j = 1:size(pBookFinal,3)
+    clear tempPillar
+    tempInd1 = find(pBookFinal(:,1,j),1,'first');
+    tempInd2 = find(pBookFinal(:,1,j),1,'last');
+    tempPillar = pBookFinal(tempInd1:tempInd2,:,j);
+    plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
+end
+%
+disp('Plotting Linked Paths.')
+detections3 = figure;
 imshow(roiZeros)
 hold on
 clear tempInd1 tempInd2
@@ -151,12 +203,35 @@ for j = 1:size(pBookFinal,3)
     tempPillar = pBookFinal(tempInd1:tempInd2,:,j);
     plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
 end
+% Detections and Links
+detectionsAndLinks = figure;
+imshow(roiZeros)
+hold on
+for i = 1:size(subpixMaxima,3) %size(subpixMaxima,3)-10
+    scatter3(subpixMaxima(:,1,i),subpixMaxima(:,2,i),subpixMaxima(:,3,i),'.')
+end
+clear tempInd1 tempInd2
+for j = 1:size(pBookFinal,3)
+    clear tempPillar
+    tempInd1 = find(pBookFinal(:,1,j),1,'first');
+    tempInd2 = find(pBookFinal(:,1,j),1,'last');
+    tempPillar = pBookFinal(tempInd1:tempInd2,:,j);
+    plot3(tempPillar(:,1),tempPillar(:,2),tempPillar(:,3))
+end
 hold off
 
+%%
+hold off
+savefile = [filePath '\Tracking_Linked Detections on pillarView.tif'];
+export_fig(detections2,savefile,'-native');
+
+
+savefile = [filePath '\Tracking_Linked Detections on Black.tif'];
+export_fig(detections3,savefile,'-native');
 
 %%
 disp('Creating Text File for trajectories.m.')
-createExcelForTrajectories(pBookFinal);
+createTxtForTrajectories(pBookFinal);
 parametersObj{1} = experiment.ppOptions;
 parametersObj{2} = maxLinkDistance;
 parametersObj{3} = maxJD;
