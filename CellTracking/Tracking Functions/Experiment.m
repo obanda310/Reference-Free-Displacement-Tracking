@@ -18,7 +18,8 @@ classdef Experiment
             if ~exist('stackFile','var') || isempty(stackFile)
                 w = msgbox('Choose the image stack you''d like to analyze.');
                 waitfor(w);
-                % Use the images from the image stack you'd like to analyze
+                % Use the images from the image stack you'd like to
+                % analyze
                 [obj.images,obj.metadata] = getImages;
                 
                 % OR
@@ -103,7 +104,7 @@ classdef Experiment
             % allow for high resolution overlays of displacement vectors
             % using the trajectories.m code. The new pixel size should be
             % 0.0825 microns
-            scaleFactor = (obj.metadata.scalingX*1000000)/0.165;
+            scaleFactor = (obj.metadata.scalingX*1000000)/0.1625;
             
             % Use EditStack.m GUI function to select a region of interest
             % and return the bounds of the ROI, as well as the stack of
@@ -134,6 +135,8 @@ classdef Experiment
                 % appended to the end of the name
                 roiFile = ...
                     [obj.metadata.filepath,obj.metadata.filename,'roi.tif'];
+                                maskFile = ...
+                    [obj.metadata.filepath,obj.metadata.filename,'masks.tif'];
                 % If a file already exists with the name we just specified
                 % (i.e. if an ROI has been selected before), that file is
                 % deleted. This is necessary because the file will not simply
@@ -143,6 +146,9 @@ classdef Experiment
                 % tiff  file
                 if exist(roiFile,'file')
                     delete(roiFile)
+                end
+                if exist(maskFile,'file')
+                    delete(maskFile)
                 end
                 % Loop through each image in the ROI image stack, append the
                 % current image (thisImg) to the end of the series, and save it
@@ -154,6 +160,9 @@ classdef Experiment
                     highIn = (double(max(max(max(roiImgs(:,:,i))))))/dataScale;
                     thisImg = imgaussfilt(imadjust(roiImgs(:,:,i),[noiseRng,highIn],[]));
                     imwrite(imresize(thisImg,scaleFactor),roiFile,'WriteMode','append');
+                    thisImg2 = uint16(roiMasks(:,:,i));
+                    imwrite(imresize(thisImg2,scaleFactor),maskFile,'WriteMode','append');
+                    
                 end
                 
                 % If it exists...
