@@ -14,31 +14,72 @@ disp('1.1 Loading Tracking Outputs')
 
 [num,dataKey] = InputSelector();
 
+files = dir('*.tif'); %Check Directory for default filenames
+
+%Open Black Image
+for k = 1:length(files)
+    current=files(k).name;
+    check(k)=strcmp(current(end-8:end),'black.tif');
+end
+loc=find(check);
+if size(loc,1)==1
+imageBlack = imread(files(loc(1)).name);
+else
 [nameBlackFile,filePath] = uigetfile('*.tif','Select a Black Image of the Correct Dimensions');
 imageBlack = imread([filePath,nameBlackFile]);
-
-w = questdlg('Use a Fluorescent image for overlays?',...
-    'Fluorescent Image (Optional)','Yes','No','No');
-waitfor(w);
-if strcmp(w,'Yes') == 1
-    [nameFluorFile,filePath] = uigetfile('*.tif','Select Fluorescent Image for Overlay');
-    imageFluor = imread([filePath,nameFluorFile]);
-else
-    imageFluor = imageBlack;
 end
 
+
+
+
 w = questdlg('Use a Transmitted image for overlays?',...
-    'Fluorescent Image (Optional)','Yes','No','No');
+    'Fluorescent Image (Optional)','Yes','No','Yes');
 waitfor(w);
 if strcmp(w,'Yes') == 1
+    clear check
+    for k = 1:length(files)
+    current=files(k).name;
+    if length(current)>=26 
+    check(k)=strcmp(current(end-25:end),'Transmitted Cell Image.tif');
+    end
+    end
+    loc=find(check);
+    if size(loc,1)==1
+    imageTrans = imread(files(loc(1)).name);
+    else
     [nameTransFile,filePath] = uigetfile('*.tif','Select Transmitted Image for Overlay');
     imageTrans = imread([filePath,nameTransFile]);
+    end
 else
     imageTrans = imageBlack;
 end
 
+%Open Fluorescent Image
+w = questdlg('Use a Fluorescent image for overlays?',...
+    'Fluorescent Image (Optional)','Yes','No','No');
+waitfor(w);
+if strcmp(w,'Yes') == 1
+    clear check
+    for k = 1:length(files)
+    current=files(k).name;
+    if length(current)>=26 
+    check(k)=strcmp(current(end-26:end),'Fluorescent Cell Image.tif');
+    end
+    end
+    loc=find(check);
+    if size(loc,1)==1
+    imageFluor = imread(files(loc(1)).name);
+    else
+    [nameFluorFile,filePath] = uigetfile('*.tif','Select Fluorescent Image for Overlay');
+    imageFluor = imread([filePath,nameFluorFile]);
+    end
+else
+    imageFluor = imageBlack;
+end
+
+%open Cell Area Binary Image
 w = questdlg('Input Binary Cell Outline?',...
-    'Binary Outline','Yes','No','No');
+    'Binary Outline','Yes','No','Yes');
 if strcmp(w,'Yes') == 1
     [nameAreaFile,filePath] = uigetfile('*.tif','Select a Thresholded Image of the Cell Area');
     imageArea = imread([filePath,nameAreaFile]);
@@ -47,7 +88,17 @@ else
     imageArea = imageBlack==0;
 end
 
-roiStack = getImages();
+%Open processed image stack of dots
+    for k = 1:length(files)
+    current=files(k).name;
+    check(k)=strcmp(current(end-6:end),'roi.tif');
+    end
+    loc=find(check);
+    if size(loc,1)==1
+    roiStack = getImages(files(loc(1)).name);
+    else
+    roiStack = getImages();
+    end
 
 imageBorders = ones(size(imageArea,1),size(imageArea,2));
 % bLimits = round(6/dataKey(9,1));
@@ -75,7 +126,7 @@ totalNumFrames = max(num(:,dataKey(3,1)))+dataKey(8,1); %Maximum number of frame
 %Section 2.) Building book1 and book2 from the raw data
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
-
+clear book1
 disp('2.1 Creating book1 and book2')
 
 % book1 = zeros(numIndices,totalNumFrames,numTraj);
@@ -92,9 +143,18 @@ disp('2.1 Creating book1 and book2')
 %5 = Magnitude of displacement
 %6 = Intensity in current frame (column 14 from TrackMate output)
 %7 = Gauss filtered intensity values (created/used in section 4)
-%8 = Tilt Corrected dX
-%9 = Tilt Corrected dY
-%10 = Tilt Corrected Magnitude
+%8 = Global Tilt Corrected dX
+%9 = Global Tilt Corrected dY
+%10 = Global Tilt Corrected Magnitude
+%11 = Mean local dx tilt
+%12 = Mean local dy tilt
+%13 = Local Tilt Corrected dx
+%14 = Local Tilt Corrected dy
+%15 = Local Tilt Corrected Magnitude
+%16 = Index %15 is above cmCutoff (section 4.6)
+%17 = Local Tilt Corrected dx above cutoff (using idx 16 as a mask)
+%18 = Local Tilt Corrected dy above cutoff
+%19 = Local Tilt Corrected Magnitude above cutoff
 
 %Index List for Book2 - Frame Independent Values
 %1 = Raw X Centroid Location of Traj in First Frame
@@ -107,14 +167,21 @@ disp('2.1 Creating book1 and book2')
 %8 = Value of book1 index 2 (see above) in Last Frame that Traj Appears
 %9 = Maximum Magnitude of displacement
 %10= Numeric ID of Pillar
-%11= Tilt Corrected Final dx
-%12= Tilt Corrected Final dy
-%13= Tilt Corrected Final Magnitude
+%11= Global Tilt Corrected Final dx
+%12= Global Tilt Corrected Final dy
+%13= Global Tilt Corrected Final Magnitude
 %14= Predicted Top Surface
 %15= Deviation from top Surface
+%16
+%17
+%18= Local Tilt Corrected Final dx
+%19= Local Tilt Corrected Final dy
+%20= Local Tilt Corrected Final Magnitude
+%21= Book1 Index 16 is >0 for at least 3 consecutive frames
 
 %HANDLING XYZ DATA
 skipCount = 0;
+missingNo = 0;
 for i = 1:numTraj
     % Here we build a book of pages (3D array) with the data for a single
     % object/trajectory per page. Most of the code is to ensure that each
@@ -140,20 +207,22 @@ for i = 1:numTraj
         end
         
         if skip == 0
-        book2(i-skipCount,3) = startFrame;
-        book2(i-skipCount,4) = endFrame;
+        book2((i-skipCount)-missingNo,3) = startFrame;
+        book2((i-skipCount)-missingNo,4) = endFrame;
         % this fills in the upper portion of obj matrix with zeros if the first
         % frame is not 0
         
-        book1(1,startFrame:endFrame,i-skipCount) = tempObj(:,dataKey(1,1)).*dataKey(7,1);
-        book1(2,startFrame:endFrame,i-skipCount) = tempObj(:,dataKey(2,1)).*dataKey(7,1);
-        book1(6,startFrame:endFrame,i-skipCount) = tempObj(:,dataKey(5,1));
-%     else
-%         startFrame = 1;
-%         endFrame = 1;
-%         book2(i-skipCount,3) = startFrame;
-%         book2(i-skipCount,4) = endFrame;
+        book1(1,startFrame:endFrame,(i-skipCount)-missingNo) = tempObj(:,dataKey(1,1)).*dataKey(7,1);
+        book1(2,startFrame:endFrame,(i-skipCount)-missingNo) = tempObj(:,dataKey(2,1)).*dataKey(7,1);
+        book1(6,startFrame:endFrame,(i-skipCount)-missingNo) = tempObj(:,dataKey(5,1));
+%      else
+%          startFrame = 1;
+%          endFrame = 1;
+%          book2(i-skipCount,3) = startFrame;
+%          book2(i-skipCount,4) = endFrame;
         end
+    else
+        missingNo = missingNo +1;
     end
     if i == 1 || i == 5000 || i == 10000 || i == 15000 || i==20000 || i==25000
         disp(['Progress: ' num2str(i) ' of ' num2str(numTraj)])
@@ -170,10 +239,12 @@ for i = 1:numTraj
     book1(5,:,i) = (book1(3,:,i).^2 + book1(4,:,i).^2).^0.5; %frame specific total displacement
     book2(i,10) = i; %pillar ID
 end
-
+%%
 % Tilt Correction
-[noiseBook,sumIndFinal] = tiltCorrection(roiStack,imageTrans,book1,book2);
+[noiseBook,noiseStats,sumIndFinal] = tiltCorrection(roiStack,imageTrans,book1,book2);
 
+
+%%
 for i = 1:totalNumFrames
     book1(8,i,:) = ((book1(3,i,:)) - noiseBook(i,2)).*(book1(3,i,:)~=0);
     book1(9,i,:) = ((book1(4,i,:)) - noiseBook(i,3)).*(book1(4,i,:)~=0);
@@ -183,21 +254,23 @@ for i = 1:totalNumFrames
     noiseBook(i,8) = mean(book1(10,i,sumIndFinal));
 end
 
+%%
+bins = 0:.025:2.25;
 errorHist = figure;
 hold on
-histogram(book1(10,:,sumIndFinal),'normalization','probability')
-histogram(book1(5,:,sumIndFinal),'normalization','probability')
+histogram(book1(10,:,sumIndFinal)*dataKey(9,1),bins,'normalization','probability')
+histogram(book1(5,:,sumIndFinal)*dataKey(9,1),bins,'normalization','probability')
 savefile = [filePath '\ErrorHistNoStress.tif'];
 export_fig(errorHist,savefile);
 
 
 errorHist2 = figure;
 hold on
-histogram(book1(10,:,:),'normalization','probability')
-histogram(book1(5,:,:),'normalization','probability')
+histogram((book1(10,:,:))*dataKey(9,1),bins,'normalization','probability')
+histogram((book1(5,:,:))*dataKey(9,1),bins,'normalization','probability')
 savefile = [filePath '\HistDisplacements.tif'];
 export_fig(errorHist2,savefile);
-
+%%
 for i = 1:numTraj
     
     book2(i,5) = book1(3,book2(i,4),i);
@@ -207,10 +280,92 @@ for i = 1:numTraj
     book2(i,9) = (book2(i,5).^2 + book2(i,6).^2).^0.5;
     book2(i,11) = book1(8,book2(i,4),i);
     book2(i,12) = book1(9,book2(i,4),i);
-    book2(i,13) = (book2(i,5).^2 + book2(i,6).^2).^0.5;
+    book2(i,13) = (book2(i,11).^2 + book2(i,12).^2).^0.5;
+end
+%%
+clear imageArea2
+imageArea2 = zeros(size(imageArea,1)+100,size(imageArea,2)+100);
+imageArea2(51:size(imageArea,1)+50,51:size(imageArea,2)+50) = imageArea;
+for i = 1:numTraj
+    if book2(i,13) > (1/dataKey(9,1))
+        imageArea2((round(book2(i,2))):(round(book2(i,2))+100),(round(book2(i,1))):(round(book2(i,1))+100))=0;
+    end
+end
+imageArea2 = imcrop(imageArea2,[51,51,size(imageArea,2)-1,size(imageArea,1)-1]);
+noCellTraj = 0;
+for i = 1:numTraj
+    %if it is in black region
+    if imageArea2(round(book2(i,2)),round(book2(i,1)))~=0
+        if noCellTraj == 0
+            noCellTraj = i;
+        else
+        noCellTraj = cat(1,noCellTraj,i);
+        end
+    end
+end
+%%
+clear book4
+%book4 contains the closest 500 pillars to index pillar(dim 1) that do not
+%fall within the boundaries of the cell specified in var 'imageArea'
+
+% find mean deviation of 500 closest in 'noCellTraj' variable
+for i = 1:numTraj
+    clear tempDistances
+    if size(noCellTraj,1)>100
+    tempDistances(1:size(noCellTraj,1),1) = ((book2(noCellTraj,1)-book2(i,1)).^2.+(book2(noCellTraj,2)-book2(i,2)).^2).^0.5;
+    [tempDistances2,origOrder] = sortrows(tempDistances);
+    book4(i,1:100) = noCellTraj(origOrder(1:100,1),1); %record the closest 500 pillars
+    else
+    tempDistances(1:size(noCellTraj,1),1) = ((book2(:,1)-book2(i,1)).^2.+(book2(:,2)-book2(i,2)).^2).^0.5;
+    [~,origOrder] = sortrows(tempDistances);
+    book4(i,1:size(noCellTraj,1)) = origOrder(1:size(noCellTraj,1),1); %record all pillars
+    end
+end
+clear tempDistances
+%%
+clear book5
+book5 = book1;
+book5(book5(3:4,:,:) == 0) = NaN;
+
+for j = 1:totalNumFrames
+for i = 1:numTraj
+    if book1(3,j,i) == 0 || book1(4,j,i) == 0
+    book1(11,j,i) = 0;
+    book1(12,j,i) = 0;
+    book1(13,j,i) = 0;
+    book1(14,j,i) = 0;
+    book1(15,j,i) = 0;
+    else
+    book1(11,j,i) = nanmean(book5(3,j,book4(i,:)));
+    book1(12,j,i) = nanmean(book5(4,j,book4(i,:)));
+    book1(13,j,i) = book1(3,j,i)-book1(11,j,i);
+    book1(14,j,i) = book1(4,j,i)-book1(12,j,i);
+    book1(15,j,i) = ((book1(13,j,i).^2)+(book1(14,j,i).^2)).^.5;
+    end
+end
 end
 
+%%
 
+for i = 1:numTraj
+
+    book2(i,18) = book1(13,book2(i,4),i);
+    book2(i,19) = book1(14,book2(i,4),i);
+    book2(i,20) = (book2(i,18).^2 + book2(i,19).^2).^0.5;
+  
+end
+
+% for i = 1:numTraj
+%     if book1(13,book2(i,4)-1,i) == 0 || book1(14,book2(i,4)-1,i) == 0
+%     book2(i,18) = max(book1(13,:,i));
+%     book2(i,19) = max(book1(14,:,i));
+%     book2(i,20) = (book2(i,18).^2 + book2(i,19).^2).^0.5;
+%     else
+%     book2(i,18) = book1(13,book2(i,4)-1,i);
+%     book2(i,19) = book1(14,book2(i,4)-1,i);
+%     book2(i,20) = (book2(i,18).^2 + book2(i,19).^2).^0.5;
+%     end
+% end
 %%
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
@@ -218,41 +373,41 @@ end
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 
-disp('3.1 Identifying Pillar Neighbor Groups')
-
-clear tempDistances
-book3 = zeros(numTraj,50);
-cm3 = zeros(numTraj,50,totalNumFrames);
-cm4 = zeros(numTraj,totalNumFrames);
-interpXq = linspace(1,size(book1,2),size(book1,2)*3);
-maxDistance = (max(max(book1(5,:,:))));
-for i = 1:numTraj
-    tempDistances(1:numTraj,1) = ((book2(:,1)-book2(i,1)).^2.+(book2(:,2)-book2(i,2)).^2).^0.5;
-    tempDistances(1:numTraj,2) = linspace(1,numTraj,numTraj);
-    tempDistances = sortrows(tempDistances);
-    book3(i,1:50) = tempDistances(1:50,2); %record the closest 50 pillars
-    if book2(i,9) < (maxDistance) %filter by deformation limits here and in following if statement
-        cm4(i,1:totalNumFrames) = book1(6,1:totalNumFrames,i);
-    else
-        cm4(i,1:totalNumFrames) = NaN;
-    end
-    
-    for j = 1:50
-        if book2(book3(i,j),9) < (maxDistance) % *following if statement*
-            cm3(i,j,1:totalNumFrames) = book1(6,1:totalNumFrames,book3(i,j)); %record intensity value if pillar has low deformation
-        else
-            cm3(i,j,1:totalNumFrames) = NaN;
-        end
-    end
-end
-
-cm4(cm4==0) = NaN;
-totalAverage = zeros(1,totalNumFrames);
-for i = 1:totalNumFrames
-    totalAverage(1,i) = mean(cm4(:,i),'omitnan');
-end
-totalAverageInterp(1,:) = interp1(linspace(1,size(book1,2),size(book1,2)),conv(totalAverage(1,:),gausswin(6),'same'),interpXq,'spline');
-
+% disp('3.1 Identifying Pillar Neighbor Groups')
+% 
+% clear tempDistances
+% book3 = zeros(numTraj,50);
+% cm3 = zeros(numTraj,50,totalNumFrames);
+% cm4 = zeros(numTraj,totalNumFrames);
+% interpXq = linspace(1,size(book1,2),size(book1,2)*3);
+% maxDistance = (max(max(book1(5,:,:))));
+% for i = 1:numTraj
+%     tempDistances(1:numTraj,1) = ((book2(:,1)-book2(i,1)).^2.+(book2(:,2)-book2(i,2)).^2).^0.5;
+%     tempDistances(1:numTraj,2) = linspace(1,numTraj,numTraj);
+%     tempDistances = sortrows(tempDistances);
+%     book3(i,1:50) = tempDistances(1:50,2); %record the closest 50 pillars
+%     if book2(i,9) < (maxDistance) %filter by deformation limits here and in following if statement
+%         cm4(i,1:totalNumFrames) = book1(6,1:totalNumFrames,i);
+%     else
+%         cm4(i,1:totalNumFrames) = NaN;
+%     end
+%     
+%     for j = 1:50
+%         if book2(book3(i,j),9) < (maxDistance) % *following if statement*
+%             cm3(i,j,1:totalNumFrames) = book1(6,1:totalNumFrames,book3(i,j)); %record intensity value if pillar has low deformation
+%         else
+%             cm3(i,j,1:totalNumFrames) = NaN;
+%         end
+%     end
+% end
+% 
+% cm4(cm4==0) = NaN;
+% totalAverage = zeros(1,totalNumFrames);
+% for i = 1:totalNumFrames
+%     totalAverage(1,i) = mean(cm4(:,i),'omitnan');
+% end
+% totalAverageInterp(1,:) = interp1(linspace(1,size(book1,2),size(book1,2)),conv(totalAverage(1,:),gausswin(6),'same'),interpXq,'spline');
+% 
 
 %%
 
@@ -276,7 +431,7 @@ disp('4.1 Storing Maximum Displacement Values')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %4.2 Creating a Color Map for Quiver Plots%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+disp('4.2 Creating Color Map for Vector Plot Image Overlays')
 [cm1,cm2,cmD,cmDS,colorMap,colorScheme] = createColorMap(book1,book2,outputs);
 
 
@@ -292,6 +447,7 @@ disp('4.1 Storing Maximum Displacement Values')
 %*****Not really very useful as of 2017*****
 
 if ismember(10,outputs) == 1
+    disp('4.3 Fitting Marker Plane')
     planeFit(book1,book2,totalNumFrames,filePath)
 end
 
@@ -307,7 +463,8 @@ end
 zScale = .4; %microns
 highestObjectInZ = (size(book1,2)-1)* zScale;
 
-
+if ismember(17,outputs) == 1
+disp('4.4 Extracting Z-Information Based on through-Z Intensity Profiles')
 %Interpolation to increase resolution of intensity data points
 clear interpBook interpX
 degreeInterp = 12;
@@ -575,8 +732,44 @@ if zPeakAvgNo > 2
     
 end
 
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 4.6 Data Filters and Cutoffs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 4.6.1 Persistence - The goal is to remove shear deformations that "occur"
+% in less than 3 consecutive frames. Whether a shear deformation "occurs"
+% will depend on whether the displacement is greater than some threshold.
+disp('4.6 Thresholding Data Using a Displacement Magnitude-Based Cutoff')
+cmCutoff = 3; %The first colormap group to be used in filtered data sets
+book1(16,:,:) = book1(15,:,:)>2;
+cmConsec = ones(3,1);
+for i = 1:size(book1,3)
+    if sum(book1(16,:,i),2)<3
+        book2(i,21) = 0;
+    else
+        book2(i,21) = 1;
+    end
+    
+    if book2(i,21) == 1
+        temp = book1(16,:,i);
+        for j = 2:size(temp,2)-1
+            temp2(j,1) = temp(1,j)+temp(1,j-1)+temp(1,j+1);
+        end
+        if max(temp2)<3
+            book2(i,21) = 0;
+        end
+    end
+end
 
-
+filterSet = find(book2(:,21)>0);
+for i = 1:size(filterSet,1);
+    book1(17:19,:,filterSet(i,1)) = book1(13:15,:,filterSet(i,1));
+end
+filterMask = book1(19,:,:)>2;
+book1(17,:,:) = book1(17,:,:).*filterMask;
+book1(18,:,:) = book1(18,:,:).*filterMask;
+book1(19,:,:) = book1(19,:,:).*filterMask;
+book2(:,22) = book2(:,21).*book2(:,20);
 %%
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
@@ -584,6 +777,7 @@ end
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 %%
+disp('5.0 Creating Centroid and Vector Plot Overlay Image Outputs')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%5.2 Drawing Zero-State Displacement Fields on Black Background%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -598,7 +792,7 @@ if ismember(2,outputs) == 1
         hold on
         
         for i = 1:cmD
-            quiver(book1(1,f,cm1(cm1(:,i,f)>0,i,f)),book1(2,f,cm1(cm1(:,i,f)>0,i,f)),book1(3,f,cm1(cm1(:,i,f)>0,i,f)),book1(4,f,cm1(cm1(:,i,f)>0,i,f)),...
+            quiver(book1(1,f,cm1(cm1(:,i,f)>0,i,f)),book1(2,f,cm1(cm1(:,i,f)>0,i,f)),book1(13,f,cm1(cm1(:,i,f)>0,i,f)),book1(14,f,cm1(cm1(:,i,f)>0,i,f)),...
                 0,'color',[colorMap(i,1:3)]);
             hold on
         end
@@ -680,7 +874,7 @@ if ismember(3,outputs) == 1
     hold on
     if ismember(8,outputs) == 0
         for i = 1:cmD
-            quiver(book2(cm2(cm2(:,i)>0,i),1),book2(cm2(cm2(:,i)>0,i),2),book2(cm2(cm2(:,i)>0,i),11),book2(cm2(cm2(:,i)>0,i),12),0,'color',[colorMap(i,1:3)]);
+            quiver(book2(cm2(cm2(:,i)>0,i),1),book2(cm2(cm2(:,i)>0,i),2),book2(cm2(cm2(:,i)>0,i),18),book2(cm2(cm2(:,i)>0,i),19),0,'color',[colorMap(i,1:3)]);
             hold on
         end
         
@@ -706,7 +900,7 @@ if ismember(5,outputs) == 1
     hold on
     for i = 1:cmD
         
-        quiver(book2(cm2(cm2(:,i)>0,i),1),book2(cm2(cm2(:,i)>0,i),2),book2(cm2(cm2(:,i)>0,i),11),book2(cm2(cm2(:,i)>0,i),12),0,'color',[colorMap(i,1:3)]);%(i^2)/((cmD/1.5)^2) also (i^1.3)/((cmD/2)^1.3) ...(i^2)/((cmD/1.5)^2)
+        quiver(book2(cm2(cm2(:,i)>0,i),1),book2(cm2(cm2(:,i)>0,i),2),book2(cm2(cm2(:,i)>0,i),18),book2(cm2(cm2(:,i)>0,i),19),0,'color',[colorMap(i,1:3)]);%(i^2)/((cmD/1.5)^2) also (i^1.3)/((cmD/2)^1.3) ...(i^2)/((cmD/1.5)^2)
         hold on
     end
     %quiver(book1(10,1,:),book1(11,1,:),book1(12,totalNumFrames,:),book1(13,totalNumFrames,:),0,'g');
@@ -725,7 +919,7 @@ if ismember(5,outputs) == 1
     imshow(imageTrans,[])
     hold on
     for i = 1:cmD
-        quiver(book2(cm2(cm2(:,i)>0,i),1),book2(cm2(cm2(:,i)>0,i),2),book2(cm2(cm2(:,i)>0,i),11),book2(cm2(cm2(:,i)>0,i),12),0,'color',[colorMap(i,1:3)]);%(i^1.3)/((cmD/2)^1.3)
+        quiver(book2(cm2(cm2(:,i)>0,i),1),book2(cm2(cm2(:,i)>0,i),2),book2(cm2(cm2(:,i)>0,i),18),book2(cm2(cm2(:,i)>0,i),19),0,'color',[colorMap(i,1:3)]);%(i^1.3)/((cmD/2)^1.3)
         hold on
     end
     %quiver(book1(10,1,:),book1(11,1,:),book1(12,totalNumFrames,:),book1(13,totalNumFrames,:),0,'g');
@@ -738,149 +932,16 @@ if ismember(5,outputs) == 1
     end
 end
 
-%%
+%% ***WIP*** Create FE Mesh
+
 if ismember(11,outputs) == 1
-    
-    % Create Mesh from 2D shear data
-    
-    clear MeshBook MeshList
-    clear book4
-    
-    book4 = book1;
-    book4(~book4) = NaN;
-    
-    MeshBook = book4(1:2,1:25,1:121);
-    MeshBook(2,:,:) = MeshBook(2,:,:)*-1;
-    node = 0;
-    
-    for i = 1:size(MeshBook,2)
-        for j = 1:size(MeshBook,3)
-            node = node + 1;
-            if isnan(MeshBook(1,i,j)) == 1
-                MeshBook(1,i,j) = MeshBook(1,i-1,j);
-            end
-            if isnan(MeshBook(2,i,j)) == 1
-                MeshBook(2,i,j) = MeshBook(2,i-1,j);
-            end
-            MeshBook(3,i,j) = i;
-            MeshBook(4,i,j) = node;
-            
-            
-            MeshList(2,node) = MeshBook(1,i,j);
-            MeshList(3,node) = MeshBook(2,i,j);
-            MeshList(4,node) = MeshBook(3,i,j);
-            MeshList(1,node) = MeshBook(4,i,j);
-            
-            MeshList2(2,node) = MeshBook(1,1,j);
-            MeshList2(3,node) = MeshBook(2,1,j);
-            MeshList2(4,node) = MeshBook(3,i,j);
-            MeshList2(1,node) = MeshBook(4,i,j);
-        end
-    end
-    
-    %Building Elements
-    %Start with the first frame
-    clear EleList EleList2
-    Element = 0;
-    for i = 1:size(MeshBook,3)
-        clear current diff
-        current(1:2,:) = MeshBook(1:2,1,:);
-        diff(1,:) = current(1,:) - MeshBook(1,1,i);
-        diff(2,:) = current(2,:) - MeshBook(2,1,i);
-        diff(3,:) = sqrt(diff(1,:).^2.+diff(2,:).^2);
-        diff(diff<-5) = NaN;
-        diff(diff>22) = NaN;
-        for j = 1:size(diff,2)
-            if isnan(diff(1,j))==1 || isnan(diff(2,j))== 1 || isnan(diff(3,j)) ==1 || diff(3,j) == 0
-                diff(1:3,j) = 0;
-            end
-        end
-        
-        clear current2
-        current2 = find(diff(3,:));
-        
-        if size(current2,2) == 3
-            current3 = diff(1:3,current2);
-            mesh3 = current2(find(current3(3,:)==max(current3(3,:))));
-            mesh4 = current2(find(current3(2,:)==min(current3(2,:))));
-            mesh2 = current2(find(current3(1,:)==min(current3(1,:))));
-            for k = 1:(size(MeshBook,2)-1)
-                Element = Element + 1;
-                
-                EleList(i,1,k) = MeshBook(4,k,i); %5
-                EleList(i,2,k) = MeshBook(4,k,mesh2); %6
-                EleList(i,3,k) = MeshBook(4,k,mesh3); %7
-                EleList(i,4,k) = MeshBook(4,k,mesh4); %8
-                EleList(i,5,k) = MeshBook(4,k+1,i); %1
-                EleList(i,6,k) = MeshBook(4,k+1,mesh2); %2
-                EleList(i,7,k) = MeshBook(4,k+1,mesh3); %3
-                EleList(i,8,k) = MeshBook(4,k+1,mesh4); %4
-                
-                EleList(i,9,k) = Element;
-                EleList2(2:9,Element) = EleList(i,1:8,k);
-                EleList2(1,Element) = Element;
-            end
-        end
-        
-        
-    end
-    
-    %Write the deformed mesh
-    
-    meshTxt = fopen('mesh.txt','wt');
-    nodesFormat = '<node id=" %d "> %f, %f, %f </node>\n';
-    fprintf(meshTxt,'<?xml version="1.0" encoding="ISO-8859-1"?>\n<febio_spec version="2.5">\n<Geometry>\n<Nodes name="Part1">\n');
-    fprintf(meshTxt,nodesFormat,MeshList(1:4,:));
-    fprintf(meshTxt,'</Nodes>\n<Elements type="hex8" mat="1" name="part1">\n');
-    elementsFormat = '<elem id=" %d "> %d, %d, %d, %d, %d, %d, %d, %d </elem>\n';
-    fprintf(meshTxt,elementsFormat,EleList2(1:9,:));
-    fprintf(meshTxt,'</Elements>\n</Geometry></febio_spec>');
-    fclose(meshTxt);
-    
-    %Write the undeformed Mesh
-    
-    meshTxt = fopen('meshUD.txt','wt');
-    nodesFormat = '<node id=" %d "> %f, %f, %f </node>\n';
-    fprintf(meshTxt,'<?xml version="1.0" encoding="ISO-8859-1"?>\n<febio_spec version="2.5">\n<Geometry>\n<Nodes name="Part1">\n');
-    fprintf(meshTxt,nodesFormat,MeshList2(1:4,:));
-    fprintf(meshTxt,'</Nodes>\n<Elements type="hex8" mat="1" name="part1">\n');
-    elementsFormat = '<elem id=" %d "> %d, %d, %d, %d, %d, %d, %d, %d </elem>\n';
-    fprintf(meshTxt,elementsFormat,EleList2(1:9,:));
-    fprintf(meshTxt,'</Elements>\n</Geometry></febio_spec>');
-    fclose(meshTxt);
-    
-    %Display the nodes from the deformed mesh
-    
-    figure
-    hold on
-    for i = 1:size(MeshBook,2)
-        scatter3(MeshBook(1,i,:),MeshBook(2,i,:),i*ones(1,size(MeshBook,3)),'.','g');
-        scatter3(MeshBook(1,1,:),MeshBook(2,1,:),i*ones(1,size(MeshBook,3)),'.','b');
-    end
-    hold off
-    
+    disp('6.0 Creating FE Mesh')
+   meshbook(); 
 end
-
-
-%%
+%% Create Heat Map of Shear Deformations
+if ismember(15,outputs) == 1
 customHeatMap(book1,book2,imageBlack,dataKey,outputs,filePath)
-
-%%
-cmArea = sum(sum(imageArea==0));
-cmCutoff = ceil(2*(mean(mean(book1(10,:,sumIndFinal))))/cmDS);
-for i = 1:totalNumFrames
-    for j = cmCutoff:cmD
-        temp(i,j) = sum(book1(10,i,cm1(cm1(:,j,i)>0,j,i)));
-    end
 end
-sumDisp = sum(sum(temp));
-averageDisp = sumDisp/cmArea;
-
-areaTxt = fopen('Area-Disp Relationship.txt','wt');
-fprintf(areaTxt,strcat('Cell Area in Sq. Pixels: ', num2str(cmArea) , '\n'));
-fprintf(areaTxt,strcat('Sum of Displacements in Linear Pixels: ', num2str(sumDisp) , '\n'));
-fprintf(areaTxt,strcat('Ratio: ', num2str(averageDisp) , '\n'));
-fclose(areaTxt);
 
 
 %%
@@ -891,26 +952,32 @@ clear topSurface fitSurface
 [topSurface ,fitSurface] = findSurface(book1,book2,cm2,cmCutoff,imageArea,imageBorders);
 
 %%
-figure
-%plot the filter pillars at the top frame that they reach
-scatter3(0,0,0)
-hold on
-scatter3(topSurface(:,3),topSurface(:,2),topSurface(:,4));
-plot(fitSurface{1})
-%plot(fitTiltPlanePixels)
-hold off
+% figure
+% %plot the filter pillars at the top frame that they reach
+% scatter3(0,0,0)
+% hold on
+% scatter3(topSurface(:,3),topSurface(:,2),topSurface(:,4));
+% %plot(fitSurface{1})
+% plot(fitSurface{2})
+%  xlim([0 size(roiStack,1)])
+%  ylim([0 size(roiStack,2)])
+% %plot(fitTiltPlanePixels)
+% hold off
 %%
-figure
-imshow(imageArea)
-hold on
-scatter(topSurface(:,2),topSurface(:,3),5,'r')
-hold off
+% figure
+% imshow(imageArea)
+% hold on
+% scatter(topSurface(:,2),topSurface(:,3),5,'r')
+% hold off
+% 
 
 %% Calculate Z-Displacement at Surface (Quick Method)
 clear cellSurface
 for i = 1:numTraj
 book2(i,14) = feval(fitSurface{1},book1(2,book2(i,4),i),book1(1,book2(i,4),i));
+book2(i,16) = feval(fitSurface{2},book1(2,book2(i,4),i),book1(1,book2(i,4),i));
 book2(i,15) = 0;
+book2(i,17) = 0;
 end
 
 cellSurface = zeros(1,1);
@@ -925,6 +992,7 @@ cellSurface(1,:) = [];
 
 for i = 1:size(cellSurface,1)
 book2(cellSurface(i,1),15) = book2(cellSurface(i,1),4)-book2(cellSurface(i,1),14);
+book2(cellSurface(i,1),17) = book2(cellSurface(i,1),4)-book2(cellSurface(i,1),16);
 end
 
 
@@ -933,7 +1001,9 @@ end
 %% Calculate Z-Displacement at Surface (Quick Method 2)
 for i = 1:numTraj
 book2(i,14) = feval(fitSurface{1},book1(2,book2(i,4),i),book1(1,book2(i,4),i));
+book2(i,16) = feval(fitSurface{2},book1(2,book2(i,4),i),book1(1,book2(i,4),i));
 book2(i,15) = book2(i,4)-book2(i,14);
+book2(i,17) = book2(i,4)-book2(i,16);
 end
 
 
@@ -952,21 +1022,50 @@ end
 % hold off
 
 %%
+if ismember(16,outputs) == 1
+    %%
+[imageHeatZ,vq] = customHeatMapZ(book2,imageBlack,dataKey,outputs,filePath);
+end
+%% Relate Cell Spread Area to Displacements
+clear imageAreaProps imageArea3
+imageArea3(:,:) = logical(imageArea==0);
+imageAreaProps = regionprops(imageArea3,'centroid','Area','Eccentricity','Perimeter');
+propsArea = sum(sum(imageArea==0));
+propsSumDisp = sum(sum(book1(19,:,:)));
+propsMeanDisp = mean(mean(book1(19,:,:)));
+propsCircularity = ((imageAreaProps.Perimeter) .^2 )./ (4*(pi*(imageAreaProps.Area)));
+ratioArea = propsSumDisp/propsArea;
+ratioPerimeter = propsSumDisp/imageAreaProps.Perimeter;
+
+
+areaTxt = fopen('Area-Disp Relationship.txt','wt');
+fprintf(areaTxt,strcat('Code Date:07/05/2017','\n'));
+fprintf(areaTxt,strcat('Cell Area in Sq. Pixels: ', num2str(imageAreaProps.Area) , '\n'));
+fprintf(areaTxt,strcat('Sum of Displacements in Linear Pixels: ', num2str(propsSumDisp) , '\n'));
+fprintf(areaTxt,strcat('Average Displacement in Linear Pixels: ', num2str(propsMeanDisp) , '\n'));
+fprintf(areaTxt,strcat('Perimeter: ', num2str(imageAreaProps.Perimeter) , '\n'));
+fprintf(areaTxt,strcat('Circularity: ', num2str(propsCircularity) , '\n'));
+fprintf(areaTxt,strcat('Eccentricity', num2str(imageAreaProps.Eccentricity) , '\n'));
+fprintf(areaTxt,strcat('Area Ratio: ', num2str(ratioArea) , '\n'));
+fprintf(areaTxt,strcat('Perimeter Ratio: ', num2str(ratioPerimeter) , '\n'));
+
+fclose(areaTxt);
 
 %% Calculate Z-Displacement at Surface (Quick Method 2 in microns)
 
-interpSurface{1} = fit([(book2(:,2) + book2(:,12))*dataKey(9,1),(book2(:,1) + book2(:,11))*dataKey(9,1)],(book2(:,14)+book2(:,15))*0.4,'lowess','Span',.005);
-
-close all
-figure
-quiver3(book2(:,2)*dataKey(9,1),book2(:,1)*dataKey(9,1),book2(:,14)*0.4,book2(:,12)*dataKey(9,1),book2(:,11)*dataKey(9,1),book2(:,15)*0.4,'r')
-hold on
-plot3(0,0,0)
-plot(interpSurface{1})
-xlim([0 size(roiStack,1)]*dataKey(9,1))
-ylim([0 size(roiStack,2)]*dataKey(9,1))
-zlim([0 size(roiStack,3)]*0.4)
-hold off
+% %interpSurface{1} = fit([(book2(:,2) + book2(:,12))*dataKey(9,1),(book2(:,1) + book2(:,11))*dataKey(9,1)],(book2(:,14)+book2(:,15))*0.4,'lowess','Span',.01);
+% interpSurface{1} = fit([(book2(:,2) + book2(:,12))*dataKey(9,1),(book2(:,1) + book2(:,11))*dataKey(9,1)],(book2(:,16)+book2(:,17))*0.4,'lowess','Span',.01);
+% 
+% close all
+% figure
+% quiver3(book2(:,2)*dataKey(9,1),book2(:,1)*dataKey(9,1),book2(:,14)*0.4,book2(:,12)*dataKey(9,1),book2(:,11)*dataKey(9,1),book2(:,15)*0.4,'r')
+% hold on
+% plot3(0,0,0)
+% plot(interpSurface{1})
+% xlim([0 size(roiStack,1)]*dataKey(9,1))
+% ylim([0 size(roiStack,2)]*dataKey(9,1))
+% zlim([0 size(roiStack,3)]*0.4)
+% hold off
 %%
 % 
 % figure
@@ -975,5 +1074,76 @@ hold off
 % plot(interpSurface{2})
 % plot3(0,0,0)
 
+% %% Calculate Area and Displacement
+% for j = 1:5
+% 
+% [nameAreaFile,filePath] = uigetfile('*.tif','Select a Thresholded Image of the Cell Area');
+% imageArea2 = imread([filePath,nameAreaFile]);
+% Area2 = sum(sum(imageArea2==0));
+% 
+% [nameCOIFile,filePath] = uigetfile('*.tif','Select a Thresholded Image of the Cell Forces');
+% imageForceCOI = imread([filePath,nameCOIFile]);
+% 
+% 
+% forces = 0;
+% for i = 1:numTraj
+%     %if it is in black region
+%     if imageForceCOI(round(book2(i,2)),round(book2(i,1)))==0
+%         if forces == 0
+%             forces = i;
+%         else
+%         forces = cat(1,forces,i);
+%         end
+%     end
+% end
+% 
+% for i = 1:totalNumFrames
+%     forcesZ(i,1) = sum(book1(10,i,forces));
+% end
+% 
+% sumDisp = sum(forcesZ);
+% averageDisp = sumDisp/Area2;
+% 
+% cd(filePath)
+% 
+% areaTxt = fopen('Area-Disp Relationship.txt','wt');
+% fprintf(areaTxt,strcat('Cell Area in Sq. Pixels: ', num2str(Area2) , '\n'));
+% fprintf(areaTxt,strcat('Sum of Displacements in Linear Pixels: ', num2str(sumDisp) , '\n'));
+% fprintf(areaTxt,strcat('Ratio: ', num2str(averageDisp) , '\n'));
+% 
+% for i = 1:totalNumFrames
+%     fprintf(areaTxt,strcat('Sum of Displacements in Linear Pixels for Frame ',num2str(i),': ', num2str(forcesZ(i,1)) , '\n'));
+% end
+% 
+% fclose(areaTxt);
+% 
+% AreaDispCOIs(1,j) = Area2;
+% AreaDispCOIs(2,j) = sumDisp;
+% AreaDispCOIs(3,j) = averageDisp;
+% AreaDispCOIs(4:(3+totalNumFrames),j) = forcesZ;
+% 
+% end
+%
+% txtFileName = 'AreaDispPerCell.txt';
+%     if exist(txtFileName,'file')
+%         delete(txtFileName)
+%     end
+%     dlmwrite(txtFileName,AreaDispCOIs);
+% 
+
 %%
+% close all
+% i = 1000;
+% plot(1:1:totalNumFrames,book1(15,:,i))
+% hold on
+% plot(1:1:totalNumFrames,book1(11,:,i))
+% plot(1:1:totalNumFrames,book1(12,:,i))
+% figure
+% hold on
+% plot(1:1:totalNumFrames,book1(13,:,i))
+% plot(1:1:totalNumFrames,book1(14,:,i))
+% figure
+% plot(1:1:totalNumFrames,book1(3,:,i))
+% hold on
+% plot(1:1:totalNumFrames,book1(4,:,i))
 disp('Trajectories Program has Completed Successfully')
