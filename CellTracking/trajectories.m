@@ -172,8 +172,8 @@ disp('2.1 Creating book1 and book2')
 %13= Global Tilt Corrected Final Magnitude
 %14= Predicted Top Surface
 %15= Deviation from top Surface
-%16
-%17
+%16= Alternative Predicted Top Surface
+%17= Deviation from Alternative Top Surface
 %18= Local Tilt Corrected Final dx
 %19= Local Tilt Corrected Final dy
 %20= Local Tilt Corrected Final Magnitude
@@ -277,7 +277,7 @@ for i = 1:numTraj
     book2(i,6) = book1(4,book2(i,4),i);
     book2(i,7) = book1(1,book2(i,4),i);
     book2(i,8) = book1(2,book2(i,4),i);
-    book2(i,9) = (book2(i,5).^2 + book2(i,6).^2).^0.5;
+    book2(i,9) = max(book1(5,:,i));%(book2(i,5).^2 + book2(i,6).^2).^0.5;
     book2(i,11) = book1(8,book2(i,4),i);
     book2(i,12) = book1(9,book2(i,4),i);
     book2(i,13) = (book2(i,11).^2 + book2(i,12).^2).^0.5;
@@ -351,7 +351,7 @@ for i = 1:numTraj
 
     book2(i,18) = book1(13,book2(i,4),i);
     book2(i,19) = book1(14,book2(i,4),i);
-    book2(i,20) = (book2(i,18).^2 + book2(i,19).^2).^0.5;
+    book2(i,20) = max(book1(15,:,i));%(book2(i,18).^2 + book2(i,19).^2).^0.5;
   
 end
 
@@ -1028,14 +1028,15 @@ if ismember(16,outputs) == 1
 end
 %% Relate Cell Spread Area to Displacements
 clear imageAreaProps imageArea3
+book1(find(isnan(book1))) = 0;
 imageArea3(:,:) = logical(imageArea==0);
 imageAreaProps = regionprops(imageArea3,'centroid','Area','Eccentricity','Perimeter');
 propsArea = sum(sum(imageArea==0));
 propsSumDisp = sum(sum(book1(19,:,:)));
 propsMeanDisp = mean(mean(book1(19,:,:)));
-propsCircularity = ((imageAreaProps.Perimeter) .^2 )./ (4*(pi*(imageAreaProps.Area)));
+propsCircularity = ((sum(cat(1,imageAreaProps.Perimeter)))^2 )/(4*(pi*(sum(cat(1,imageAreaProps.Area)))));
 ratioArea = propsSumDisp/propsArea;
-ratioPerimeter = propsSumDisp/imageAreaProps.Perimeter;
+ratioPerimeter = propsSumDisp/cat(1,imageAreaProps.Perimeter);
 
 
 areaTxt = fopen('Area-Disp Relationship.txt','wt');
