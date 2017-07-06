@@ -6,7 +6,7 @@ function [colorMap1,colorMap2,divisionsNumber,divisionsSize,map,scheme] = create
 
 %set up color map
 if ismember(1,outputs) == 1
-    divisionsNumber = 21; % default value
+    divisionsNumber = 30; % default value
     map = brewermap(divisionsNumber,'*Spectral');
     scheme = 'Spectral';
 else
@@ -16,7 +16,7 @@ divisionsNumber = input(promptColorMap); %color map divisions
 divisionsNumber = size(map,1);
 end
 
-divisionsSize = (max(max(book1(5,:,:))))/divisionsNumber;
+divisionsSize = 1;
 numIndices = size(book1,1);
 totalNumFrames = size(book1,2);
 numTraj = size(book1,3);
@@ -28,9 +28,9 @@ for i = 1:divisionsNumber
     for j = 1:size(book1,2)
     clear maskArray
      if i == divisionsNumber
-     maskArray1 = book1(10,j,:) > (divisionsSize*(i-1));
+     maskArray1 = book1(15,j,:) > (divisionsSize*(i-1));
      else
-     maskArray1 = book1(10,j,:) <= (divisionsSize*i) & book1(10,j,:) > (divisionsSize*(i-1));
+     maskArray1 = book1(15,j,:) <= (divisionsSize*i) & book1(15,j,:) > (divisionsSize*(i-1));
      end         
      colorMap1(1:size(find(squeeze(maskArray1)),1),i,j) = find(squeeze(maskArray1));
     end
@@ -38,9 +38,9 @@ end
 for i = 1:divisionsNumber
     clear maskArray
      if i == divisionsNumber
-     maskArray1 = book2(:,13) > (divisionsSize*(i-1));
+     maskArray1 = book2(:,20) > (divisionsSize*(i-1));
      else
-     maskArray1 = book2(:,13) <= (divisionsSize*i) & book2(:,13) > (divisionsSize*(i-1));
+     maskArray1 = book2(:,20) <= (divisionsSize*i) & book2(:,20) > (divisionsSize*(i-1));
      end         
      colorMap2(1:size(find(maskArray1(:,:)),1),i) = find(maskArray1(:,:));
 end
