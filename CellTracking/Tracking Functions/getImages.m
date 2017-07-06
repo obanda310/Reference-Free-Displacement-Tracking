@@ -57,8 +57,8 @@ function [images,meta] = getImages(file)
     if isnan(meta.scalingX)
         disp('Metadata did not load properly.')
         disp('Please input data manually below as it is required')
-        prompt = 'What was the scaling in XY (pixels/micron)? Enter a decimal and press enter: ';
-        meta.scalingX = 1/(input(prompt)*1000000);
+        prompt = 'What was the scaling in XY (microns/pixel)? Enter a decimal and press enter: ';
+        meta.scalingX = (input(prompt)/1000000);
         meta.scalingY = meta.scalingX;
         prompt = 'What was the color depth of the images? Enter an integer and press enter (ex. 8 for 8bit): ';
         meta.colorDepth = input(prompt); 
