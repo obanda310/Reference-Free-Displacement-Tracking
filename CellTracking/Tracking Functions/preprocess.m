@@ -5,7 +5,7 @@ ppOptions = ppSelector();
 
 %use kilfoil pre-processing?
 if ismember(5,ppOptions{1}) == 1
-    filtMasks = (bpass3dMB(obj.images, [1 1 1], [12 12 12],[0 0]))>0;
+    filtMasks = (bpass3dMB(images, [1 1 1], [12 12 12],[0 0]));
     
     
 else
@@ -103,10 +103,10 @@ else
     
     % Clear any objects that are not 2-dimensionally larger than a
     % threshold value equal to dotSizeThresh
-    dotSizeThreshLB = round(0.9/(1000000*obj.metadata.scalingX)^3);
+    dotSizeThreshLB = round(0.9/(1000000*metadata.scalingX)^3);
     filtMasks = bwareaopen(filtMasks,dotSizeThreshLB);
     if ismember(3,ppOptions{1}) == 1
-        [filtMasks,~] = removeLarge(obj.images,filtMasks);
+        [filtMasks,~] = removeLarge(images,filtMasks);
     end
 end
 

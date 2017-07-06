@@ -17,6 +17,10 @@ btn = uicontrol('Parent',d,...
     'String','Close',...
     'Callback','delete(gcf)');
 
+
+drawnow;
+uicontrol(btn)
+
 choice = 'Custom Code';
 
 % Wait for d to close before running to completion
@@ -73,11 +77,22 @@ elseif strcmp(choice,'Custom Code') == 1
     dataKey(8,1) = 0; %startVar
     dataKey(9,1) = .165 * dataKey(7,1);
     
-    
-    [name,path] = uigetfile('*.txt','Select .xlsx File From Particle Tracker Output');
+%Open trajectories.txt    
+files = dir('*.txt'); %Check Directory for default filenames
+for k = 1:length(files)
+    current=files(k).name;
+    if length(current)>=21 
+    check(k)=strcmp(current(end-20:end),'trajectoriesInput.txt');
+    end
+end
+loc=find(check);
+if size(loc,1)==1
+data = dlmread(files(loc(1)).name);
+else
+    [name,path] = uigetfile('*.txt','Select .txt File From Particle Tracker Output');
     file = [path,name];
     data = dlmread(file);
-    
+end   
 end
 
 end
