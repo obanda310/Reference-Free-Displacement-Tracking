@@ -1,4 +1,4 @@
-function r = feature2D(img,lambda,w,masscut,Imin)
+function [r] = feature2D(img,lambda,w,masscut,Imin)
 % Note: feature2D requires the Image processing toolbox due to a call to
 % imdilate in the localmax subfunction. Use feature2D_nodilate for an
 % alternative which works almost as well.
@@ -77,6 +77,7 @@ a=image;
 
 %       Finding local maxima
 loc= localmax(image,sep,Imin);
+%%
 if (numel(loc) == 0 || loc(1) == -1)
     r = -1;
     return
@@ -144,10 +145,13 @@ yc = zeros(nmax,1);
 rg = zeros(nmax,1);
 e  = zeros(nmax,1);
 %	Calculate feature centers
+%%
 for i=1:nmax,
+    xcmask(:,:,i) = double(a(fix(yl(i)):fix(yh(i)),fix(xl(i)):fix(xh(i)))).*xmask;
 	xc(i) = sum(sum(double(a(fix(yl(i)):fix(yh(i)),fix(xl(i)):fix(xh(i)))).*xmask));  
 	yc(i) = sum(sum(double(a(fix(yl(i)):fix(yh(i)),fix(xl(i)):fix(xh(i)))).*ymask));
 end
+%%
 x1=x;
 y1=y;
 %	Correct for the 'offset' of the centroid masks
@@ -158,7 +162,7 @@ x = x + xc - 0*fix(extent/2);
 y = ( y + yc - 0*fix(extent/2) ) * yscale;
 x2=x;
 y2=y;
-
+%%
 %	Construct the subarray and calculate the mass, squared radius of gyration, eccentricity
 for i=1:nmax,
     suba(:,:,i) = fracshift( double(a(fix(yl(i)):fix(yh(i)),fix(xl(i)):fix(xh(i)))), -xc(i) , -yc(i) );
@@ -178,4 +182,7 @@ x3 = x2 + xc - 0*fix(extent/2);
 y3 = ( y2 + yc - 0*fix(extent/2) ) * yscale;
 
 r = [x3,y3,m,rg,e];
+
+%%
+save feature2Doutput
 %toc
