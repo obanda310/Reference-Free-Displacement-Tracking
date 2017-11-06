@@ -31,7 +31,8 @@ for i = 1:size(planesGroups,1)
     SE = strel('disk',round(5/xyScale));
     vqEdgeFilter = isnan(vq); %imdilate(isnan(vq),SE);
     vq = vq.*(vqEdgeFilter==0);  
-    disp(num2str(max(max(abs(vq)))))
+    disp(num2str(max(max((vq)))))
+    disp(num2str(min(min((vq)))))
     MaximumHeatMap = imagesc(xq2,yq2,vq);
     vqFinal(:,:,i) = vq;
     imageHeat = MaximumHeatMap.CData;%.*(imageBinary==0);
