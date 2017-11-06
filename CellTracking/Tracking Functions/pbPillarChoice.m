@@ -1,3 +1,8 @@
     function pbPillarChoice(src,~)
-        src.Parent.UserData = str2double(src.String); % Compare list to source
+        disp(get(src.Parent,'selectionType'))
+        if strcmp( get(src.Parent,'selectionType') , 'alt')
+        src.Parent.UserData(2,1) = str2double(src.String);
+        else
+        src.Parent.UserData(1,1) = str2double(src.String);
+        end
     end

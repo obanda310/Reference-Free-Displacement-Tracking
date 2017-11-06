@@ -1,4 +1,5 @@
 function SlaterLab_GUI_v3
+close all
     % Create and then hide the GUI as it is being constructed
     h = figure('Position',[50,100,1800,900]);
     data = struct('date',[],...
@@ -210,8 +211,14 @@ function SlaterLab_GUI_v3
         'String',dlgDiameter,...
         'Position',[200,225,50,25]);
         
+        w = questdlg('Attempt to read data from filepath?',...
+         'Read Filepath Data','Yes','No','No');
+        waitfor(w);
+        
+        
         backslashIdx = regexp(filepath,'\');
         data.guts = filepath(backslashIdx(end-1)+1:end-1);
+        if strcmp(w,'Yes') == 1
         spaces = regexp(data.guts,'\s');
 
         % Info array contains information from filepath
@@ -277,7 +284,21 @@ function SlaterLab_GUI_v3
         elseif strcmp(data.pi,'LAP')
             data.piConc = data.piAmount/294.2447;       % in Molar units, amt in mg
         end
-        
+        else
+          
+            data.date = 0;
+            data.expNo = 0;
+            data.testNo = 0;
+            data.gelConc = 0;
+            data.pi = 0;
+            data.piAmount = 0;
+            data.piConc = 0;
+            data.lightPower = 0;
+            data.exposureTime = 0;
+            data.NVP = 0;
+            data.NVPAmount = 0;
+            data.NVPConc = 0;
+        end
         uicontrol(...
         'Style','text',...
         'String',data.date,...
@@ -356,7 +377,7 @@ function SlaterLab_GUI_v3
         % Open each .csv file and save the data to the "data" variable
         fileID = fopen(data.csvfile);  % Open file
         % Read data - each .csv column is saved into its own cell array
-        data.raw = textscan(fileID,'%q %q %q','Delimiter',',');
+        data.raw = textscan(fileID,'%q %q %q %q %q','Delimiter',',');
         fclose(fileID); % Close file
         % Concatenate data from all three cell arrays into one cell array
         data.raw = [data.raw{1},data.raw{2},data.raw{3}];

@@ -1,6 +1,9 @@
 function plotTracks(lub,maxMasks)
 disp('Plotting Linked Paths.')
-figure
+preview = figure('Position',[100 100 1200 800]);
+handles.axes1 = axes( ...
+    'Units','normalized', ...
+    'Position',[0 0 1 1]);
 imshow(maxMasks)
 hold on
 clear tempInd1 tempInd2

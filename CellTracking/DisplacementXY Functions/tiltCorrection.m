@@ -1,7 +1,9 @@
-function [noiseBook,noiseStats,sumIndFinal] = tiltCorrection(roiStack,imageTrans,book1,book2)
+function [noiseBook,noiseStats,sumIndFinal] = tiltCorrection(roiStack,imageTrans,book1,book2,noCellTraj)
 % Tilt Correction
 close all
+
 totalNumFrames = size(book1,2);
+if nargin == 4
 % sumImages = zeros(size(roiStack,1),size(roiStack,2));
 % for i = 2:totalNumFrames
 %     sumImages(:,:) = sumImages + roiStack(:,:,i);
@@ -27,7 +29,9 @@ sumIndX  = (book2(:,1)>sumBounds(1,1) & book2(:,1)<sumBounds(1,3));
 sumIndY  = (book2(:,2)>sumBounds(1,2) & book2(:,2)<sumBounds(1,4));
 sumIndXY = sumIndX .* sumIndY;
 sumIndFinal = find(sumIndXY);
-
+elseif nargin == 5
+    sumIndFinal = noCellTraj;
+end
 book1(book1==0) = NaN;
 for i = 1:totalNumFrames  
     

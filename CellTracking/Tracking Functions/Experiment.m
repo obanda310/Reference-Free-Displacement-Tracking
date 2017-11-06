@@ -39,7 +39,7 @@ classdef Experiment
             % overlay
             if ~exist('cellFile','var') || isempty(cellFile)
                 w = questdlg('Create a companion TRANSMITTED image of the cells on this gel? If yes, select starting image',...
-                    'Transmitted Image (Optional)','Yes','No','No');
+                    'Transmitted Image (Optional)','Yes','No','Yes');
                 waitfor(w);
                 if strcmp(w,'Yes') == 1
                     obj.cellImg = getImages;
@@ -135,7 +135,7 @@ classdef Experiment
                 % appended to the end of the name
                 roiFile = ...
                     [obj.metadata.filepath,obj.metadata.filename,'roi.tif'];
-                                maskFile = ...
+                maskFile = ...
                     [obj.metadata.filepath,obj.metadata.filename,'masks.tif'];
                 % If a file already exists with the name we just specified
                 % (i.e. if an ROI has been selected before), that file is

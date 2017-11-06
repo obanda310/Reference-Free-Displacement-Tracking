@@ -1,4 +1,5 @@
-close all; clear;
+ close all; clear;
+ set(0,'defaultfigurecolor',[1 1 1])
 %Analyzing Trajectories from FIJI input or from Custom Code
 
 %--------------------------------------------------------------------------
@@ -10,12 +11,20 @@ close all; clear;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %1.1 Loading Data and Background Images for Overlays%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+auto = questdlg('Attempt to Automate?',...
+    'Automated inputs?','Yes','No','Yes');
+
+if strcmp(auto,'Yes') == 1
+    autoChk = 1;
+else
+    autoChk = 0;
+end
 disp('1.1 Loading Tracking Outputs')
 
-[num,dataKey] = InputSelector();
+[num,dataKey] = InputSelector(autoChk);
 
 files = dir('*.tif'); %Check Directory for default filenames
-
+filePath = strcat(cd,'\');
 %Open Black Image
 for k = 1:length(files)
     current=files(k).name;
@@ -28,13 +37,16 @@ else
 [nameBlackFile,filePath] = uigetfile('*.tif','Select a Black Image of the Correct Dimensions');
 imageBlack = imread([filePath,nameBlackFile]);
 end
+ 
 
 
-
-
+if autoChk == 0
 w = questdlg('Use a Transmitted image for overlays?',...
-    'Fluorescent Image (Optional)','Yes','No','Yes');
+    'Transmitted Image (Optional)','Yes','No','Yes');
 waitfor(w);
+else
+    w = 'Yes';
+end
 if strcmp(w,'Yes') == 1
     clear check
     for k = 1:length(files)
@@ -55,9 +67,13 @@ else
 end
 
 %Open Fluorescent Image
+if autoChk == 0
 w = questdlg('Use a Fluorescent image for overlays?',...
     'Fluorescent Image (Optional)','Yes','No','No');
 waitfor(w);
+else
+    w = 'No';
+end
 if strcmp(w,'Yes') == 1
     clear check
     for k = 1:length(files)
@@ -78,13 +94,35 @@ else
 end
 
 %open Cell Area Binary Image
+if autoChk == 0
 w = questdlg('Input Binary Cell Outline?',...
     'Binary Outline','Yes','No','Yes');
+else
+    w = 'Yes';
+end
 if strcmp(w,'Yes') == 1
+    
+    clear check
+    for k = 1:length(files)
+    current=files(k).name;
+    if length(current)>=15 
+    check(k)=strcmp(current(end-14:end),'Binary Mask.tif');
+    end
+    end
+    loc=find(check);
+    if size(loc,1)==1
+    imageArea= imread(files(loc(1)).name);
+    imageArea = imresize(imageArea,(size(imageBlack,1)/size(imageArea,1)));
+    else
     [nameAreaFile,filePath] = uigetfile('*.tif','Select a Thresholded Image of the Cell Area');
     imageArea = imread([filePath,nameAreaFile]);
     imageArea = imresize(imageArea,(size(imageBlack,1)/size(imageArea,1)));
-else
+    end
+if size(imageArea,1) ~= size(imageBlack,1) || size(imageArea,2) ~= size(imageBlack,2)
+    [nameAreaFile,filePath] = uigetfile('*.tif','Select a Thresholded Image of the Cell Area');
+    imageArea = imread([filePath,nameAreaFile]);
+end
+else  
     imageArea = imageBlack==0;
 end
 
@@ -108,7 +146,7 @@ imageBorders = ones(size(imageArea,1),size(imageArea,2));
 % imageBorders(:,1:bLimits) = 0;
 
 
-outputs = OutputSelector();
+outputs = OutputSelector(autoChk);
 
 %%
 
@@ -239,9 +277,24 @@ for i = 1:numTraj
     book1(5,:,i) = (book1(3,:,i).^2 + book1(4,:,i).^2).^0.5; %frame specific total displacement
     book2(i,10) = i; %pillar ID
 end
-%%
-% Tilt Correction
-[noiseBook,noiseStats,sumIndFinal] = tiltCorrection(roiStack,imageTrans,book1,book2);
+%% Find non-deformed pillars with no previous info
+noCellTrajIni = 0;
+SE = strel('disk',80);
+imageAreaDil = imerode(imageArea,SE);
+for i = 1:numTraj
+    %if it is in black region
+    if imageAreaDil(round(book2(i,2)),round(book2(i,1)))~=0
+        if noCellTrajIni == 0
+            noCellTrajIni = i;
+        else
+        noCellTrajIni = cat(1,noCellTrajIni,i);
+        end
+    end
+end
+imshow(imageAreaDil)
+
+%% Tilt Correction
+[noiseBook,noiseStats,sumIndFinal] = tiltCorrection(roiStack,imageTrans,book1,book2,noCellTrajIni);
 
 
 %%
@@ -255,7 +308,7 @@ for i = 1:totalNumFrames
 end
 
 %%
-bins = 0:.025:2.25;
+bins = 0:.025:3;
 errorHist = figure;
 hold on
 histogram(book1(10,:,sumIndFinal)*dataKey(9,1),bins,'normalization','probability')
@@ -282,7 +335,7 @@ for i = 1:numTraj
     book2(i,12) = book1(9,book2(i,4),i);
     book2(i,13) = (book2(i,11).^2 + book2(i,12).^2).^0.5;
 end
-%%
+%% Find all pillars in non-deformed regions
 clear imageArea2
 imageArea2 = zeros(size(imageArea,1)+100,size(imageArea,2)+100);
 imageArea2(51:size(imageArea,1)+50,51:size(imageArea,2)+50) = imageArea;
@@ -760,11 +813,15 @@ for i = 1:size(book1,3)
         end
     end
 end
-
+%%
 filterSet = find(book2(:,21)>0);
 for i = 1:size(filterSet,1);
     book1(17:19,:,filterSet(i,1)) = book1(13:15,:,filterSet(i,1));
 end
+if size(filterSet,1)<1
+    book1(17:19,:,:) = 0;
+end
+
 filterMask = book1(19,:,:)>2;
 book1(17,:,:) = book1(17,:,:).*filterMask;
 book1(18,:,:) = book1(18,:,:).*filterMask;
@@ -940,36 +997,48 @@ if ismember(11,outputs) == 1
 end
 %% Create Heat Map of Shear Deformations
 if ismember(15,outputs) == 1
-customHeatMap(book1,book2,imageBlack,dataKey,outputs,filePath)
+[imageHeatXY,vqXY,vqXYtotal,imageHeatNaN,imageHeatXYColor]=customHeatMap(book1,book2,imageBlack,dataKey,outputs,filePath);
 end
-
+SE = strel('disk',30);
+vqXYBinary = imdilate(vqXY ==0,SE);
+BinaryFile = [filePath,'HeatMaps\Single\','Binary_Shear.tif'];
+        imwrite(vqXYBinary,BinaryFile);
+%%
+imageHeatXY2 = imresize(vqXY,[size(imageArea,1) size(imageArea,2)]);
+imageHeatXY2(isnan(imageHeatXY2)) = 0;
+%%
+clear  imageHeatXYTotalScale imageHeatXYtotal2
+for i = 1:size(vqXYtotal,3)
+imageHeatXYtotal2(:,:,i) = imresize(vqXYtotal(:,:,i),[size(imageArea,1) size(imageArea,2)]);
+end
+imageHeatXYtotal2(isnan(imageHeatXYtotal2)) = 0;
 
 %%
 [fitTiltPlaneMicrons,fitTiltPlanePixels] = tiltPlane(noiseBook,dataKey,imageArea);
 
 %%
 clear topSurface fitSurface
-[topSurface ,fitSurface] = findSurface(book1,book2,cm2,cmCutoff,imageArea,imageBorders);
+[topSurface ,fitSurface] = findSurface(book1,book2,cm2,cmCutoff,imageArea,imageBorders,dataKey);
+save('fitSurface.mat','fitSurface')
+%%
+figure
+%plot the filter pillars at the top frame that they reach
+scatter3(0,0,0)
+hold on
+scatter3(topSurface(:,3),topSurface(:,2),topSurface(:,4));
+%plot(fitSurface{1})
+plot(fitSurface{2})
+ xlim([0 size(roiStack,1)])
+ ylim([0 size(roiStack,2)])
+%plot(fitTiltPlanePixels)
+hold off
+%%
+figure
+imshow(imageArea)
+hold on
+scatter(topSurface(:,2),topSurface(:,3),5,'r')
+hold off
 
-%%
-% figure
-% %plot the filter pillars at the top frame that they reach
-% scatter3(0,0,0)
-% hold on
-% scatter3(topSurface(:,3),topSurface(:,2),topSurface(:,4));
-% %plot(fitSurface{1})
-% plot(fitSurface{2})
-%  xlim([0 size(roiStack,1)])
-%  ylim([0 size(roiStack,2)])
-% %plot(fitTiltPlanePixels)
-% hold off
-%%
-% figure
-% imshow(imageArea)
-% hold on
-% scatter(topSurface(:,2),topSurface(:,3),5,'r')
-% hold off
-% 
 
 %% Calculate Z-Displacement at Surface (Quick Method)
 clear cellSurface
@@ -996,7 +1065,7 @@ book2(cellSurface(i,1),17) = book2(cellSurface(i,1),4)-book2(cellSurface(i,1),16
 end
 
 
-%interpSurface{1} = fit([(book2(:,2) + book2(:,12)),(book2(:,1) + book2(:,11))],(book2(:,14)+book2(:,15)),'lowess','Span',.01);
+interpSurface{1} = fit([(book2(:,2) + book2(:,12)),(book2(:,1) + book2(:,11))],(book2(:,14)+book2(:,15)),'lowess','Span',.01);
 
 %% Calculate Z-Displacement at Surface (Quick Method 2)
 for i = 1:numTraj
@@ -1007,52 +1076,103 @@ book2(i,17) = book2(i,4)-book2(i,16);
 end
 
 
-%interpSurface{1} = fit([(book2(:,2) + book2(:,12)),(book2(:,1) + book2(:,11))],(book2(:,14)+book2(:,15)),'lowess','Span',.005);
+interpSurface{1} = fit([(book2(:,2) + book2(:,12)),(book2(:,1) + book2(:,11))],(book2(:,14)+book2(:,15)),'lowess','Span',.005);
 
 %%
 % close all
-% figure
-% quiver3(book2(:,2),book2(:,1),book2(:,14),book2(:,12),book2(:,11),book2(:,15))
-% hold on
-% plot3(0,0,0)
-% plot(interpSurface{1})
-% xlim([0 size(roiStack,1)])
-% ylim([0 size(roiStack,2)])
-% zlim([0 size(roiStack,3)])
-% hold off
+figure
+quiver3(book2(:,2),book2(:,1),book2(:,14),book2(:,12),book2(:,11),book2(:,15))
+hold on
+plot3(0,0,0)
+plot(interpSurface{1})
+xlim([0 size(roiStack,1)])
+ylim([0 size(roiStack,2)])
+zlim([0 size(roiStack,3)]) 
+hold off
 
 %%
 if ismember(16,outputs) == 1
     %%
-[imageHeatZ,vq] = customHeatMapZ(book2,imageBlack,dataKey,outputs,filePath);
+[imageHeatZ,vqZ] = customHeatMapZ(book2,imageBlack,dataKey,outputs,filePath);
 end
+%% Isolating Cell-Body Normal Forces
+%Filter Z-Deformation to accept only normal deformation within the cell's boundary
+imageHeatZScale = size(imageArea,1)/size(vqZ,1);
+imageHeatZ2 = imresize(vqZ,[size(imageArea,1) size(imageArea,2)]);
+imageHeatZ3 = double(imageHeatZ2) .* double(imageArea==0);
+imageHeatZ3(isnan(imageHeatZ3)) = 0;
+
+
 %% Relate Cell Spread Area to Displacements
 clear imageAreaProps imageArea3
 book1(find(isnan(book1))) = 0;
 imageArea3(:,:) = logical(imageArea==0);
-imageAreaProps = regionprops(imageArea3,'centroid','Area','Eccentricity','Perimeter');
+imageAreaProps = regionprops(imageArea3,'centroid','Area','Eccentricity','Perimeter','MajorAxisLength','MinorAxisLength');
 propsArea = sum(sum(imageArea==0));
 propsSumDisp = sum(sum(book1(19,:,:)));
 propsMeanDisp = mean(mean(book1(19,:,:)));
+if propsArea > 0
 propsCircularity = ((sum(cat(1,imageAreaProps.Perimeter)))^2 )/(4*(pi*(sum(cat(1,imageAreaProps.Area)))));
 ratioArea = propsSumDisp/propsArea;
 ratioPerimeter = propsSumDisp/cat(1,imageAreaProps.Perimeter);
+else
+    clear imageAreaProps
+    imageAreaProps = struct('centroid',0,'Area',0,'Eccentricity',0,'Perimeter',0,'MajorAxisLength',0,'MinorAxisLength',0);
+%     imageAreaProps.Perimeter =0;
+%     imageAreaProps.Area = 0;
+%     imageAreaProps(1,1).MajorAxisLength = 0;
+%     imageAreaProps(1,1).MinorAxisLength = 0;
+%     imageAreaProps(1,1).Eccentricity = 0;
+    propsCircularity = 0;
+    ratioArea = 0;
+    ratioPerimeter = 0;
+end
 
 
 areaTxt = fopen('Area-Disp Relationship.txt','wt');
-fprintf(areaTxt,strcat('Code Date:07/05/2017','\n'));
-fprintf(areaTxt,strcat('Cell Area in Sq. Pixels: ', num2str(imageAreaProps.Area) , '\n'));
-fprintf(areaTxt,strcat('Sum of Displacements in Linear Pixels: ', num2str(propsSumDisp) , '\n'));
-fprintf(areaTxt,strcat('Average Displacement in Linear Pixels: ', num2str(propsMeanDisp) , '\n'));
-fprintf(areaTxt,strcat('Perimeter: ', num2str(imageAreaProps.Perimeter) , '\n'));
-fprintf(areaTxt,strcat('Circularity: ', num2str(propsCircularity) , '\n'));
-fprintf(areaTxt,strcat('Eccentricity', num2str(imageAreaProps.Eccentricity) , '\n'));
-fprintf(areaTxt,strcat('Area Ratio: ', num2str(ratioArea) , '\n'));
-fprintf(areaTxt,strcat('Perimeter Ratio: ', num2str(ratioPerimeter) , '\n'));
+fprintf(areaTxt,strcat('Code Date:07/13/2017','\n'));
+
+fprintf(areaTxt,strcat( num2str(sum(cat(1,imageAreaProps.Area))) , '\n'));
+fprintf(areaTxt,strcat( num2str(propsSumDisp) , '\n'));
+fprintf(areaTxt,strcat( num2str(propsMeanDisp) ,'\n'));
+fprintf(areaTxt,strcat( num2str(sum(cat(1,imageAreaProps.Perimeter))) ,'\n'));
+fprintf(areaTxt,strcat( num2str(propsCircularity) ,'\n'));
+fprintf(areaTxt,strcat( num2str(imageAreaProps(1,1).Eccentricity) ,'\n'));
+fprintf(areaTxt,strcat(num2str(imageAreaProps(1,1).MajorAxisLength) , '\n'));
+fprintf(areaTxt,strcat(num2str(imageAreaProps(1,1).MinorAxisLength) , '\n'));
+fprintf(areaTxt,strcat( num2str(ratioArea) ,'\n'));
+fprintf(areaTxt,strcat(num2str(ratioPerimeter) ,'\n'));
+fprintf(areaTxt,strcat(num2str(sum(sum(imageHeatXY2))) , '\n'));
+fprintf(areaTxt,strcat(num2str(sum(sum(sum(imageHeatXYtotal2)))) , '\n'));
+fprintf(areaTxt,strcat(num2str(sum(sum(imageHeatZ3))) , '\n'));
+fprintf(areaTxt,strcat(num2str(max(max(imageHeatXY2))) , '\n'));
+fprintf(areaTxt,strcat('\n'));
+fprintf(areaTxt,strcat('Above is Without Text for Copy Paste','\n'));
+fprintf(areaTxt,strcat('\n'));
+fprintf(areaTxt,strcat( num2str(sum(cat(1,imageAreaProps.Area))) ,',    Cell Area in Sq. Pixels: ', '\n'));
+fprintf(areaTxt,strcat( num2str(propsSumDisp) ,',   Sum of Pillar Displacements in Linear Pixels: ', '\n'));
+fprintf(areaTxt,strcat( num2str(propsMeanDisp) ,',  Average Displacement in Linear Pixels: ', '\n'));
+fprintf(areaTxt,strcat( num2str(sum(cat(1,imageAreaProps.Perimeter))) ,',   Perimeter: ', '\n'));
+fprintf(areaTxt,strcat( num2str(propsCircularity) ,',   Circularity: ', '\n'));
+fprintf(areaTxt,strcat( num2str(imageAreaProps(1,1).Eccentricity) ,',   Eccentricity', '\n'));
+fprintf(areaTxt,strcat(num2str(imageAreaProps(1,1).MajorAxisLength) ,',   Major Axis of Ellipse', '\n'));
+fprintf(areaTxt,strcat(num2str(imageAreaProps(1,1).MinorAxisLength) ,',   Minor Axis of Ellipse', '\n'));
+fprintf(areaTxt,strcat( num2str(ratioArea) ,',  Area Ratio: ', '\n'));
+fprintf(areaTxt,strcat(num2str(ratioPerimeter) ,',  Perimeter Ratio: ', '\n'));
+fprintf(areaTxt,strcat(num2str(sum(sum(imageHeatXY2))) ,',  Sum of Interpolated XY Displacements in Linear Microns (Surface): ', '\n'));
+fprintf(areaTxt,strcat(num2str(sum(sum(sum(imageHeatXYtotal2)))) ,',    Sum of Interpolated XY Displacements in Linear Microns (Stack): ', '\n'));
+fprintf(areaTxt,strcat(num2str(sum(sum(imageHeatZ3))) ,',   Sum of Interpolated Normal Displacements in Linear Microns (Cell Boundary): ', '\n'));
+fprintf(areaTxt,strcat(num2str(max(max(imageHeatXY2))) ,',   Max of Interpolated XY Displacements in Linear Microns (Surface): ', '\n'));
 
 fclose(areaTxt);
+%% Create folder for profile views and save relevant data
+filePath = cd;
+folderName = 'Profile Data';
+mkdir(filePath,folderName)
+save('Profile Data\vqXY.mat','vqXY')
+save('Profile Data\HeatMapXY.mat','imageHeatXYColor')
 
-%% Calculate Z-Displacement at Surface (Quick Method 2 in microns)
+ %% Calculate Z-Displacement at Surface (Quick Method 2 in microns)
 
 % %interpSurface{1} = fit([(book2(:,2) + book2(:,12))*dataKey(9,1),(book2(:,1) + book2(:,11))*dataKey(9,1)],(book2(:,14)+book2(:,15))*0.4,'lowess','Span',.01);
 % interpSurface{1} = fit([(book2(:,2) + book2(:,12))*dataKey(9,1),(book2(:,1) + book2(:,11))*dataKey(9,1)],(book2(:,16)+book2(:,17))*0.4,'lowess','Span',.01);
@@ -1141,7 +1261,7 @@ fclose(areaTxt);
 % plot(1:1:totalNumFrames,book1(12,:,i))
 % figure
 % hold on
-% plot(1:1:totalNumFrames,book1(13,:,i))
+% plot(1:1:totalNumFrames,book1(13,:,i)) 
 % plot(1:1:totalNumFrames,book1(14,:,i))
 % figure
 % plot(1:1:totalNumFrames,book1(3,:,i))

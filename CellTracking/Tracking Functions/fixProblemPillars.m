@@ -1,3 +1,31 @@
+%This function file is currently not in use as of 07/12/2017. The code
+%referencing this function file has been removed from the main tracking
+%script.
+
+%Old code from tracking script:
+%Copy-Paste into tracking script to use
+% for k = 1:4
+% numPillars = max(lub(:,7));
+% [lub] = refreshData(lub,maxAi,maxAc,numPillars,maxMasks);
+% problems = find(lub(:,20)>0);
+% % Fixing Problem Pillars
+% sLocs = unique(lub(:,[10 11 7]),'rows','stable');
+% exempt = unique(lub((lub(:,21)<(0.8*size(roiImgs,3))),7)); % exempt from being matched to because the pillar is too short
+% for i = 1:size(exempt,1)
+% sLocs(sLocs(:,3)==exempt(i,1),:) = 0;
+% end
+% sLocs = unique(sLocs,'rows','stable');
+% sLocs(sLocs(:,3)==0,:) = [];
+% lub(:,23) = lub(:,7);
+% [lub] = fixProblemPillars(lub,maxAi,problems,sLocs,maxD);
+% end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%This function attempts to correct "problems" automatically. In its current
+%state, however, it seems to create just as many problems as it fixes.
 function [lub] = fixProblemPillars(lub,maxAi,problems,sLocs,maxD)
 count = 0;
 for i = 1:size(problems,1)

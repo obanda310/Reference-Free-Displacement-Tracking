@@ -1,4 +1,4 @@
-function [topSurface ,fitSurface] = findSurface(book1,book2,cm2,cmCutoff,imageArea,imageBorders)
+function [topSurface ,fitSurface] = findSurface(book1,book2,cm2,cmCutoff,imageArea,imageBorders,dataKey)
 
 %clear topSurface topSurfaceCand bLimits fitSurface
 
@@ -38,3 +38,4 @@ topSurface([find(topSurface(:,4)>ub | topSurface(:,4)<lb)],:) = [];
 
 fitSurface{1} = fit([topSurface(:,3),topSurface(:,2)],topSurface(:,4),'poly11');
 fitSurface{2} = fit([topSurface(:,3),topSurface(:,2)],topSurface(:,4),'lowess','Span',0.1);
+fitSurface{3} = fit([topSurface(:,3)*dataKey(9,1),topSurface(:,2)*dataKey(9,1)],topSurface(:,4)*dataKey(10,1),'lowess','Span',0.1);

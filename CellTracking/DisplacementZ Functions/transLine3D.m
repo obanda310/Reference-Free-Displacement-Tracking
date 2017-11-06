@@ -24,9 +24,9 @@ lb(3,1) = 0;
         yf = yn + y0;
         zf = zn + z0;
         for i=1:size(rowP,1)
-            distance(i,1) = norm(cross(rowV,rowP(i,1:3)'-[xf;yf;zf]))/norm(rowV);
+            distances(i,1) = norm(cross(rowV,rowP(i,1:3)'-[xf;yf;zf]))/norm(rowV);
         end
-        totalCost = sum(distance(:,1));
+        totalCost = sum(distances(:,1));
     end
 end
 
