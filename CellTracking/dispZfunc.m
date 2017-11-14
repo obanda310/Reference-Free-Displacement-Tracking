@@ -1,11 +1,11 @@
-% function dispZfunc(directory)
+%function dispZfunc(directory)
 % if nargin ==1
 % cd(directory);
 % end
 clear all
 close all
 set(0,'defaultfigurecolor',[1 1 1])
-
+tic
 
 %%
 files = dir('*.tif'); %Check Directory for default filenames
@@ -30,12 +30,12 @@ end
 try
     if size(find(check),2) >0
         load('StackName.mat','StackName')
-        roiStack = getImages(StackName);
+        roiStack = single(getImages(StackName));
     else
-        roiStack = getImages();
+        roiStack = single(getImages());
     end
 catch
-    roiStack = getImages();
+    roiStack = single(getImages());
     
 end
 % Get a Transmitted Image
@@ -111,7 +111,7 @@ if size(files,1)>=1
     end
     loc=find(check);
 else
-    loc= zeros(2,2);
+    loc= zeros(1,1);
 end
 %%
 if size(loc,2)<1
@@ -124,34 +124,31 @@ if size(loc,2)<1
     sumBounds(1,5:6) = (sumBounds(1,1:2) + sumBounds(1,3:4))/2;
     sumBounds = sumBounds * xyScale;
 end
-x = size(roiStack,1);
-y = size(roiStack,2);
-z = size(roiStack,3);
+
 boundsX = [0 size(imageBinary,2)*xyScale];
 boundsY = [0 size(imageBinary,1)*xyScale];
 %% Kilfoil Stack Filter
+disp('Processing Images')
 try
     load('processedStack.mat')
 catch
     res=bpass3dMB(roiStack, [2 2 1], [7 7 12],[0 0]);
 end
+disp(['done Processing Images at '  num2str(toc) ' seconds'])
+x = size(res,1);
+y = size(res,2);
+z = size(res,3);
 %% Kilfoil Object Detection 3D
 disp('Detecting 3D Centroids')
 masscut = mean(prctile(roiStack(:,:,size(roiStack,3)),95));
 r=feature3dMB(res, d , [d d 10], [x y z],[1 1 1],5,masscut,.3); %
 r(:,1:2) = r(:,1:2)*xyScale;
 r(:,3) = r(:,3)*zScale;
-disp('done Detecting 3D Centroids')
-%% 2D Reference plane (for determining location on fit lines of reference points)
-close all
-rXY = feature2D(res(:,:,1),1,6,0,1);
-rXY(:,[1 2]) = rXY(:,[1 2])*xyScale;
-scatter(rXY(:,2),rXY(:,1))
-
+disp(['done Detecting 3D Centroids at ' num2str(toc) ' seconds'])
 %%
 save('rOrginal','r')
 %% Build Planes Dot by Dot
-disp('Building Planes')
+
 clear rNbor
 %Set a search window size and establish neighbors
 radXY =  2.5; %microns
@@ -165,6 +162,9 @@ for i = 1:size(r,1)
     botZ = r(i,3)- radZ;
     rNbor(i,1:size(find(r(:,1)<topX & r(:,1)>botX & r(:,2)<topY & r(:,2)>botY& r(:,3)<topZ & r(:,3)>botZ))) = find(r(:,1)<topX & r(:,1)>botX & r(:,2)<topY & r(:,2)>botY& r(:,3)<topZ & r(:,3)>botZ);
 end
+%%
+
+disp('Building Planes')
 %Grow from starting point until no more plane members are found
 clear planesTemp
 working = 1;
@@ -173,8 +173,7 @@ searched = 1:1:size(r,1);
 planesTemp(:,1) = rNbor(1,1:nnz(rNbor(1,:)));
 planes = planesTemp;
 j=1; %designates starting at plane 1
-while working == 1
-    
+while working == 1  
     for i = 1:size(planes)
         if ismember(planes(i,1),searched) == 1
             clear new
@@ -203,7 +202,7 @@ while working == 1
         end
     end
 end
-disp('done Building Planes')
+disp(['done Building Planes at ' num2str(toc) ' seconds'])
 %% View all detected planes
 figure
 hold on
@@ -352,17 +351,17 @@ else
     % % text(lub(nghbrs(i,2),1)-(cntrPt(1,1)-fSizeXmin),lub(nghbrs(i,2),2)-(cntrPt(1,2)-fSizeYmin),lub(nghbrs(i,2),6),trckText,'Color','red')
     %
     %%
-    % m = 15;
-    % figure
-    % scatter3(rNDB(:,1),rNDB(:,2),rNDB(:,3))
-    % hold on
-    % scatter3(rNDB(sortedOrig(1:m,1),1),rNDB(sortedOrig(1:m,1),2),rNDB(sortedOrig(1:m,1),3))
-    % m=10;
-    % scatter3(rNDB(sortedOrig(1:m,1),1),rNDB(sortedOrig(1:m,1),2),rNDB(sortedOrig(1:m,1),3))
-    % m=5;
-    % scatter3(rNDB(sortedOrig(1:m,1),1),rNDB(sortedOrig(1:m,1),2),rNDB(sortedOrig(1:m,1),3))
-    %scatter(0,0,0)
-    %  hold off
+    m = 15;
+    figure
+    scatter3(rNDB(:,1),rNDB(:,2),rNDB(:,3))
+    hold on
+    scatter3(rNDB(sortedOrig(1:m,1),1),rNDB(sortedOrig(1:m,1),2),rNDB(sortedOrig(1:m,1),3))
+    m=10;
+    scatter3(rNDB(sortedOrig(1:m,1),1),rNDB(sortedOrig(1:m,1),2),rNDB(sortedOrig(1:m,1),3))
+    m=5;
+    scatter3(rNDB(sortedOrig(1:m,1),1),rNDB(sortedOrig(1:m,1),2),rNDB(sortedOrig(1:m,1),3))
+    scatter(0,0,0)
+     hold off
     %%
     % Pair off neighbors
     clear differences
@@ -483,22 +482,22 @@ else
     scatter3(0,0,0)
     hold off
     %% Display v1row and v2row
-    %
-    % figure
-    % hold on
-    % scatter3(rNDB(:,1),rNDB(:,2),rNDB(:,3))
-    % scatter3(rNDB(v1row(:,1),1),rNDB(v1row(:,1),2),rNDB(v1row(:,1),3))
-    % scatter3(rNDB(v2row(:,1),1),rNDB(v2row(:,1),2),rNDB(v2row(:,1),3))
-    % scatter3(0,0,0)
-    % hold off
+    
+    figure
+    hold on
+    scatter3(rNDB(:,1),rNDB(:,2),rNDB(:,3))
+    scatter3(rNDB(v1row(:,1),1),rNDB(v1row(:,1),2),rNDB(v1row(:,1),3))
+    scatter3(rNDB(v2row(:,1),1),rNDB(v2row(:,1),2),rNDB(v2row(:,1),3))
+    scatter3(0,0,0)
+    hold off
     
 end
-disp('done Generating Row Slope')
+disp(['done Generating Row Slope at ' num2str(toc) ' seconds'])
 
 %%
 disp('Building Rows')
 [r,rows] = buildRows2(r,rowV,planesFinal);
-disp('done Building Rows')
+disp(['done Building Rows at ' num2str(toc) ' seconds'])
 
 %%
 figure
@@ -524,7 +523,7 @@ rowPlanesIdx(1,2) = size(nRS,1);
 for i = 2:size(rowPlanes,3)
     clear currentPlanes
     nRS = find(rowPlanes(:,1,i)>0,1,'first');
-    currentPlanes(:,:) =  rowPlanes(find(rowPlanes(:,1,i)>0),:,i);
+    currentPlanes(:,:) =  rowPlanes((rowPlanes(:,1,i)>0),:,i);
     rowPlanesIdx(i,1) = size(newRows,1)+1;
     newRows = cat(1,newRows,currentPlanes);
     rowPlanesIdx(i,2) = size(newRows,1);
@@ -584,13 +583,13 @@ planesLoc(planesLoc==0)=nan;
 planesLoc2 = mean(planesLoc,'omitnan');
 
 %%
-figure
-hold on
-for i = 1:size(planesFinal,2)
-    scatter3(r(planesFinal(1:nnz(planesFinal(:,i)),i),1),r(planesFinal(1:nnz(planesFinal(:,i)),i),2),r(planesFinal(1:nnz(planesFinal(:,i)),i),3))
-end
-plot(fitSurface)
-hold off
+% figure
+% hold on
+% for i = 1:size(planesFinal,2)
+%     scatter3(r(planesFinal(1:nnz(planesFinal(:,i)),i),1),r(planesFinal(1:nnz(planesFinal(:,i)),i),2),r(planesFinal(1:nnz(planesFinal(:,i)),i),3))
+% end
+% plot(fitSurface)
+% hold off
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 2ND METHOD FOR MEASURING DISPLACEMENTS
@@ -655,32 +654,55 @@ try
 catch
     book1 = -1;
 end
-%% 
+ 
+book1 = single(book1);
+book2 = single(book2);
 clear book1N
 r(:,9)=0;
-frames = 1:1:31;
+frames = 1:1:size(book1,2);
 for i = 1:size(book1,3)
 book1(20,:,i) = frames';
 book1(21,:,i) = i;
 end
+book1(book1==0) = NaN;
+book1([1 2],:,:) = book1([1 2],:,:)*xyScale;
+book1(20,:,:) = book1(20,:,:)*zScale;
+book2(:,[1 2]) = book2(:,[1 2])*xyScale;
 
-book1N(:,:) = book1([1,2,20,21],:,1)';
-for i = 2:size(book1,3)
-    book1N = cat(1,book1N,book1([1,2,20,21],:,i)');
-end
-book1N(:,1:2) = book1N(:,1:2)*xyScale;
-book1N(:,3) = book1N(:,3)*zScale;
-
-book1N(book1N==0)=NaN;
+disp('Matching 3D detections to 2D-based pillars')
 for i = 1:size(r,1)
     clear differences 
-    differences = sqrt((r(i,1)*ones(size(book1N,1),1)-book1N(:,1)).^2+(r(i,2)*ones(size(book1N,1),1)-book1N(:,2)).^2+(r(i,3)*ones(size(book1N,1),1)-book1N(:,3)).^2);
-    min(differences)
-    if min(differences)<.5
-        
-    r(i,9) = book1N(find(differences == min(differences)),4);
+    differences = min(squeeze(sqrt((book1(1,:,:)-r(i,1)).^2+(book1(2,:,:)-r(i,2)).^2+(book1(20,:,:)-r(i,3)).^2)));
+    
+    if min(differences)<.5       
+    r(i,9) = find(differences==min(differences));
     end
+
 end
+disp('done Matching 3D detections to 2D-based pillars')
+
+
+%% Row Shift Correction
+figure
+hold on
+for i=1:size(rows,1)
+scatter3(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),1),r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),2),r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),3))
+end
+%%
+
+for i = 1:size(rows,1)
+    rowsSCtest(i,1:length(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),1))) = r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),1);
+    rowsSC(i,1) = mean(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),1)-book2(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),9),1));
+    rowsSC(i,3) = length(r(r(rowsNDCU(rowsNDCU(i,:)>0),9)>0,1)-book2(r(r(rowsNDCU(rowsNDCU(i,:)>0),9)>0,9),1));
+    rowsSC(i,2) = mean(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),2)-book2(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),9),2));   
+end
+
+%store shift correction in r
+for i = 1:size(r,1)
+   r(i,10) = rowsSC(r(i,8),1);
+    r(i,11) = rowsSC(r(i,8),2); 
+end
+
 %%
 figure
 hold on
@@ -691,23 +713,27 @@ for i=1:max(r(:,9))
     end
     
 end
-scatter3(book1N(:,1),book1N(:,2),book1N(:,3),'.')
-%%
+for i = 1:size(book1,3)
+scatter3(book1(1,:,i),book1(2,:,i),book1(20,:,i),'.')
+end
+%% XY component of reference Method 2
 for i = 1:size(r,1)
     
     temp = squeeze(rowFits2(r(i,8),1:2,:))';
     if r(i,9)>0
-    [xy,distance,t_a] = distance2curve(temp,book2(r(i,9),1:2)*xyScale);
-    rRef2b(i,1:2) = xy(1,1:2);
+    [xy,distance,t_a] = distance2curve(temp,book2(r(i,9),1:2));
+    rRef2b(i,1:2) = xy(1,1:2) + r(i,10:11);
     else
     rRef2b(i,1:2) = rRef2a(i,1:2);    
     end
-    
+end
+
+%% Z component of reference Method 2    
+for i = 1:size(r,1)
     differential = rowFits2(r(i,8),1:3,2)-rowFits2(r(i,8),1:3,1);
     differential2 = rowFits2(r(i,8),1:2,2) - rRef2b(i,1:2);
     differential3 = mean(differential(1,1:2)./differential2(1,1:2));
     rRef2b(i,3) = rowFits2(r(i,8),3,2)-differential(1,3)/differential3;
-    
 end
 %%
 figure
@@ -746,19 +772,19 @@ disp('done Fitting Rows with Independent Slopes - Method 2')
 % scatter3(0,0,0);
 
 %% Scatter3/Plot3 of Dots/Fits Method 2
-figure
-hold on
-for j = 1:size(rowPlanes,3)
-    for i = 1:size(rowPlanes,1)
-        n = nnz(rowPlanes(i,:,j));
-        scatter3(r(rowPlanes(i,1:n,j),1),r(rowPlanes(i,1:n,j),2),r(rowPlanes(i,1:n,j),3))
-    end
-end
-
-for i = 1:size(rowFits2,1)
-    plot3([rowFits2(i,1,1) rowFits2(i,1,2)],[rowFits2(i,2,1) rowFits2(i,2,2)],[rowFits2(i,3,1) rowFits2(i,3,2)])
-end
-scatter3(0,0,0)
+% figure
+% hold on
+% for j = 1:size(rowPlanes,3)
+%     for i = 1:size(rowPlanes,1)
+%         n = nnz(rowPlanes(i,:,j));
+%         scatter3(r(rowPlanes(i,1:n,j),1),r(rowPlanes(i,1:n,j),2),r(rowPlanes(i,1:n,j),3))
+%     end
+% end
+% 
+% for i = 1:size(rowFits2,1)
+%     plot3([rowFits2(i,1,1) rowFits2(i,1,2)],[rowFits2(i,2,1) rowFits2(i,2,2)],[rowFits2(i,3,1) rowFits2(i,3,2)])
+% end
+% scatter3(0,0,0)
 
 
 %% Quiver Plot of Displacements Method 2
@@ -884,8 +910,8 @@ for i = 1:size(r,1)
     
     temp = squeeze(rowsLines2(:,1:2,r(i,8)));
     if r(i,9)>0
-    [xy,distance,t_a] = distance2curve(temp,book2(r(i,9),1:2)*xyScale);
-    rRef1b(i,1:2) = xy(1,1:2);
+    [xy,distance,t_a] = distance2curve(temp,book2(r(i,9),1:2));
+    rRef1b(i,1:2) = xy(1,1:2) + r(i,10:11);
     else
     rRef1b(i,1:2) = rRef1a(i,1:2);    
     end
@@ -897,12 +923,12 @@ for i = 1:size(r,1)
     
 end
 %%
-figure
-hold on
-scatter3(rRef1b(:,1),(size(imageBinary,1)*xyScale)-rRef1b(:,2),rRef1b(:,3))
-for i = 1:size(rowsLines2,3)
-    plot3([rowsLines2(1,1,i) rowsLines2(2,1,i)],[(size(imageBinary,1)*xyScale)-rowsLines2(1,2,i) (size(imageBinary,1)*xyScale)-rowsLines2(2,2,i)],[rowsLines2(1,3,i) rowsLines2(2,3,i)])
-end
+% figure
+% hold on
+% scatter3(rRef1b(:,1),(size(imageBinary,1)*xyScale)-rRef1b(:,2),rRef1b(:,3))
+% for i = 1:size(rowsLines2,3)
+%     plot3([rowsLines2(1,1,i) rowsLines2(2,1,i)],[(size(imageBinary,1)*xyScale)-rowsLines2(1,2,i) (size(imageBinary,1)*xyScale)-rowsLines2(2,2,i)],[rowsLines2(1,3,i) rowsLines2(2,3,i)])
+% end
 
 %%
 rDisp1 = r(:,1:3)-rRef1b(:,1:3);
@@ -913,22 +939,22 @@ rDisp1 = r(:,1:3)-rRef1b(:,1:3);
 
 disp('done Fitting Rows with Row Slope - Method 1')
 %% Scatter3/Plot3 of Dots/Fits Method 1
-figure
-hold on
-for j = 1:size(rowPlanes,3)
-    for i = 1:size(rowPlanes,1)
-        n = nnz(rowPlanes(i,:,j));
-        scatter3(r(rowPlanes(i,1:n,j),1),(size(imageBinary,1)*xyScale)-r(rowPlanes(i,1:n,j),2),r(rowPlanes(i,1:n,j),3))
-    end
-end
-for i = 1:size(rowsLines2,3)
-    plot3([rowsLines2(1,1,i) rowsLines2(2,1,i)],[(size(imageBinary,1)*xyScale)-rowsLines2(1,2,i) (size(imageBinary,1)*xyScale)-rowsLines2(2,2,i)],[rowsLines2(1,3,i) rowsLines2(2,3,i)])
-end
-scatter3(0,0,0)
+% figure
+% hold on
+% for j = 1:size(rowPlanes,3)
+%     for i = 1:size(rowPlanes,1)
+%         n = nnz(rowPlanes(i,:,j));
+%         scatter3(r(rowPlanes(i,1:n,j),1),(size(imageBinary,1)*xyScale)-r(rowPlanes(i,1:n,j),2),r(rowPlanes(i,1:n,j),3))
+%     end
+% end
+% for i = 1:size(rowsLines2,3)
+%     plot3([rowsLines2(1,1,i) rowsLines2(2,1,i)],[(size(imageBinary,1)*xyScale)-rowsLines2(1,2,i) (size(imageBinary,1)*xyScale)-rowsLines2(2,2,i)],[rowsLines2(1,3,i) rowsLines2(2,3,i)])
+% end
+% scatter3(0,0,0)
 
 %% Quiver Plot
-figure
-quiver3(rRef1b(:,1),rRef1b(:,2),rRef1b(:,3),rDisp1(:,1),rDisp1(:,2),rDisp1(:,3),0)
+% figure
+% quiver3(rRef1b(:,1),rRef1b(:,2),rRef1b(:,3),rDisp1(:,1),rDisp1(:,2),rDisp1(:,3),0)
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 3RD METHOD FOR FITTING ROWS (METHOD 1 AND 2 COMBINED)
@@ -963,8 +989,8 @@ for i = 1:size(r,1)
     
     temp = squeeze(rowFits3(r(i,8),1:2,:))';
     if r(i,9)>0
-    [xy,distance,t_a] = distance2curve(temp,book2(r(i,9),1:2)*xyScale);
-    rRef3b(i,1:2) = xy(1,1:2);
+    [xy,distance,t_a] = distance2curve(temp,book2(r(i,9),1:2));
+    rRef3b(i,1:2) = xy(1,1:2) + r(i,10:11);
     else
     rRef3b(i,1:2) = rRef3a(i,1:2);    
     end
@@ -976,14 +1002,14 @@ for i = 1:size(r,1)
     
 end
 %%
-figure
-hold on
-scatter3(rRef2b(:,1),rRef2b(:,2),rRef2b(:,3))
-for i = 1:size(rowFits3,1)
-    plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[rowFits3(i,2,1) rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)])
-end
+% figure
+% hold on
+% scatter3(rRef2b(:,1),rRef2b(:,2),rRef2b(:,3))
+% for i = 1:size(rowFits3,1)
+%     plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[rowFits3(i,2,1) rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)])
+% end
 
-
+%%
 rDisp3 = r(:,1:3)-rRef3b(:,1:3);
 %% Calculate Average Displacement per Row per Plane Method 3
 [rDisp3Mean,rDisp3MeanPlanes,rDisp3StdPlanes,rDisp3MeanTotal,rDisp3StdTotal] = quickRowStats(rDisp3,planesFinal,rowPlanesIdx,rNDC,rowsNDCU,planesLocFiltList);
@@ -991,38 +1017,40 @@ rDisp3 = r(:,1:3)-rRef3b(:,1:3);
 [noiseMean3,noiseStd3,noiseCutoff3,rDisp3Filt,rDisp3PF] = rowNoiseCalc(r,rDisp3,planesLocFiltList,rNDC);
 disp('done Fitting Rows with Independent Slopes - Method 3')
 %% Scatter3/Plot3 of Dots/Fits Method 3
-figure
-hold on
-for j = 1:size(rowPlanes,3)
-    for i = 1:size(rowPlanes,1)
-        n = nnz(rowPlanes(i,:,j));
-        
-        scatter3(r(rowPlanes(i,1:n,j),1),(size(imageBinary,1)*xyScale)-r(rowPlanes(i,1:n,j),2),r(rowPlanes(i,1:n,j),3))
-    end
-    
-end
-
-for i = 1:size(rowFits3,1)
-    plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(i,2,1) (size(imageBinary,1)*xyScale)-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)])
-end
-scatter3(0,0,0)
+% figure
+% hold on
+% for j = 1:size(rowPlanes,3)
+%     for i = 1:size(rowPlanes,1)
+%         n = nnz(rowPlanes(i,:,j));
+%         
+%         scatter3(r(rowPlanes(i,1:n,j),1),(size(imageBinary,1)*xyScale)-r(rowPlanes(i,1:n,j),2),r(rowPlanes(i,1:n,j),3))
+%     end
+%     
+% end
+% 
+% for i = 1:size(rowFits3,1)
+%     plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(i,2,1) (size(imageBinary,1)*xyScale)-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)])
+% end
+% scatter3(0,0,0)
 %%
-figure
-hold on
-scatter3(0,0,0)
-scatter3(x*xyScale,y*xyScale,z*zScale)
-for j = 1:size(rowPlanes,3)
-    if nnz(planes2(:,j))>5000
-        method3fit{j} = fit([r(planes2(1:nnz(planes2(:,j)),j),1),(size(imageBinary,1)*xyScale)-r(planes2(1:nnz(planes2(:,j)),j),2)],r(planes2(1:nnz(planes2(:,j)),j),3),'lowess','Span',.02);
-        plot(method3fit{j})
-    end
-    plot(fitSurface)
-end
+% figure
+% hold on
+% scatter3(0,0,0)
+% scatter3(x*xyScale,y*xyScale,z*zScale)
+% for j = 1:size(rowPlanes,3)
+%     if nnz(planes2(:,j))>5000
+%         method3fit{j} = fit([r(planes2(1:nnz(planes2(:,j)),j),1),(size(imageBinary,1)*xyScale)-r(planes2(1:nnz(planes2(:,j)),j),2)],r(planes2(1:nnz(planes2(:,j)),j),3),'lowess','Span',.02);
+%         plot(method3fit{j})
+%     end
+%     plot(fitSurface)
+% end
 
 %% Quiver Plot of Displacements Method 3
 figure
-quiver3(rRef3(:,1),(size(imageBinary,1)*xyScale)-rRef3(:,2),rRef3(:,3),rDisp3(:,1),rDisp3(:,2)*-1,rDisp3(:,3),0)
-
+hold on
+for i = 1:size(planesFinal,2)
+quiver3(rRef3b(planesFinal(1:nnz(planesFinal(:,i)),i),1),(size(imageBinary,1)*xyScale)-rRef3b(planesFinal(1:nnz(planesFinal(:,i)),i),2),rRef3b(planesFinal(1:nnz(planesFinal(:,i)),i),3),rDisp3(planesFinal(1:nnz(planesFinal(:,i)),i),1),rDisp3(planesFinal(1:nnz(planesFinal(:,i)),i),2)*-1,rDisp3(planesFinal(1:nnz(planesFinal(:,i)),i),3),0)
+end
 %% Create Histogram
 close all
 zdispdist = figure;
@@ -1062,20 +1090,41 @@ export_fig(zdispdist,savefile,'-native');
 figure;
 hold on
 histogram(abs(rDisp3(intersect(planesLocFiltList(:,1),rNDC),3)),50)
-histmax = max(histcounts(abs(rDisp3(:,3)),50))
+histmax = max(histcounts(abs(rDisp3(:,3)),50));
 plot([noiseCutoff3 noiseCutoff3],[0 histmax],'color',[.3 .3 .3],'linestyle','--','linewidth',1)
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CREATE COLOR MAPS OF DISPLACEMENTS IN Z
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-colorMap = brewermap(65536,'*PuBu');
-colorBar1 = zeros(500,25);
+colorMapZ = single(brewermap(65536,'*PuBu'));
+colorBar1 = single(zeros(500,25));
 range = uint16(round(linspace(65536,1,500)'));
 for i = 1:25
     colorBar1(1:500,i) = range;
 end
-colorBar2 = ind2rgb(colorBar1,colorMap);
+colorBar2 = ind2rgb(colorBar1,colorMapZ);
+for i = 1:10
+    colorBar2((i*50)-3:(i*50),13:25,:) = 0;
+end
+colorBar2(1:3,13:25,:) = 0;
+
+%Save Color Bar Image
+close all
+colorBarSave = figure;
+hold on
+imshow(colorBar2);
+filePath=cd;
+savefile = [filePath '\HeatMaps\ColorBarZv2.tif'];
+export_fig(colorBarSave,savefile,'-native');
+
+colorMapXY = single(brewermap(65536,'*Spectral'));
+colorBar1 = single(zeros(500,25));
+range = uint16(round(linspace(65536,1,500)'));
+for i = 1:25
+    colorBar1(1:500,i) = range;
+end
+colorBar2 = single(ind2rgb(colorBar1,colorMapXY));
 for i = 1:10
     colorBar2((i*50)-3:(i*50),13:25,:) = 0;
 end
@@ -1093,7 +1142,7 @@ export_fig(colorBarSave,savefile,'-native');
 
 cutoff = 0.2; %microns
 imageBinaryCombined = ((imageBinaryDilated==0));%+(imageBinary2==0))==0;
-
+%%
 %Determine which 'planes' in planesFinal should be the same plane
 clear planesGroups
 for i = 1:size(planesLoc2,2)
@@ -1102,10 +1151,10 @@ for i = 1:size(planesLoc2,2)
     planesGroups(i,1:size(find(abs(differences)<2),2)) = find(abs(differences)<2)';
 end
 planesGroups = unique(planesGroups,'rows');
-[HeatMapN,vqN] = heatmapZ(r,rDisp3,planesFinal,planesGroups,imageBinaryCombined,xyScale,noiseCutoff3,colorMap,0);
-[HeatMap,vq1] = heatmapZ(r,rDisp1Filt,planesFinal,planesGroups,imageBinaryCombined,xyScale,noiseCutoff1,colorMap,1);
-[HeatMap2,vq2] = heatmapZ(r,rDisp2Filt,planesFinal,planesGroups,imageBinaryCombined,xyScale,noiseCutoff2,colorMap,2);
-[HeatMap3,vq3] = heatmapZ(r,rDisp3Filt,planesFinal,planesGroups,imageBinaryCombined,xyScale,noiseCutoff3,colorMap,3);
+[HeatMapN,vqN] = heatmapZ(r,rDisp3,planesFinal,planesGroups,imageBinaryCombined,xyScale,0,colorMapZ,colorMapXY,0);
+[HeatMap,vq1] = heatmapZ(r,rDisp1Filt,planesFinal,planesGroups,imageBinaryCombined,xyScale,noiseCutoff1,colorMapZ,colorMapXY,1);
+[HeatMap2,vq2] = heatmapZ(r,rDisp2Filt,planesFinal,planesGroups,imageBinaryCombined,xyScale,noiseCutoff2,colorMapZ,colorMapXY,2);
+[HeatMap3,vq3] = heatmapZ(r,rDisp3Filt,planesFinal,planesGroups,imageBinaryCombined,xyScale,noiseCutoff3,colorMapZ,colorMapXY,3);
 
 
 % Print Data to txt file
@@ -1204,3 +1253,4 @@ save('Profile Data\vqZ.mat','vqN','vq1','vq2','vq3','imageTrans','HeatMap','Heat
 % plot(layer)
 % hold on
 % scatter3(0,0,0);
+toc

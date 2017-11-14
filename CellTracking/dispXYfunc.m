@@ -1,7 +1,7 @@
-function dispXYfunc(directory)
-if nargin == 1
-cd(directory);
-end
+% function dispXYfunc(directory)
+% if nargin == 1
+% cd(directory);
+% end
  set(0,'defaultfigurecolor',[1 1 1])
 %Analyzing Trajectories from FIJI input or from Custom Code
 
@@ -1175,6 +1175,7 @@ folderName = 'Profile Data';
 mkdir(filePath,folderName)
 save('Profile Data\vqXY.mat','vqXY')
 save('Profile Data\HeatMapXY.mat','imageHeatXYColor')
+%%
 save('XY Disp Data.mat','book1','book2')
 %% Noise Histograms
 set(0,'defaultfigurecolor',[1 1 1])

@@ -7,7 +7,7 @@ noiseCutoff1 = 2*noiseStd1;
 
 % Use noiseCutoff to filter data
 rDisp1Filt = rDisp1;
-rDisp1Filt(abs(rDisp1Filt)<noiseCutoff1) = 0;
+rDisp1Filt(abs(rDisp1Filt(:,3))<noiseCutoff1,3) = 0;
 rDisp1PF = find(abs(rDisp1(:,3))<noiseCutoff1+noiseStd1 & abs(rDisp1(:,3))>noiseCutoff1);
 clear rNbor
 radXY = 2.5;
@@ -34,8 +34,8 @@ for i = 1:size(rDisp1PF,1)
         rDisp1PF(i,5) = 1;
     end
 
-    if rDisp1PF(i,5) == 0
-        rDisp1Filt(rDisp1PF(i,1),:) = 0;
-    end
+%     if rDisp1PF(i,5) == 0
+%         rDisp1Filt(rDisp1PF(i,1),3) = 0;
+%     end
 end
 end
