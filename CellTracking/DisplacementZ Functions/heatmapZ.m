@@ -1,9 +1,11 @@
-function [imageHeatColorFinal,vqFinal] = heatmapZ(r,rDisp,planesFinal,planesGroups,imageBinary,xyScale,cutoff,colorMap,method)
+function [imageHeatColorFinal,vqFinal] = heatmapZ(r,rDisp,planesFinal,planesGroups,imageBinary,xyScale,cutoff,colorMapZ,colormapXY,method)
 filePath = strcat(cd,'\');
 for i = 1:size(planesGroups,1)
     clear rVq
-    maxD = 1.2; % maximum positive/negative values on scale bar in microns
-    scaleD = 32768/maxD; %scalar for creating heatmap
+    maxD = 1.2; % maximum positive/negative values on Z scale bar in microns
+    maxXY = 3; % maximum positive/negative values on XY scale bar in microns
+    scaleD = 32768/maxD; %scalar for creating heatmapZ
+    scaleXY = 65535/maxXY;
     clear planesFinal2
     planesFinal2 = planesFinal(:,planesGroups(i,1));
     if size(planesGroups,2)>1 && planesGroups(i,2)~=0
@@ -18,10 +20,14 @@ for i = 1:size(planesGroups,1)
     rVq(:,3) = rDisp(planesFinal2,3);
     rVq = double(rVq);
     rVq(abs(rVq(:,3))<cutoff,3) = 0;
-    
+    rVq(:,4) = sqrt(rDisp(planesFinal2,1).^2+rDisp(planesFinal2,2).^2);
+    if cutoff~=0
+    rVq(abs(rVq(:,4))<.33,4) = 0;
+    end
+     
     % figure
     % scatter3(r(topMarkers,1),r(topMarkers,2),r(topMarkers,3))
-    
+    % First do Z heatmap
     res = 1;
     [xq,yq] = meshgrid(xyScale:res*xyScale:size(imageBinary,2)*xyScale, xyScale:res*xyScale:size(imageBinary,1)*xyScale);
     vq = griddata(rVq(:,1),rVq(:,2),rVq(:,3),xq,yq,'cubic');
@@ -34,14 +40,14 @@ for i = 1:size(planesGroups,1)
     disp(num2str(max(max((vq)))))
     disp(num2str(min(min((vq)))))
     MaximumHeatMap = imagesc(xq2,yq2,vq);
-    vqFinal(:,:,i) = vq;
+    vqFinal(:,:,i) = single(vq);
     imageHeat = MaximumHeatMap.CData;%.*(imageBinary==0);
     imageHeat(imageHeat>0) = 32768+(abs(imageHeat(imageHeat>0))*scaleD);
     imageHeat(imageHeat<0) = 32768 - (abs(imageHeat(imageHeat<0))*scaleD);
     imageHeat(imageHeat==0) = 32768;
     imageHeat(isnan(imageHeat)) = 32768;
     imageHeat = uint16(imageHeat);
-    imageHeatColor = ind2rgb(imageHeat,colorMap);
+    imageHeatColor = single(ind2rgb(imageHeat,colorMapZ));
     imageHeatColorFinal(:,:,:,i) = imageHeatColor;
     close all
     maxHeatMap = figure;
@@ -52,6 +58,32 @@ for i = 1:size(planesGroups,1)
     export_fig(maxHeatMap,savefile,'-native');
     
     %Save Color Bar Values (depends on vq!)
+    %Now do XY heat maps
+        vq = griddata(rVq(:,1),rVq(:,2),rVq(:,4),xq,yq,'cubic');
+    xq2 = linspace(0,size(imageBinary,2)*xyScale,size(vq,2));
+    yq2 = linspace(0,size(imageBinary,1)*xyScale,size(vq,1));
+    
+    SE = strel('disk',round(5/xyScale));
+    vqEdgeFilter = isnan(vq); %imdilate(isnan(vq),SE);
+    vq = single(vq.*(vqEdgeFilter==0));  
+    disp(num2str(max(max((vq)))))
+    disp(num2str(min(min((vq)))))
+    MaximumHeatMap = imagesc(xq2,yq2,vq);
+    vqFinalXY(:,:,i) = single(vq);
+    imageHeat = MaximumHeatMap.CData;%.*(imageBinary==0);
+    imageHeat(imageHeat>0) = imageHeat(imageHeat>0)*scaleXY;
+    imageHeat(isnan(imageHeat)) = 0;
+    imageHeat = uint16(imageHeat);
+    imageHeatColor = single(ind2rgb(imageHeat,colormapXY));
+    imageHeatColorXYFinal(:,:,:,i) = imageHeatColor;
+    close all
+    maxHeatMap = figure;
+    hold on
+    imshow(imageHeatColor);
+    
+    savefile = [filePath strcat('HeatMaps\Single\PlanesHeatMapXY_Method_',num2str(method),'_Plane_',num2str(i),'_NoiseCutoff_',num2str(cutoff),'.tif')];
+    export_fig(maxHeatMap,savefile,'-native');
+    
 end
 
 
