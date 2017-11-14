@@ -139,7 +139,7 @@ ele = 15;
 
 %% Gather detection rows in window
 rZone = unique(r(r(:,1)>figLimits(1,1)&r(:,1)<figLimits(1,2)&r(:,2)<size(res,2)*xyScale-figLimits(1,3)&r(:,2)>size(res,2)*xyScale-figLimits(1,4),8));
-
+rZonePts = find(r(:,1)>figLimits(1,1)&r(:,1)<figLimits(1,2)&r(:,2)<size(res,2)*xyScale-figLimits(1,3)&r(:,2)>size(res,2)*xyScale-figLimits(1,4));
 %%
 %Figure 5 - 3D Detections
 
@@ -171,9 +171,9 @@ hold on
 colorMapFig7 = brewermap(size(rZone,1),'*spectral');
 clear temp
 for i = 1:size(rZone,1)
-    scatter3(r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1),(size(imageBinary,1)*xyScale)-r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),2),r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),3),'MarkerEdgeColor',[colorMapFig7(rZone(i,1),1:3)])
+    scatter3(r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1),(size(imageBinary,1)*xyScale)-r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),2),r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
     temp(1:nnz(rows(rZone(i,1),:)),1:3,i) = sortrows(r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1:3),1);
-    plot3(temp(:,1,i),(size(imageBinary,1)*xyScale)-temp(:,2,i),temp(:,3,i),'-','Color',[colorMapFig7(rZone(i,1),1:3)])
+    plot3(temp(:,1,i),(size(imageBinary,1)*xyScale)-temp(:,2,i),temp(:,3,i),'-','Color',[colorMapFig7(i,1:3)])
     %plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(i,2,1) (size(imageBinary,1)*xyScale)-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)],'Color',[colorMapFig7(i,1:3)])
 end
 scatter3(0,0,0)
@@ -191,27 +191,76 @@ temp(temp==0) = NaN;
     %%
 %Figure 6b - 3D Detections and Row Fits
 
+az2=-130;
+ele2=30;
+
 f6b = figure;
 hold on
 colorMapFig7 = brewermap(size(rZone,1),'*spectral');
+rowsFilt = rows;
+for i = 1:size(rZone,1)
+    rowsFilt(rZone(i,1),:) = 0;
+    rowsFilt(rZone(i,1),1:nnz(intersect(rZonePts,rows(rZone(i,1),:)))) = intersect(rZonePts,rows(rZone(i,1),:));
+end
 
 for i = 1:size(rZone,1)
-    scatter3(r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1),(size(imageBinary,1)*xyScale)-r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),2),r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
-    plot3(temp(:,1,i),(size(imageBinary,1)*xyScale)-temp(:,2,i),temp(:,3,i),'-','Color',[colorMapFig7(i,1:3)])
+    scatter3(r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1),(size(imageBinary,1)*xyScale)-r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),2),r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),3),'MarkerEdgeColor',[.5 .5 .5])
+    plot3(temp(:,1,i),(size(imageBinary,1)*xyScale)-temp(:,2,i),temp(:,3,i),'-','Color',[.5 .5 .5])
     plot3([rowFits3(rZone(i,1),1,1) rowFits3(rZone(i,1),1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(rZone(i,1),2,1) (size(imageBinary,1)*xyScale)-rowFits3(rZone(i,1),2,2)],[rowFits3(rZone(i,1),3,1) rowFits3(rZone(i,1),3,2)],'r')
 end
 
+for i = 1:size(rZone,1)
+    scatter3(r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),1),(size(imageBinary,1)*xyScale)-r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),2),r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
+    temp2(:,1:3) = sortrows(r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),1:3),1);
+    plot3(temp2(:,1),(size(imageBinary,1)*xyScale)-temp2(:,2),temp2(:,3),'Color',[colorMapFig7(i,1:3)])
+end
 
 %xlim([figLimits(1,1) figLimits(1,2)])
 %ylim([figLimits(1,3) figLimits(1,4)])
 xlabel('X (\mum)')
 ylabel('Y (\mum)')
 zlabel('Z (\mum)')
-view([az ele])
+view([az2 ele2])
 
 
     savefile = [strcat(filePath,'\MethodsExpFigs\') 'fig6b.tif'];
     export_fig(f6b,savefile,'-native');
+        %%
+%Figure 6C - 3D Detections and Row Fits
+
+f6c = figure;
+hold on
+colorMapFig7 = brewermap(size(rZone,1),'*spectral');
+rowsFilt = rows;
+for i = 1:size(rZone,1)
+    rowsFilt(rZone(i,1),:) = 0;
+    rowsFilt(rZone(i,1),1:nnz(intersect(rZonePts,rows(rZone(i,1),:)))) = intersect(rZonePts,rows(rZone(i,1),:));
+end
+
+for i = 1:size(rZone,1)
+    scatter3(r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1),(size(imageBinary,1)*xyScale)-r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),2),r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),3),'MarkerEdgeColor',[.5 .5 .5])
+    plot3(temp(:,1,i),(size(imageBinary,1)*xyScale)-temp(:,2,i),temp(:,3,i),'-','Color',[.5 .5 .5])
+    plot3([rowFits3(rZone(i,1),1,1) rowFits3(rZone(i,1),1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(rZone(i,1),2,1) (size(imageBinary,1)*xyScale)-rowFits3(rZone(i,1),2,2)],[rowFits3(rZone(i,1),3,1) rowFits3(rZone(i,1),3,2)],'r')
+end
+
+for i = 1:size(rZone,1)
+    scatter3(r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),1),(size(imageBinary,1)*xyScale)-r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),2),r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
+    temp2(:,1:3) = sortrows(r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),1:3),1);
+    plot3(temp2(:,1),(size(imageBinary,1)*xyScale)-temp2(:,2),temp2(:,3),'Color',[colorMapFig7(i,1:3)])
+end
+
+%xlim([figLimits(1,1) figLimits(1,2)])
+%ylim([figLimits(1,3) figLimits(1,4)])
+xlim([figLimits(1,1) figLimits(1,2)])
+ylim([figLimits(1,3) figLimits(1,4)])
+xlabel('X (\mum)')
+ylabel('Y (\mum)')
+zlabel('Z (\mum)')
+view([az ele])
+
+
+    savefile = [strcat(filePath,'\MethodsExpFigs\') 'fig6c.tif'];
+    export_fig(f6c,savefile,'-native');
 %%
 %Figure 7a - Row Fits/Column Fits
 f7a = figure;
@@ -224,7 +273,7 @@ end
 
 for i = 1:size(rowFits3,1)
     
-    plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(i,2,1) (size(imageBinary,1)*xyScale)-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)],'Color','g')
+    plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(i,2,1) (size(imageBinary,1)*xyScale)-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)],'Color','r')
 end
 scatter3(rRef3b(:,1),(size(imageBinary,1)*xyScale)-rRef3b(:,2),rRef3b(:,3),'x','r')
 scatter3(0,0,0)
