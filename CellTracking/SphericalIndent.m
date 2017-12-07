@@ -1,4 +1,5 @@
 %% Making the spherical indentation data for FE fitting
+vqtest = vq3(:,:,[1 3 4]);
 h = fspecial('average', [20 20]);
 vqtest(isnan(vqtest)) = 0;
 for i = 1:size(vqtest,3)
@@ -12,8 +13,9 @@ vqtestfilt3 = vqtestfilt2*-1;
 ShowStack(vqtestfilt3)
 %%
 vqtestproj = squeeze(mean(permute(vqtestfilt3,[3,1,2])));
+%%
 imshow(vqtestproj,[])
-
+%%
 %inputs:
 %originalmatrix: the original matrix
 %binarisedmatrix = originalmatrix > threshold; %the thresholded matrix, a logical array
@@ -66,4 +68,5 @@ radHeatColor = ind2rgb(radHeat,colorMapRad);
 close all
 imshow(radHeatColor)
 hold on 
-plot([5 10 15 20 25 30 35 40 45 50 55 60 65 70]/xyScale,[1 50 1 50 1 50 1 50 1 50 1 50 1 50] )
+
+%plot([5 10 15 20 25 30 35 40 45 50 55 60 65 70]/xyScale,[1 50 1 50 1 50 1 50 1 50 1 50 1 50] )
