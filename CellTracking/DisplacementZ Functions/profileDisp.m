@@ -148,9 +148,11 @@ hold on
 plot(xq,zq);
 
 % Shift curve to be centered on max shear magnitude
+pkTails = .2;%Threshold for finding shear peak tails
+
 mIdx = find(xyq == max(xyq));
-iIdx = find(round((xyq(1:mIdx)/max(xyq))*5) == 0,1,'last');
-fIdx = mIdx + find(round((xyq(mIdx:end)/max(xyq))*5) == 0,1,'first');
+iIdx = find(round((xyq(1:mIdx)/max(xyq))/pkTails) == 0,1,'last');
+fIdx = mIdx + find(round((xyq(mIdx:end)/max(xyq))/pkTails) == 0,1,'first');
 pkWidth = fIdx-iIdx;
 fWidth = pkWidth*3;
 iIdx2 = iIdx-pkWidth/3;
