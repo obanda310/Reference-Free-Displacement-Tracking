@@ -71,10 +71,11 @@ export_fig(pillarView,savefile,'-native');
 
 %% Sub-pixel Object Detection Using Kilfoil 'feature2D' Function
 clear subpixMaxima3
+%[r] = feature2D(img,lambda,w,masscut,Imin)
 for i = 1:size(roiImgs,3)
     clear temp
     currentImg = roiMasks(:,:,i).*emptyMask;
-    temp = feature2D(currentImg,1,2,1,1);
+    temp = feature2D(currentImg,1,2,2000,50);
     if i == 1
         temp(:,6) = i;
         subpixMaxima3 = temp;
