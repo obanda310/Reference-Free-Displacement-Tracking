@@ -653,27 +653,14 @@ end
 try
     load('XY Disp Data.mat')
 catch
-    book1 = -1;
+    disp('Failed to load Shear data!')
 end
- 
-book1 = single(book1);
-book2 = single(book2);
-clear book1N
 r(:,9)=0;
-frames = 1:1:size(book1,2);
-for i = 1:size(book1,3)
-book1(20,:,i) = frames';
-book1(21,:,i) = i;
-end
-book1(book1==0) = NaN;
-book1([1 2],:,:) = book1([1 2],:,:)*xyScale;
-book1(20,:,:) = book1(20,:,:)*zScale;
-book2(:,[1 2]) = book2(:,[1 2])*xyScale;
 
 disp('Matching 3D detections to 2D-based pillars')
 for i = 1:size(r,1)
     clear differences 
-    differences = min(squeeze(sqrt((book1(1,:,:)-r(i,1)).^2+(book1(2,:,:)-r(i,2)).^2+(book1(20,:,:)-r(i,3)).^2)));
+    differences = min(squeeze(sqrt((shear.rawX(:,:)-r(i,1)).^2+(shear.rawY(:,:)-r(i,2)).^2+(shear.rawZ(:,:)-r(i,3)).^2)));
     
     if min(differences)<.5       
     r(i,9) = find(differences==min(differences));
@@ -693,9 +680,9 @@ end
 
 for i = 1:size(rows,1)
     rowsSCtest(i,1:length(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),1))) = r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),1);
-    rowsSC(i,1) = mean(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),1)-book2(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),9),1));
-    rowsSC(i,3) = length(r(r(rowsNDCU(rowsNDCU(i,:)>0),9)>0,1)-book2(r(r(rowsNDCU(rowsNDCU(i,:)>0),9)>0,9),1));
-    rowsSC(i,2) = mean(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),2)-book2(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),9),2));   
+    rowsSC(i,1) = mean(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),1)-shear.rawX1(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),9))');
+    rowsSC(i,3) = length(r(r(rowsNDCU(rowsNDCU(i,:)>0),9)>0,1)-shear.rawX1(r(r(rowsNDCU(rowsNDCU(i,:)>0),9)>0,9))');
+    rowsSC(i,2) = mean(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),2)-shear.rawY1(r(rowsNDCU(i,(r(rowsNDCU(i,rowsNDCU(i,:)>0),9)>0),:),9))');   
 end
 
 %store shift correction in r
@@ -714,15 +701,15 @@ for i=1:max(r(:,9))
     end
     
 end
-for i = 1:size(book1,3)
-scatter3(book1(1,:,i),book1(2,:,i),book1(20,:,i),'.')
+for i = 1:size(shear.rawX,2)
+scatter3(shear.rawX(:,i),shear.rawY(:,i),shear.rawZ(:,i),'.')
 end
 %% XY component of reference Method 2
 for i = 1:size(r,1)
     
     temp = squeeze(rowFits2(r(i,8),1:2,:))';
     if r(i,9)>0
-    [xy,distance,t_a] = distance2curve(temp,book2(r(i,9),1:2));
+    [xy,distance,t_a] = distance2curve(temp,[shear.rawX1(r(i,9)) shear.rawY1(r(i,9))]);
     rRef2b(i,1:2) = xy(1,1:2) + r(i,10:11);
     else
     rRef2b(i,1:2) = rRef2a(i,1:2);    
@@ -911,7 +898,7 @@ for i = 1:size(r,1)
     
     temp = squeeze(rowsLines2(:,1:2,r(i,8)));
     if r(i,9)>0
-    [xy,distance,t_a] = distance2curve(temp,book2(r(i,9),1:2));
+    [xy,distance,t_a] = distance2curve(temp,[shear.rawX1(r(i,9)) shear.rawY1(r(i,9))]);
     rRef1b(i,1:2) = xy(1,1:2) + r(i,10:11);
     else
     rRef1b(i,1:2) = rRef1a(i,1:2);    
@@ -990,7 +977,7 @@ for i = 1:size(r,1)
     
     temp = squeeze(rowFits3(r(i,8),1:2,:))';
     if r(i,9)>0
-    [xy,distance,t_a] = distance2curve(temp,book2(r(i,9),1:2));
+    [xy,distance,t_a] = distance2curve(temp,[shear.rawX1(r(i,9)) shear.rawY1(r(i,9))]);
     rRef3b(i,1:2) = xy(1,1:2) + r(i,10:11);
     else
     rRef3b(i,1:2) = rRef3a(i,1:2);    

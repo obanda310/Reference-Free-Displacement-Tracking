@@ -1,21 +1,20 @@
-function [imageHeat2max,vq2max,vq2total,imageHeatNaN,imageHeatColorM]=customHeatMap(book1,book2,imageBlack,dataKey,outputs,filePath)
+function [imageHeat2max,vq2max,vq2total,imageHeatNaN,imageHeatColorM]=customHeatMap(shear,deformation,imageBlack,dataKey,outputs,filePath)
 
 %Input Variables to Specify
 maxD = 3; %maximum value on the heat map color bar (microns)
 res = .5; % number of original pixels between interpolated points (value of 1 should return a heat map with original image dimensions)
 res2 = res*4;
-cutoff = 2; %pixels
+
 
 % Creating Heat Maps!
 disp('7.1 Creating Maximum Shear Heat Maps')
 close all
 clear xq yq vq xq2 yq2
-totalNumFrames = size(book1,2);
 folderName = ('HeatMaps');
 %cleardir = rmdir(folderName,'s');
 mkdir(filePath,folderName)
 folderName = ('Single');
-mkdir(strcat(filePath,'HeatMaps\'),folderName)
+mkdir(strcat(filePath,'\HeatMaps\'),folderName)
 
 %Create Color Bar
 colorMap2 = brewermap(65536,'*spectral');
@@ -46,8 +45,8 @@ close
 
 %Create Heat Map of Max Displacement
 [xq,yq] = meshgrid(0:res*dataKey(9,1):size(imageBlack,2)*dataKey(9,1), 0:res*dataKey(9,1):size(imageBlack,1)*dataKey(9,1));
-vq = dataKey(9,1) * griddata(book2(:,1)*dataKey(9,1),book2(:,2)*dataKey(9,1),book2(:,20),xq,yq,'cubic');
-vq2max = dataKey(9,1) * griddata(book2(:,1)*dataKey(9,1),book2(:,2)*dataKey(9,1),book2(:,22),xq,yq,'cubic');
+vq = dataKey(9,1)*griddata(shear.rawX1(:),shear.rawY1(:),deformation(:)/dataKey(9,1),xq,yq,'cubic');
+vq2max = griddata(shear.rawX1(:),shear.rawY1(:),shear.coFilt(:),xq,yq,'cubic');
 disp(num2str(max(max(vq))))
 xq2 = linspace(0,size(imageBlack,2)*dataKey(9,1),size(vq,2));
 yq2 = linspace(0,size(imageBlack,1)*dataKey(9,1),size(vq,1));
@@ -80,14 +79,14 @@ hold on
 imshow(imageHeatColor2);
 
 if ismember(6,outputs) == 1
-    savefile = [filePath 'HeatMaps\Single\MaximumHeatMap.tif'];
+    savefile = [filePath '\HeatMaps\Single\MaximumHeatMap.tif'];
     export_fig(maxHeatMap,savefile,'-native');
-    savefile = [filePath 'HeatMaps\Single\MaximumHeatMapNoiseCutoff.tif'];
+    savefile = [filePath '\HeatMaps\Single\MaximumHeatMapNoiseCutoff.tif'];
     export_fig(maxHeatMap2,savefile,'-native');
 else
-    savefile = [filePath 'HeatMaps\Single\MaximumHeatMap.tif'];
+    savefile = [filePath '\HeatMaps\Single\MaximumHeatMap.tif'];
     export_fig(maxHeatMap,savefile);
-    savefile = [filePath 'HeatMaps\Single\MaximumHeatMapNoiseCutoff.tif'];
+    savefile = [filePath '\HeatMaps\Single\MaximumHeatMapNoiseCutoff.tif'];
     export_fig(maxHeatMap2,savefile);
 end
 
@@ -113,11 +112,11 @@ if ismember(12,outputs) == 1
     delete 'HeatMaps\Through-Z Shear Stack.tif'
     
     %mkdir(strcat(filePath,'HeatMaps\'),folderName)
-    for i = 1:totalNumFrames
+    for i = 1:shear.numFrames
         clear imageHeat imageHeat2 vq xq2 yq2
         [xq3,yq3] = meshgrid(0:res2*dataKey(9,1):size(imageBlack,2)*dataKey(9,1), 0:res2*dataKey(9,1):size(imageBlack,1)*dataKey(9,1));
-        vq = dataKey(9,1) * griddata(book2(:,1)*dataKey(9,1),book2(:,2)*dataKey(9,1),squeeze(book1(15,i,:)),xq3,yq3,'cubic');
-        vq2 = dataKey(9,1) * griddata(book2(:,1)*dataKey(9,1),book2(:,2)*dataKey(9,1),squeeze(book1(19,i,:)),xq3,yq3,'cubic');
+        vq =  griddata(shear.rawX1(:),shear.rawY1(:),(shear.ltdXY(i,:)),xq3,yq3,'cubic');
+        vq2 = griddata(shear.rawX1(:),shear.rawY1(:),(shear.coltdXY(i,:)),xq3,yq3,'cubic');
         xq2 = linspace(0,size(imageBlack,2)*dataKey(9,1),size(vq,2));
         yq2 = linspace(0,size(imageBlack,1)*dataKey(9,1),size(vq,1));
         
@@ -126,7 +125,7 @@ if ismember(12,outputs) == 1
         imageHeat(isnan(imageHeat)) = 0; 
         imageHeat = uint16(round(imageHeat * heatScale));
         imageHeatColor = ind2rgb(imageHeat,colorMap2);
-        StackFile = [filePath,'HeatMaps\','Through-Z Shear Stack.tif'];
+        StackFile = [filePath,'\HeatMaps\','Through-Z Shear Stack.tif'];
         imwrite(imageHeatColor,StackFile,'WriteMode','append');
         
         vq2total(:,:,i) = vq2;
@@ -135,7 +134,7 @@ if ismember(12,outputs) == 1
         imageHeat2(isnan(imageHeat2)) = 0;
         imageHeat2 = uint16(round(imageHeat2 * heatScale));
         imageHeatColor2 = ind2rgb(imageHeat2,colorMap2);
-        StackFile2 = [filePath,'HeatMaps\','Through-Z Shear Stack Noise Cutoff.tif'];
+        StackFile2 = [filePath,'\HeatMaps\','Through-Z Shear Stack Noise Cutoff.tif'];
         imwrite(imageHeatColor2,StackFile2,'WriteMode','append');
         
         

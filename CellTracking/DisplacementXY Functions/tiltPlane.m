@@ -5,9 +5,9 @@ function [tiltPlaneFitMicrons,tiltPlaneFitPixels] = tiltPlane(noiseBook,dataKey,
 
 clear n P N x y z
 n=size(noiseBook,1);
-x=(noiseBook(:,2)+(size(imageArea,1)/2))*dataKey(9,1);
-y=(noiseBook(:,3)+(size(imageArea,2)/2))*dataKey(9,1);
-z=(linspace(1,n,n)')*0.4;
+x=(noiseBook(:,2)+(size(imageArea,1)/2));
+y=(noiseBook(:,3)+(size(imageArea,2)/2));
+z=(linspace(1,n,n)')*dataKey(10,1);
 
 %3D line fit
 P=[mean(x),mean(y),mean(z)]';

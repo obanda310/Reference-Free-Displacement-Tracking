@@ -1,4 +1,4 @@
-function [imageHeat ,vq] = customHeatMapZ(book2,imageBlack,dataKey,outputs,filePath)
+function [imageHeat ,vq] = customHeatMapZ(shear,imageBlack,dataKey,outputs,filePath)
 disp('7.4 Creating Surface Normal Deformation Heat Map')
 %Create Color Bar
 colorMap2 = brewermap(65536,'*RdGy');
@@ -30,7 +30,7 @@ close
 
 %Create Heat Map of Max Displacement
 [xq,yq] = meshgrid(0:2*dataKey(9,1):size(imageBlack,2)*dataKey(9,1), 0:2*dataKey(9,1):size(imageBlack,1)*dataKey(9,1));
-vq = dataKey(9,1) * griddata(book2(:,1)*dataKey(9,1),book2(:,2)*dataKey(9,1),book2(:,17),xq,yq,'cubic');
+vq =  griddata(shear.rawX1(:),shear.rawY1(:),shear.dTop2(:),xq,yq,'cubic');
 xq2 = linspace(0,size(imageBlack,2)*dataKey(9,1),size(vq,2));
 yq2 = linspace(0,size(imageBlack,1)*dataKey(9,1),size(vq,1));
 MaximumHeatMap = imagesc(xq2,yq2,vq);
@@ -47,7 +47,7 @@ close all
 maxHeatMap = figure;
 hold on
 imshow(imageHeatColor);
-savefile = [filePath 'HeatMaps\Single\MaximumHeatMapZ.tif'];
+savefile = [filePath '\HeatMaps\Single\MaximumHeatMapZ.tif'];
 if ismember(6,outputs) == 1
     export_fig(maxHeatMap,savefile,'-native');
 else

@@ -1,9 +1,9 @@
-function [noiseBook,noiseStats,sumIndFinal] = tiltCorrection(roiStack,imageTrans,book1,book2,noCellTraj)
+function [noiseBook,noiseStats,sumIndFinal] = tiltCorrection(roiStack,imageTrans,shear,noCellTraj)
 % Tilt Correction
-close all
 
-totalNumFrames = size(book1,2);
-if nargin == 4
+
+totalNumFrames = size(shear.rawX,1);
+if nargin == 3
 % sumImages = zeros(size(roiStack,1),size(roiStack,2));
 % for i = 2:totalNumFrames
 %     sumImages(:,:) = sumImages + roiStack(:,:,i);
@@ -25,25 +25,27 @@ close
 
 sumBounds = sumBounds;
 sumBounds(1,3:4) = sumBounds(1,1:2) + sumBounds(1,3:4);
-sumIndX  = (book2(:,1)>sumBounds(1,1) & book2(:,1)<sumBounds(1,3));
-sumIndY  = (book2(:,2)>sumBounds(1,2) & book2(:,2)<sumBounds(1,4));
+sumIndX  = (shear.rawX1(:)>sumBounds(1,1) & shear.rawX1(:)<sumBounds(1,3));
+sumIndY  = (shear.rawY1(:)>sumBounds(1,2) & shear.rawY1(:)<sumBounds(1,4));
 sumIndXY = sumIndX .* sumIndY;
 sumIndFinal = find(sumIndXY);
-elseif nargin == 5
+elseif nargin == 4
     sumIndFinal = noCellTraj;
 end
-book1(book1==0) = NaN;
+shear.rawdX(shear.rawdX==0) = NaN;
+shear.rawdY(shear.rawdY==0) = NaN;
+shear.rawdXY(shear.rawdXY==0) = NaN;
 for i = 1:totalNumFrames  
     
-    noiseBook(i,1) = nanmean(book1(5,i,sumIndFinal));
-    noiseBook(i,2) = nanmean(book1(3,i,sumIndFinal));
-    noiseStats(i,1) = nanstd(book1(3,i,sumIndFinal));
-    noiseBook(i,3) = nanmean(book1(4,i,sumIndFinal));
-    noiseStats(i,2) = nanstd(book1(4,i,sumIndFinal));
+    noiseBook(i,1) = nanmean(shear.rawdXY(i,sumIndFinal));
+    noiseBook(i,2) = nanmean(shear.rawdX(i,sumIndFinal));
+    noiseStats(i,1) = nanstd(shear.rawdX(i,sumIndFinal));
+    noiseBook(i,3) = nanmean(shear.rawdY(i,sumIndFinal));
+    noiseStats(i,2) = nanstd(shear.rawdY(i,sumIndFinal));
     noiseBook(i,4) = sqrt(noiseBook(i,3)^2 + noiseBook(i,2)^2);
     noiseBook(i,5) = noiseBook(i,1) - noiseBook(i,4);
 end
-book1(isnan(book1)) = 0;
+
 noiseBook(isnan(noiseBook)) = 0;
 
 
