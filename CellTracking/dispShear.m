@@ -1,7 +1,7 @@
-% function dispXYfunc(directory)
-% if nargin == 1
-% cd(directory);
-% end
+function dispShear(directory)
+if nargin == 1
+cd(directory);
+end
 filePath = cd;
 set(0,'defaultfigurecolor',[1 1 1])
 %Analyzing Trajectories from FIJI input or from Custom Code
@@ -17,6 +17,7 @@ disp('1.1 Loading Images and Raw Data')
 image = ImageData(autoChk);
 raw = RawData(autoChk);
 raw = rawPx2um(raw);
+save('DataRaw.mat','raw')
 outputs = OutputSelector(autoChk);
 
 %--------------------------------------------------------------------------
@@ -402,7 +403,7 @@ mkdir(filePath,folderName)
 save('Profile Data\vqXY.mat','vqXY')
 save('Profile Data\HeatMapXY.mat','imageHeatXYColor')
 %%
-save('XY Disp Data.mat','shear')
+save('DataShear.mat','shear')
 %% Noise Histograms
 set(0,'defaultfigurecolor',[1 1 1])
 
