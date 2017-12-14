@@ -2,6 +2,8 @@ function dispShear(directory)
 if nargin == 1
 cd(directory);
 end
+tic
+mkdir('Shear Mat Files')
 filePath = cd;
 set(0,'defaultfigurecolor',[1 1 1])
 %Analyzing Trajectories from FIJI input or from Custom Code
@@ -15,11 +17,12 @@ set(0,'defaultfigurecolor',[1 1 1])
 autoChk = 1; %1 for auto, otherwise 0
 disp('1.1 Loading Images and Raw Data')
 image = ImageData(autoChk);
+image = DilateBinary(image,100);
 raw = RawData(autoChk);
 raw = rawPx2um(raw);
-save('DataRaw.mat','raw')
+save('Shear Mat Files\DataRaw.mat','raw')
 outputs = OutputSelector(autoChk);
-
+disp(['done Loading Images and Raw Data '  num2str(toc) ' seconds'])
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 %Section 2.) Building Shear Data from Raw Data
@@ -27,10 +30,12 @@ outputs = OutputSelector(autoChk);
 %--------------------------------------------------------------------------
 
 clear shear
+disp(['Calculating Displacements and Tilt'])
 shear = ShearData(raw,image);
+%%
 shear = globalTilt(shear,image,raw,filePath);
-shear = localTilt(shear);
-
+shear = localTilt(shear,filePath);
+disp(['done Calculating Displacements and Tilt '  num2str(toc) ' seconds'])
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 %Section 3.)Data Manipulations for Visualizations
@@ -41,9 +46,10 @@ shear = localTilt(shear);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %3.1 Binning for Quiver Plots and HeatMaps%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp(['Binning Data'])
 disp('3.1 Creating Color Map for Vector Plot Image Overlays')
 [cm1,cm2,cmD,cmDS,colorMap,colorScheme] = createColorMap(shear,raw,outputs);
-
+disp(['done Binning Data'  num2str(toc) ' seconds'])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 3.2 Data Filters and Cutoffs
@@ -53,6 +59,7 @@ disp('3.1 Creating Color Map for Vector Plot Image Overlays')
 % will depend on whether the displacement is greater than some threshold.
 disp('3.2 Thresholding Data Using a Displacement Magnitude-Based Cutoff')
 shear = lTcutoff(shear);
+disp(['done Thresholding Data Using a Displacement Magnitude-Based Cutoff'  num2str(toc) ' seconds'])
 %%
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
@@ -139,6 +146,7 @@ end
 % also plots the final displacement quiver field.
 
 if ismember(3,outputs) == 1
+    %%
     debugImage = figure('Position',[0 0 1000 1000]);
     imshow(image.Trans,[])
     hold on
@@ -213,7 +221,7 @@ if ismember(5,outputs) == 1
         export_fig(transmittedOverlay,savefile);
     end
 end
-
+disp('done Creating Centroid and Vector Plot Overlay Image Outputs')
 %%
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
@@ -222,22 +230,30 @@ end
 %--------------------------------------------------------------------------
 
 %% Create Heat Map of Shear Deformations
+disp('5.0 Creating Shear HeatMaps')
+
 if ismember(15,outputs) == 1
-[imageHeatXY,vqXY,vqXYtotal,imageHeatNaN,imageHeatXYColor]=customHeatMap(shear,shear.ltLastdXY,image.Black,raw.dataKey,outputs,filePath);
+[imageHeatXY,vqXY,vqXYtotal,imageHeatNaN,imageHeatXYColor]=customHeatMap(shear,shear.ltLastdXY,image,raw.dataKey,outputs,filePath);
 end
 SE = strel('disk',30);
 vqXYBinary = imdilate(vqXY ==0,SE);
-BinaryFile = [filePath,'\HeatMaps\Single\','Binary_Shear.tif'];
+BinaryFile = [filePath,'\HeatMaps\Shear\','Binary_Shear.tif'];
         imwrite(vqXYBinary,BinaryFile);
 %%
 imageHeatXY2 = imresize(vqXY,[size(image.Area,1) size(image.Area,2)]);
 imageHeatXY2(isnan(imageHeatXY2)) = 0;
 %%
 clear  imageHeatXYTotalScale imageHeatXYtotal2
+if size(vqXYtotal,1) ~= 1
 for i = 1:size(vqXYtotal,3)
+    
 imageHeatXYtotal2(:,:,i) = imresize(vqXYtotal(:,:,i),[size(image.Area,1) size(image.Area,2)]);
 end
+else
+    imageHeatXYtotal2 = 1;
+end
 imageHeatXYtotal2(isnan(imageHeatXYtotal2)) = 0;
+disp(['done Creating Shear HeatMaps'  num2str(toc) ' seconds'])
 %%
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
@@ -250,27 +266,28 @@ imageHeatXYtotal2(isnan(imageHeatXYtotal2)) = 0;
 %%
 clear topSurface fitSurface
 [topSurface ,fitSurface] = findSurface(shear,cm2,image.Area,image.Borders,raw.dataKey);
-save('fitSurface.mat','fitSurface')
+save('Shear Mat Files\Surface.mat','fitSurface')
 %%
-figure
-%plot the filter pillars at the top frame that they reach
-scatter3(0,0,0)
-hold on
-scatter3(topSurface(:,3),topSurface(:,2),topSurface(:,4));
-%plot(fitSurface{1})
-plot(fitSurface{2})
- xlim([0 size(image.ROIstack,1)*raw.dataKey(9,1)])
- ylim([0 size(image.ROIstack,2)*raw.dataKey(9,1)])
-%plot(fitTiltPlanePixels)
-hold off
+% figure
+% %plot the filter pillars at the top frame that they reach
+% scatter3(0,0,0)
+% hold on
+% scatter3(topSurface(:,3),topSurface(:,2),topSurface(:,4));
+% plot(fitSurface{1})
+% plot(fitSurface{2})
+%  xlim([0 size(image.ROIstack,1)*raw.dataKey(9,1)])
+%  ylim([0 size(image.ROIstack,2)*raw.dataKey(9,1)])
+% plot(fitTiltPlanePixels)
+% hold off
 %%
-figure
-imshow(image.Area)
-hold on
-scatter(topSurface(:,2)/raw.dataKey(9,1),topSurface(:,3)/raw.dataKey(9,1),5,'r')
-hold off
-
-
+% figure
+% imshow(image.Area)
+% hold on
+% scatter(topSurface(:,2)/raw.dataKey(9,1),topSurface(:,3)/raw.dataKey(9,1),5,'r')
+% hold off
+%%
+if ismember(16,outputs) == 1
+    disp('Calculating Approximate Surface Deformations')
 %% Calculate Z-Displacement at Surface (Quick Method)
 clear cellSurface
 for i = 1:shear.numTraj
@@ -283,7 +300,7 @@ end
 cellSurface = zeros(1,1);
 for i = 1:shear.numTraj
     %if it is under the cell
-    if image.Area(round(shear.rawY1(i)),round(shear.rawX1(i)))==0 && image.Area(round(shear.lastY(i)),round(shear.lastX(i)))==0       
+    if image.Area(ceil(shear.rawY1(i)),ceil(shear.rawX1(i)))==0 && image.Area(ceil(shear.lastY(i)),ceil(shear.lastX(i)))==0       
         cellSurface = cat(1,cellSurface,i);
     end
 end
@@ -311,30 +328,30 @@ interpSurface{1} = fit([(shear.rawY1(:) + shear.gtLastdY(:)),(shear.rawX1(:) + s
 
 %%
 % close all
-figure
-quiver3(shear.rawY1(:),shear.rawX1(:),shear.Top1(:),shear.gtLastdY(:),shear.gtLastdX(:),shear.dTop1(:))
-hold on
-plot3(0,0,0)
-plot(interpSurface{1})
-xlim([0 size(image.ROIstack,1)])
-ylim([0 size(image.ROIstack,2)])
-zlim([0 size(image.ROIstack,3)]) 
-hold off
+% figure
+% quiver3(shear.rawY1(:),shear.rawX1(:),shear.Top1(:),shear.gtLastdY(:),shear.gtLastdX(:),shear.dTop1(:))
+% hold on
+% plot3(0,0,0)
+% plot(interpSurface{1})
+% xlim([0 size(image.ROIstack,1)])
+% ylim([0 size(image.ROIstack,2)])
+% zlim([0 size(image.ROIstack,3)]) 
+% hold off
 
-%%
-if ismember(16,outputs) == 1
-    %%
 [imageHeatZ,vqZ] = customHeatMapZ(shear,image.Black,raw.dataKey,outputs,filePath);
-end
+
 %% Isolating Cell-Body Normal Forces
 %Filter Z-Deformation to accept only normal deformation within the cell's boundary
 imageHeatZScale = size(image.Area,1)/size(vqZ,1);
 imageHeatZ2 = imresize(vqZ,[size(image.Area,1) size(image.Area,2)]);
 imageHeatZ3 = double(imageHeatZ2) .* double(image.Area==0);
 imageHeatZ3(isnan(imageHeatZ3)) = 0;
+end
+
 
 
 %% Relate Cell Spread Area to Displacements
+disp('Writing Area-Disp Relationship Stats')
 clear imageAreaProps imageArea3
 %shear(isnan(shear)) = 0;
 imageArea3(:,:) = logical(image.Area==0);
@@ -375,7 +392,7 @@ fprintf(areaTxt,strcat(num2str(ratioArea) ,'\n'));
 fprintf(areaTxt,strcat(num2str(ratioPerimeter) ,'\n'));
 fprintf(areaTxt,strcat(num2str(sum(sum(imageHeatXY2))) , '\n'));
 fprintf(areaTxt,strcat(num2str(sum(sum(sum(imageHeatXYtotal2)))) , '\n'));
-fprintf(areaTxt,strcat(num2str(sum(sum(imageHeatZ3))) , '\n'));
+%fprintf(areaTxt,strcat(num2str(sum(sum(imageHeatZ3))) , '\n'));
 fprintf(areaTxt,strcat(num2str(max(max(imageHeatXY2))) , '\n'));
 fprintf(areaTxt,strcat('\n'));
 fprintf(areaTxt,strcat('Above is Without Text for Copy Paste','\n'));
@@ -392,19 +409,22 @@ fprintf(areaTxt,strcat(num2str(ratioArea) ,',  Area Ratio: ', '\n'));
 fprintf(areaTxt,strcat(num2str(ratioPerimeter) ,',  Perimeter Ratio: ', '\n'));
 fprintf(areaTxt,strcat(num2str(sum(sum(imageHeatXY2))) ,',  Sum of Interpolated XY Displacements in Linear Microns (Surface): ', '\n'));
 fprintf(areaTxt,strcat(num2str(sum(sum(sum(imageHeatXYtotal2)))) ,',    Sum of Interpolated XY Displacements in Linear Microns (Stack): ', '\n'));
-fprintf(areaTxt,strcat(num2str(sum(sum(imageHeatZ3))) ,',   Sum of Interpolated Normal Displacements in Linear Microns (Cell Boundary): ', '\n'));
+%fprintf(areaTxt,strcat(num2str(sum(sum(imageHeatZ3))) ,',   Sum of Interpolated Normal Displacements in Linear Microns (Cell Boundary): ', '\n'));
 fprintf(areaTxt,strcat(num2str(max(max(imageHeatXY2))) ,',   Max of Interpolated XY Displacements in Linear Microns (Surface): ', '\n'));
 
 fclose(areaTxt);
 %% Create folder for profile views and save relevant data
+disp('Saving Mat Variables')
 filePath = cd;
 folderName = 'Profile Data';
 mkdir(filePath,folderName)
 save('Profile Data\vqXY.mat','vqXY')
 save('Profile Data\HeatMapXY.mat','imageHeatXYColor')
 %%
-save('DataShear.mat','shear')
+save('Shear Mat Files\DataShear.mat','shear')
+disp(['done Saving Mat Variables @' num2str(toc) 'seconds'])
 %% Noise Histograms
+mkdir('Histograms')
 set(0,'defaultfigurecolor',[1 1 1])
 
 %CHANGE FONT SIZES HERE
@@ -417,10 +437,10 @@ bins = [-400:20:400];
 xdispdist = figure;
 hold on
 %histogram(shear.rawdX(:,:),50)
-xStd = std2(shear.ltdX(:,shear.noCellTraj))*1000
+xStd = std2(shear.ltdX(:,shear.noCellTraj))*1000;
 xVals = shear.ltdX(:,shear.noCellTraj);
 xVals(xVals == 0) = NaN;
-xStd = std(xVals(:),'omitnan')*1000
+xStd = std(xVals(:),'omitnan')*1000;
 histogram(shear.ltdX(:,shear.noCellTraj)*1000,bins,'FaceColor',[.6 .6 .6],'Normalization','probability')
 histmax = max(histcounts(shear.ltdX(:,:)*1000,bins,'Normalization','probability'));
 p1 = plot([xStd xStd],[0 round(histmax,2)+.01],'color',[.3 .3 .3],'linestyle','--','linewidth',1);
@@ -445,7 +465,7 @@ leg.FontSize = LegendFontSize;
 axis([-400 400 0 round(histmax,2)+.01])
 
 title = '\X-Displacement Histogram';
-savefile = [filePath title];
+savefile = [filePath '\Histograms' title];
 export_fig(xdispdist,savefile,'-native');
 
 ydispdist = figure;
@@ -453,8 +473,8 @@ hold on
 %histogram(shear.rawdY(:,:),50)
 yVals = shear.ltdY(:,shear.noCellTraj);
 yVals(yVals == 0) = NaN;
-yStd = std2(shear.ltdY(:,shear.noCellTraj))*1000
-yStd = std(yVals(:),'omitnan')*1000
+yStd = std2(shear.ltdY(:,shear.noCellTraj))*1000;
+yStd = std(yVals(:),'omitnan')*1000;
 histogram(shear.ltdY(:,shear.noCellTraj)*1000,bins ,'FaceColor',[.6 .6 .6],'Normalization','probability')
 histmax = max(histcounts(shear.ltdY(:,:)*1000,bins,'Normalization','probability'));
 p1 = plot([yStd yStd],[0 round(histmax,2)+.01],'color',[.3 .3 .3],'linestyle','--','linewidth',1);
@@ -479,7 +499,7 @@ leg.FontSize = LegendFontSize;
 axis([-400 400 0 round(histmax,2)+.01])
 
 title = '\Y-Displacement Histogram';
-savefile = [filePath title];
+savefile = [filePath '\Histograms' title];
 export_fig(ydispdist,savefile,'-native');
 
 
@@ -489,11 +509,11 @@ filePath = cd;
 xydispdist = figure;
 hold on
 %histogram(shear.rawdY(:,:),50)
-xyStd = std2([shear.ltdXY(:,shear.noCellTraj) -1*shear.ltdXY(:,shear.noCellTraj)])*1000
+xyStd = std2([shear.ltdXY(:,shear.noCellTraj) -1*shear.ltdXY(:,shear.noCellTraj)])*1000;
 xyVals = squeeze(shear.ltdXY(:,shear.noCellTraj));
 xyVals = cat(1,xyVals,-1*xyVals);
 xyVals(xyVals == 0) = NaN;
-xyStd = std(xyVals(:),'omitnan')*1000
+xyStd = std(xyVals(:),'omitnan')*1000;
 xyStd2 = 2*xyStd;
 histogram(shear.ltdXY(:,shear.noCellTraj)*1000,bins ,'FaceColor',[.6 .6 .6],'Normalization','probability')
 histmax = max(histcounts(shear.ltdXY(:,:)*1000,bins,'Normalization','probability'));
@@ -521,7 +541,7 @@ leg.FontName = 'Arial';
 axis([0 400 0 round(histmax,2)+.01])
 
 title = '\XY-Displacement Histogram';
-savefile = [filePath title];
+savefile = [filePath '\Histograms' title];
 export_fig(xydispdist,savefile,'-native');
 
 %% Calculate Z-Displacement at Surface (Quick Method 2 in microns)
@@ -547,4 +567,4 @@ export_fig(xydispdist,savefile,'-native');
 % plot(interpSurface{2})
 % plot3(0,0,0)
 
-disp('Trajectories Program has Completed Successfully')
+disp(['Trajectories Program has Completed Successfully at '  num2str(toc) ' seconds'])

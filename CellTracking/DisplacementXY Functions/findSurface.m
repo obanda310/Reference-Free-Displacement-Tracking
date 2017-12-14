@@ -36,6 +36,6 @@ lb = mean(topSurface(:,4)) - 2*std(topSurface(:,4));
 topSurface([find(topSurface(:,4)>ub | topSurface(:,4)<lb)],:) = [];
 
 
-fitSurface{1} = fit([topSurface(:,3),topSurface(:,2)],topSurface(:,4),'poly11');
-fitSurface{2} = fit([topSurface(:,3),topSurface(:,2)],topSurface(:,4),'lowess','Span',0.1);
+% fitSurface{1} = fit([topSurface(:,3),topSurface(:,2)],topSurface(:,4),'poly11');
+% fitSurface{2} = fit([topSurface(:,3),topSurface(:,2)],topSurface(:,4),'lowess','Span',0.1);
 fitSurface{3} = fit([topSurface(:,3),topSurface(:,2)],topSurface(:,4)*dataKey(10,1),'lowess','Span',0.1);

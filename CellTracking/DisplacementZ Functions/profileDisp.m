@@ -173,7 +173,7 @@ newEnd = find(abs(xq3-floc) == min(abs(xq3-floc)));
 xq2=(xq3-(xq3(newStart)-0.01))/(xq3(newEnd)-(xq3(newStart)-0.01));
 xyq2 = interp1(xq2,xyq,xq);
 zq2 = interp1(xq2,zq,xq);
-dPEFq2 = interp1(xq2,dPEFq,xq)
+dPEFq2 = interp1(xq2,dPEFq,xq);
 cell_boundary = find(dPEFq2>0,1,'first');
 
 

@@ -25,9 +25,9 @@ classdef RawData3D
                 obj.s(1:2,2) = obj.s(1:2,1)*raw.dataKey(9,1);
                 obj.s(3,2) = obj.s(3,1)*raw.dataKey(10,1);
                 d = round(1/raw.dataKey(9,1));
-                dz = round(3.5/raw.dataKey(10,1));
+                dz = round(1.5/raw.dataKey(10,1));
                 obj.r=...
-                    feature3dMB(res, d , [d d dz], [obj.s(1) obj.s(2) obj.s(3)],[1 1 1],round(1/raw.dataKey(9,1)),8000,.3); %
+                    feature3dMB(res, d , [d d dz], [obj.s(1) obj.s(2) obj.s(3)],[1 1 1],round(.4/raw.dataKey(9,1)),0,.05); %
                 obj.r(:,1:2) = obj.r(:,1:2)*raw.dataKey(9,1);
                 obj.r(:,3) = obj.r(:,3)*raw.dataKey(10,1);
                 obj.l = size(obj.r,1);

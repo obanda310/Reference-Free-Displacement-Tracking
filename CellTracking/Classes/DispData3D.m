@@ -73,7 +73,8 @@ classdef DispData3D
         
         
         %% Method 2 Translating Average Line
-        function obj = method2fit(obj,m1,r,raw,image,rows,rowPlanesIdx)
+        function obj = method2fit(obj,m1,r,raw,im,rows,rowPlanesIdx)
+            
             %% Revisiting Method One reinforced by Average slopes
             %Strategy: find closest and furthest points in row from one point in rowFit
             %and use those two points to determine if a different fit using method 1 is
@@ -102,7 +103,8 @@ classdef DispData3D
                 obj.rowEnds(rowPlanesIdx(i,1):rowPlanesIdx(i,2),5) = rowPlanesMaxWidth(i,1);
             end
             for i = 1:size(obj.rowEnds)
-                if image.ADil(round(r.Y(obj.rowEnds(i,1))/raw.dataKey(9,1)),round(r.X(obj.rowEnds(i,1))/raw.dataKey(9,1)))>0 && image.ADil(round(r.Y(obj.rowEnds(i,2))/raw.dataKey(9,1)),round(r.X(obj.rowEnds(i,2))/raw.dataKey(9,1)))>0 && obj.rowEnds(i,3)>obj.rowEnds(i,5)*.7 %|| obj.rowEnds(i,?)>20
+                
+                if im(ceil(r.Y(obj.rowEnds(i,1))/raw.dataKey(9,1)),ceil(r.X(obj.rowEnds(i,1))/raw.dataKey(9,1)))>0 && im(ceil(r.Y(obj.rowEnds(i,2))/raw.dataKey(9,1)),ceil(r.X(obj.rowEnds(i,2))/raw.dataKey(9,1)))>0 && obj.rowEnds(i,3)>obj.rowEnds(i,5)*.7 %|| obj.rowEnds(i,?)>20
                     obj.rowEnds(i,4) = 1;
                 else
                     obj.rowEnds(i,4) = 0;
@@ -287,7 +289,7 @@ classdef DispData3D
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %% Plotting Functions
+        %% Histogram Functions
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function NoiseHists(obj,planesLocFiltList,r,method)
             %% Create Histogram
@@ -323,7 +325,7 @@ classdef DispData3D
             
             title = strcat('Z-Displacement Histogram',method);
             filePath = cd;
-            savefile = [filePath title];
+            savefile = [filePath '\Histograms\' title];
             export_fig(zdispdist,savefile,'-native');
             
         end

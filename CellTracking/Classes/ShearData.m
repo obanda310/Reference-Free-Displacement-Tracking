@@ -54,6 +54,7 @@ classdef ShearData
         noiseBook %
         cutoff
         cmCutoff
+        sumIndFinal
         
     end
     methods
@@ -94,12 +95,12 @@ classdef ShearData
                     % the last frame that an object appears in
                     endFrame = (startFrame+numFrames-1);
                     
-                    if image.Borders(round(tempObj(1,3)*raw.dataKey(7,1)),round(tempObj(1,2)*raw.dataKey(7,1)))==0
-                        skip = 1;
-                        skipCount = skipCount+1;
-                    else
+%                     if image.Borders(ceil(tempObj(1,3)*raw.dataKey(7,1)),ceil(tempObj(1,2)*raw.dataKey(7,1))+1)==0
+%                         skip = 1;
+%                         skipCount = skipCount+1
+%                     else
                         skip = 0;
-                    end
+%                     end
                     
                     if skip == 0
                         obj.firstFrame((i-skipCount)-missingNo) = startFrame;
@@ -149,7 +150,7 @@ classdef ShearData
             imageAreaDil = imerode(image.Area,SE);
             for i = 1:obj.numTraj
                 %if it is in black region
-                if imageAreaDil(round(obj.rawY1(i)),round(obj.rawX1(i)))~=0
+                if imageAreaDil(ceil(obj.rawY1(i)),ceil(obj.rawX1(i)))~=0
                     if noCellTrajIni == 0
                         noCellTrajIni = i;
                     else
@@ -161,7 +162,7 @@ classdef ShearData
             imshow(imageAreaDil)
             
             % Tilt Correction
-            [obj.noiseBook,noiseStats,sumIndFinal] = tiltCorrection(image.ROIstack,image.Trans,obj,noCellTrajIni);
+            [obj.noiseBook,noiseStats,obj.sumIndFinal] = tiltCorrection(image.ROIstack,image.Trans,obj,noCellTrajIni);
             
             
             %
@@ -169,28 +170,11 @@ classdef ShearData
                 obj.gtdX(i,:) = ((obj.rawdX(i,:)) - obj.noiseBook(i,2)).*(obj.rawdX(i,:)~=0);
                 obj.gtdY(i,:) = ((obj.rawdY(i,:)) - obj.noiseBook(i,3)).*(obj.rawdY(i,:)~=0);
                 obj.gtdXY(i,:) = ((obj.gtdX(i,:).^2)+(obj.gtdY(i,:).^2)).^.5;
-                obj.noiseBook(i,6) = mean(obj.gtdX(i,sumIndFinal));
-                obj.noiseBook(i,7) = mean(obj.gtdY(i,sumIndFinal));
-                obj.noiseBook(i,8) = mean(obj.gtdXY(i,sumIndFinal));
+                obj.noiseBook(i,6) = mean(obj.gtdX(i,obj.sumIndFinal));
+                obj.noiseBook(i,7) = mean(obj.gtdY(i,obj.sumIndFinal));
+                obj.noiseBook(i,8) = mean(obj.gtdXY(i,obj.sumIndFinal));
             end
             
-            %
-            bins = 0:.025:3;
-            errorHist = figure;
-            hold on
-            histogram(obj.gtdXY(:,sumIndFinal),bins,'normalization','probability')
-            histogram(obj.rawdXY(:,sumIndFinal),bins,'normalization','probability')
-            savefile = [filePath '\ErrorHistNoStress.tif'];
-            export_fig(errorHist,savefile);
-            
-            
-            errorHist2 = figure;
-            hold on
-            histogram((obj.gtdXY(:,:)),bins,'normalization','probability')
-            histogram((obj.rawdXY(:,:)),bins,'normalization','probability')
-            savefile = [filePath '\HistDisplacements.tif'];
-            export_fig(errorHist2,savefile);
-            %
             for i = 1:obj.numTraj
                 
                 obj.lastdX(i) = obj.rawdX(obj.lastFrame(i),i);
@@ -202,6 +186,7 @@ classdef ShearData
                 obj.gtLastdY(i) = obj.gtdY(obj.lastFrame(i),i);
                 obj.gtLastdXY(i) = (obj.gtLastdX(i).^2 + obj.gtLastdY(i).^2).^0.5;
             end
+            
             % Find all pillars in non-deformed regions
             clear imageArea2
             imageArea2 = zeros(size(image.Area,1)+100,size(image.Area,2)+100);
@@ -223,10 +208,55 @@ classdef ShearData
                     end
                 end
             end
-              figure
-        imshow(imageArea2)
+            figure
+            imshow(imageArea2)
+            
+            %CHANGE FONT SIZES HERE
+            AxisFontSize = 28;
+            AxisTitleFontSize = 28;
+            LegendFontSize = 20;
+            %
+            mkdir('Histograms')
+            bins = 0:.025:3;
+            errorHist = figure;
+            hold on
+            histogram(obj.gtdXY(:,obj.noCellTraj),bins,'normalization','probability')
+            histogram(obj.rawdXY(:,obj.noCellTraj),bins,'normalization','probability')
+            set(gca,'fontsize',AxisFontSize)
+            xt = 'Reference Error';% input('enter the xaxis label','s');
+            yt = 'Probability'; %input('enter the yaxis label','s');
+            xl = xlabel(xt);
+            yl = ylabel(yt);
+            le2 = 'Normal'; %input('enter the legend','s');
+            le = 'Global Tilt';
+            leg = legend(le,le2,'location','northeast');
+            leg.FontSize = LegendFontSize;
+            axis([0 1 0 .4])
+            savefile = [filePath '\Histograms' '\GTErrorHistNoStress.tif'];
+            export_fig(errorHist,savefile);
+            
+            
+            errorHist2 = figure;
+            hold on
+            histogram((obj.gtdXY(:,:)),bins,'normalization','probability')
+            histogram((obj.rawdXY(:,:)),bins,'normalization','probability')
+            set(gca,'fontsize',AxisFontSize)
+            xt = 'Reference Error';% input('enter the xaxis label','s');
+            yt = 'Probability'; %input('enter the yaxis label','s');
+            xl = xlabel(xt);
+            yl = ylabel(yt);
+            le2 = 'Normal'; %input('enter the legend','s');
+            le = 'Global Tilt';
+            leg = legend(le,le2,'location','northeast');
+            leg.FontSize = LegendFontSize;
+            axis([0 1 0 .4])
+            savefile = [filePath '\Histograms' '\GTErrorHistAll.tif'];
+            export_fig(errorHist2,savefile);
+            %
+            
+            
         end
-      
+        
         %%-------------------------------------------------------------
         
         
@@ -235,7 +265,7 @@ classdef ShearData
         
         
         %% ------------------------------------------------------------
-        function obj = localTilt(obj)
+        function obj = localTilt(obj,filePath)
             
             clear book4
             %book4 contains the closest 500 pillars to index pillar(dim 1) that do not
@@ -299,6 +329,53 @@ classdef ShearData
             %     obj.ltLastdXY(i) = (obj.ltLastdX(i).^2 + obj.ltLastdY(i).^2).^0.5;
             %     end
             % end
+            
+            
+            %CHANGE FONT SIZES HERE
+            AxisFontSize = 28;
+            AxisTitleFontSize = 28;
+            LegendFontSize = 20;
+            %
+            mkdir('Histograms')
+            bins = 0:.025:3;
+            errorHist = figure;
+            hold on
+            histogram(obj.ltdXY(:,obj.noCellTraj),bins,'normalization','probability')
+            histogram(obj.gtdXY(:,obj.noCellTraj),bins,'normalization','probability')
+            histogram(obj.rawdXY(:,obj.noCellTraj),bins,'normalization','probability')
+            set(gca,'fontsize',AxisFontSize)
+            xt = 'Reference Error';% input('enter the xaxis label','s');
+            yt = 'Probability'; %input('enter the yaxis label','s');
+            xl = xlabel(xt);
+            yl = ylabel(yt);
+            le = 'Local Tilt';
+            le2 = 'Global Tilt';
+            le3 = 'Normal'; %input('enter the legend','s');
+            leg = legend(le,le2,le3,'location','northeast');
+            leg.FontSize = LegendFontSize;
+            axis([0 1 0 .4])
+            savefile = [filePath '\Histograms' '\ErrorHistNoStress.tif'];
+            export_fig(errorHist,savefile);
+            
+            
+            errorHist2 = figure;
+            hold on
+            histogram((obj.ltdXY(:,:)),bins,'normalization','probability')
+            histogram((obj.gtdXY(:,:)),bins,'normalization','probability')
+            histogram((obj.rawdXY(:,:)),bins,'normalization','probability')
+            set(gca,'fontsize',AxisFontSize)
+            xt = 'Reference Error';% input('enter the xaxis label','s');
+            yt = 'Probability'; %input('enter the yaxis label','s');
+            xl = xlabel(xt);
+            yl = ylabel(yt);
+            le = 'Local Tilt';
+            le2 = 'Global Tilt';
+            le3 = 'Normal'; %input('enter the legend','s');
+            leg = legend(le,le2,le3,'location','northeast');
+            leg.FontSize = LegendFontSize;
+            axis([0 1 0 .4])
+            savefile = [filePath '\Histograms' '\ErrorHistAll.tif'];
+            export_fig(errorHist2,savefile);
         end
         %%-------------------------------------------------------------
         
@@ -308,7 +385,7 @@ classdef ShearData
         
         %% ------------------------------------------------------------
         function obj = lTcutoff(obj)
-            obj.cutoff = 0.150;
+            obj.cutoff = 0.2;
             obj.cmCutoff = 3; %The first colormap group to be used in filtered data sets
             obj.coCheck(:,:) = obj.ltdXY(:,:)>obj.cutoff;
             for i = 1:obj.numTraj

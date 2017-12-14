@@ -16,7 +16,9 @@ classdef ImageData
         function obj = ImageData(autoChk)
             %Load a black image, transmitted image, fluorescent image, and
             %binary image.
-            
+            if isa((autoChk),'ImageData')==1
+                obj = autoChk;
+            else
             obj.Black = loadSpecific('black.tif','*.tif','Select a Black Image of the Correct Dimensions');
             %Open Transmitted Image
             if autoChk == 0
@@ -64,8 +66,15 @@ classdef ImageData
                 obj.Area = obj.Black==0;
             end
             
-            
+            BT = 35; %pixels 
             obj.Borders = ones(size(obj.Area,1),size(obj.Area,2));
+            obj.Borders(1:BT,:) = 0;
+            obj.Borders(end-BT:end,:) = 0;
+            obj.Borders(:,1:BT) = 0;
+            obj.Borders(:,end-BT:end) = 0;
+           
+                
+            end
         end
         
         function obj = roiStack(obj,autoChk)

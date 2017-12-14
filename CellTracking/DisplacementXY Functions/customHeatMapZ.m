@@ -20,7 +20,7 @@ hold on
 imshow(colorBar2);
 maxD = 1.5; % maximum positive/negative values on scale bar in microns
 scaleD = 32768/maxD; %scalar for creating heatmap
-savefile = [filePath '\HeatMaps\ColorBarZ.tif'];
+savefile = [filePath '\HeatMaps\Shear\ColorBarZ.tif'];
 if ismember(6,outputs) == 1
     export_fig(colorBarSave,savefile,'-native');
 else
@@ -47,7 +47,7 @@ close all
 maxHeatMap = figure;
 hold on
 imshow(imageHeatColor);
-savefile = [filePath '\HeatMaps\Single\MaximumHeatMapZ.tif'];
+savefile = [filePath '\HeatMaps\Shear\MaximumHeatMapZ.tif'];
 if ismember(6,outputs) == 1
     export_fig(maxHeatMap,savefile,'-native');
 else
@@ -56,7 +56,7 @@ end
 close
 
 %Save Color Bar Values (depends on vq!)
-cd HeatMaps
+cd HeatMaps\Shear
 colorBarTxt = fopen('Heat Map Color Bar Values Z.txt','wt');
 p1Format = 'Tick number %1.0f is %.2f \n';
 for i = 1:11

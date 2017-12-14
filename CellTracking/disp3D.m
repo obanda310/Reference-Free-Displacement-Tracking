@@ -8,8 +8,8 @@ set(0,'defaultfigurecolor',[1 1 1])
 tic
 autoChk = 1; %1 for auto, 0 otherwise
 %% Load Shear Data
-load('DataShear')
-load('DataRaw')
+load('Shear Mat Files\DataShear')
+load('Shear Mat Files\DataRaw')
 %% Load Images
 image = ImageData(autoChk);
 image = rawStack(image,autoChk);
@@ -19,7 +19,8 @@ image = TransDots(image);
 
 %% Kilfoil Stack Filter
 disp('Processing Images')
-res=bpass3dMB(image.RawStack, [2 2 1], [7 7 12],[0 0]);
+res=bpass3dMB(image.RawStack, [1 1 1], [4 4 4],[0 0]);
+%ShowStack(res)
 disp(['done Processing Images at '  num2str(toc) ' seconds'])
 
 %% Kilfoil Object Detection 3D
@@ -51,14 +52,14 @@ disp(['done Building Planes at ' num2str(toc) ' seconds'])
 [plane,r] = cleanPlanes(plane,raw3D);
 r = RawData3D(res,raw,r);
 r = TranscribeR(r);
-
+%%
 % View Filtered Planes
-% figure
-% hold on
-% for i = 1:size(plane.final,2)
-%     scatter3(r.X(plane.final(1:nnz(plane.final(:,i)),i)),r.Y(plane.final(1:nnz(plane.final(:,i)),i)),r.Z(plane.final(1:nnz(plane.final(:,i)),i)))
-% end
-% hold off
+figure
+hold on
+for i = 3:size(plane.final,2)
+    scatter3(r.X(plane.final(1:nnz(plane.final(:,i)),i)),r.Y(plane.final(1:nnz(plane.final(:,i)),i)),r.Z(plane.final(1:nnz(plane.final(:,i)),i)))
+end
+hold off
 %% Dots in Cell Region
 %Determine which features fall outside of a dilated mask of cell area
 image = DilateBinary(image,50);
@@ -157,7 +158,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Calculate plane distance from surface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-fS = open('fitSurface.mat');
+fS = open('Shear Mat Files\Surface.mat');
 try
     fitSurface = fS.fitSurface{3};
 catch
@@ -192,6 +193,7 @@ planesLocFiltList(planesLocFiltList==0) = [];
 % hold off
 %%
 disp('Matching 3D detections to 2D-based pillars')
+r.col = zeros(1,r.l);
 for i = 1:r.l
     clear differences 
     differences = min(squeeze(sqrt((shear.rawX(:,:)-r.X(i)).^2+(shear.rawY(:,:)-r.Y(i)).^2+(shear.rawZ(:,:)-r.Z(i)).^2)));    
@@ -210,7 +212,7 @@ disp('done Matching 3D detections to 2D-based pillars')
 for i = 1:size(rows,1)
     rowsSCtest(i,1:length(r.X(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)))) = r.X(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:));
     rowsSC(i,1) = mean(r.X(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:))-shear.rawX1(r.col(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)))');
-    rowsSC(i,3) = length(r.X(r.col(rowsNDCU(rowsNDCU(i,:)>0))>0)-shear.rawX1(r.col(r.col(rowsNDCU(rowsNDCU(i,:)>0))>0))');
+    %rowsSC(i,3) = length(r.X(r.col(rowsNDCU(rowsNDCU(i,:)>0))>0)-shear.rawX1(r.col(r.col(rowsNDCU(rowsNDCU(i,:)>0))>0))');
     rowsSC(i,2) = mean(r.Y(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:))-shear.rawY1(r.col(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)))');   
 end
 
@@ -233,7 +235,7 @@ end
 % end
 %
 
-%%
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 1st METHOD FOR MEASURING DISPLACEMENTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -267,7 +269,7 @@ NoiseHists(m1,planesLocFiltList,r,'1')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('Fitting Rows with Row Slope - Method 2')
 m2 = DispData3D;
-m2 = method2fit(m2,m1,r,raw,image,rows,rowPlanesIdx);
+m2 = method2fit(m2,m1,r,raw,image.ADil,rows,rowPlanesIdx);
 % Calculate Displacements from Fit Lines Method 2
 m2 = calcDisp(m2,r,rows,rowsNDCU); %based on fits of non-deformed markers
 m2 = calcDispSC(m2,r,shear); %includes shift correction in reference approximation
@@ -310,22 +312,24 @@ disp('done Picking Best Case Row Fit - Method 3')
 NoiseHists(m3,planesLocFiltList,r,'3')
 
 
-%%
-figure
-axis([0 r.s(1,2) 0 r.s(2,2)])
-hold on
-for j = 1:size(rowPlanes,3)
-    if nnz(plane.raw(:,j))>5000
-        m3fit{j} = fit([r(plane.raw(1:nnz(plane.raw(:,j)),j),1),(size(image.Area,1)*raw.dataKey(9,1))-r(plane.raw(1:nnz(plane.raw(:,j)),j),2)],r(plane.raw(1:nnz(plane.raw(:,j)),j),3),'lowess','Span',.02);
-        plot(m3fit{j})
-    end
-    plot(fitSurface)
-end
+% %%
+% figure
+% axis([0 r.s(1,2) 0 r.s(2,2)])
+% hold on
+% for j = 1:size(rowPlanes,3)
+%     if nnz(plane.raw(:,j))>5000
+%         m3fit{j} = fit([r(plane.raw(1:nnz(plane.raw(:,j)),j),1),(size(image.Area,1)*raw.dataKey(9,1))-r(plane.raw(1:nnz(plane.raw(:,j)),j),2)],r(plane.raw(1:nnz(plane.raw(:,j)),j),3),'lowess','Span',.02);
+%         plot(m3fit{j})
+%     end
+%     plot(fitSurface)
+% end
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CREATE COLOR MAPS OF DISPLACEMENTS IN Z
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+mkdir('HeatMaps\3D')
+mkdir('HeatMaps\3D\ColorBar')
 colorMapZ = single(brewermap(65536,'*PuBu'));
 colorBar1 = single(zeros(500,25));
 range = uint16(round(linspace(65536,1,500)'));
@@ -344,7 +348,7 @@ colorBarSave = figure;
 hold on
 imshow(colorBar2);
 filePath=cd;
-savefile = [filePath '\HeatMaps\ColorBarZv2.tif'];
+savefile = [filePath '\HeatMaps\3D\ColorBar\ColorBarZ.tif'];
 export_fig(colorBarSave,savefile,'-native');
 
 colorMapXY = single(brewermap(65536,'*Spectral'));
@@ -365,11 +369,12 @@ colorBarSave = figure;
 hold on
 imshow(colorBar2);
 filePath=cd;
-savefile = [filePath '\HeatMaps\ColorBarZv2.tif'];
+savefile = [filePath '\HeatMaps\3D\ColorBar\ColorBarShear.tif'];
 export_fig(colorBarSave,savefile,'-native');
 
-imageBinaryCombined = ((image.ADil==0));%+(imageBinary2==0))==0;
-%%
+SE = strel('disk',round(10/.1625));
+imageBinaryCombined = imdilate(image.ADil==0,SE);%+(imageBinary2==0))==0;
+%
 %Determine which 'planes' in plane.final should be the same plane
 clear planesGroups
 for i = 1:size(planesLoc2,2)
@@ -378,29 +383,29 @@ for i = 1:size(planesLoc2,2)
     planesGroups(i,1:size(find(abs(differences)<2),2)) = find(abs(differences)<2)';
 end
 planesGroups = unique(planesGroups,'rows');
-[HeatMapN,vqN] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,raw.dataKey(9,1),0,colorMapZ,colorMapXY,0);
-[HeatMap,vq1] = heatmapZ(r.r,m1.dispFilt,plane.final,planesGroups,imageBinaryCombined,raw.dataKey(9,1),m1.noiseCutoff,colorMapZ,colorMapXY,1);
-[HeatMap2,vq2] = heatmapZ(r.r,m2.dispFilt,plane.final,planesGroups,imageBinaryCombined,raw.dataKey(9,1),m2.noiseCutoff,colorMapZ,colorMapXY,2);
-[HeatMap3,vq3] = heatmapZ(r.r,m3.dispFilt,plane.final,planesGroups,imageBinaryCombined,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,3);
+[HeatMapN,vqN] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),0,colorMapZ,colorMapXY,0);
+%[HeatMap,vq1] = heatmapZ(r.r,m1.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m1.noiseCutoff,colorMapZ,colorMapXY,1);
+%[HeatMap2,vq2] = heatmapZ(r.r,m2.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m2.noiseCutoff,colorMapZ,colorMapXY,2);
+[HeatMap3,vq3] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,3);
 
 
 % Print Data to txt file
 % Calculate Useful parameters
-[vq1pos,vq1neg,m1.PosTotal, m1.PosMax, m1.NegTotal, m1.NegMax]  = vqStats(vq1,planesGroups);
-[vq2pos,vq2neg,m2.PosTotal, m2.PosMax, m2.NegTotal, m2.NegMax]  = vqStats(vq2,planesGroups);
+%[vq1pos,vq1neg,m1.PosTotal, m1.PosMax, m1.NegTotal, m1.NegMax]  = vqStats(vq1,planesGroups);
+%[vq2pos,vq2neg,m2.PosTotal, m2.PosMax, m2.NegTotal, m2.NegMax]  = vqStats(vq2,planesGroups);
 [vq3pos,vq3neg,m3.PosTotal, m3.PosMax, m3.NegTotal, m3.NegMax]  = vqStats(vq3,planesGroups);
 
 % Write to file
 cd HeatMaps
 planesLocTxt = fopen('Average Z location of planes.txt','wt');
 p1Format = 'Plane no. %1.0f is at %.2f microns from the surface \n';
-p2Format = 'Plane no. %1.0f has an average fit deviation of %.8f microns from Method 1 fit \n';
-p3Format = 'Plane no. %1.0f has an average fit deviation of %.8f microns from Method 2 fit \n';
+%p2Format = 'Plane no. %1.0f has an average fit deviation of %.8f microns from Method 1 fit \n';
+%p3Format = 'Plane no. %1.0f has an average fit deviation of %.8f microns from Method 2 fit \n';
 p4Format = 'Plane no. %1.0f has an average fit deviation of %.8f microns from Method 3 fit \n';
 for i = 1:size(planesGroups,1)
     fprintf(planesLocTxt,p1Format,i,mean(planesLoc2(1,planesGroups(i,(planesGroups(i,:)>0)))));
-    fprintf(planesLocTxt,p2Format,i,mean(m1.MeanPlanes(1,planesGroups(i,(planesGroups(i,:)>0)))));
-    fprintf(planesLocTxt,p3Format,i,mean(m2.MeanPlanes(1,planesGroups(i,(planesGroups(i,:)>0)))));
+    %fprintf(planesLocTxt,p2Format,i,mean(m1.MeanPlanes(1,planesGroups(i,(planesGroups(i,:)>0)))));
+    %fprintf(planesLocTxt,p3Format,i,mean(m2.MeanPlanes(1,planesGroups(i,(planesGroups(i,:)>0)))));
     fprintf(planesLocTxt,p4Format,i,mean(m3.MeanPlanes(1,planesGroups(i,(planesGroups(i,:)>0)))));
 end
 fclose(planesLocTxt);
@@ -408,8 +413,8 @@ cd(filePath)
 
 %Comma Delimiter Version
 cd HeatMaps
-printStats(m1,planesGroups,planesLocTxt,planesLoc2,'1');
-printStats(m2,planesGroups,planesLocTxt,planesLoc2,'2');
+%printStats(m1,planesGroups,planesLocTxt,planesLoc2,'1');
+%printStats(m2,planesGroups,planesLocTxt,planesLoc2,'2');
 printStats(m3,planesGroups,planesLocTxt,planesLoc2,'3');
 cd(filePath)
 
@@ -417,13 +422,13 @@ cd(filePath)
 %%
 save 3Ddata
 %%
-disp('Scipt has Completed')
+disp(['Script has Completed in ' num2str(toc) ' seconds'])
 % Save data for profile views
 %%
 filePath = cd;
 folderName = 'Profile Data';
 mkdir(filePath,folderName)
-save('Profile Data\vqZ.mat','vqN','vq1','vq2','vq3','image','HeatMap','HeatMap2','HeatMap3')
+save('Profile Data\vqZ.mat','vqN','vq3','image','HeatMapN','HeatMap3')
 
 %%
 %save('rowV.mat','rowV')

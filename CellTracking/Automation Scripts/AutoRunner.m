@@ -7,9 +7,17 @@ load(strcat(ListPath,ListName),'dirList')
 parts = strsplit(ListName, 'List');
 prefix = parts{1};
  set(0,'defaultfigurecolor',[1 1 1])
-%% For Running XY Script
+%% For clearing old files
+for j = 1:2
 for i = 1:size(dirList,1)
-    dispXYfunc(dirList{i,1})
+    cleanOld(dirList{i,1})
+    disp(num2str(i))
+end
+end
+ 
+ %% For Running XY Script
+for i = 1:size(dirList,1)
+    dispShear(dirList{i,1})
     disp(num2str(i))
 end
 
@@ -53,29 +61,84 @@ end
 
 %% For Running Z Script
 for i = 1:size(dirList,1)
-    dispZfunc(dirList{i,1})
+    disp(dirList{i,1})
+    disp3D(dirList{i,1})
+    disp(dirList{i,1})
+    i
 end
 
 %% For Running Z Script Outputs Only (faster alternative)
 for i = 1:size(dirList,1)
-    dispZfuncOutputs(dirList{i,1})
+    disp3DOutputs(dirList{i,1})
+    i
 end
 
-%% For Running Profile Script
 
+%%
 for i = 1:size(dirList,1)
+disp(dirList{i,1})
+cd(dirList{i,1});
+load('3Ddata.mat')
+filePath = cd;
+folderName = 'Profile Data';
+mkdir(filePath,folderName)
+save('Profile Data\vqZ.mat','vqN','vq3','image','HeatMapN','HeatMap3')
+end
+
+%% Collect vqXY/vqZ totals for shear v normal graphs
+%goodData = [1;2;3;5;6;14;17;23;31;34;43;44;47;49;50;48;11;12;19;25;28;36];
+%goodData = [1:1:51]';
+goodData = [1:1:7]';
+clear vqT
+for i2 = 1:size(goodData,1)
+    clear planesLoc3
+    disp(dirList{goodData(i2,1),1})
+    cd(dirList{goodData(i2,1),1});
+    load('3Ddata.mat')
+    load('Profile Data\vqXY.mat');
+    load('Profile Data\HeatMapXY.mat');
+    zTarget = 7;
+    for j = 1:size(planesGroups,1)
+        planesLoc3(j) = mean(planesLoc2(1,planesGroups(j,1:nnz(planesGroups(j,:)))));
+    end
+    zPlane = find(abs(planesLoc3-zTarget) == min(abs(planesLoc3-zTarget)),1,'first');
+    vqXY(isnan(vqXY)) = 0;
+    vqXY = imresize(vqXY,[size(vq3,1) size(vq3,2)]);
+    i2
+    vqT(i2,1) = sum(sum(vqXY));
+    vq3(isnan(vq3)) = 0;
+    vqT(i2,2) = sum(sum(abs(vq3(:,:,zPlane))));
+    vqT(i2,3) = zPlane;
+    vqT(i2,4) = planesLoc2(zPlane);
+    vqT(i2,5) = sum(sum(image.Area ==0))*raw.dataKey(9,1)^2;
+    vqT(i2,6) = max(max(vqXY));
+    vqT(i2,7) = max(max(abs(vq3(:,:,zPlane))));
+end
+    save([ListPath 'ShearNormalStats.mat'],'vqT')
+    figure
+    scatter(vqT(:,1),vqT(:,2))
+    figure
+    scatter(vqT(:,5),vqT(:,1))
+    figure
+    scatter(vqT(:,5),vqT(:,2))   
+    figure
+    scatter(vqT(:,6),vqT(:,7))
+%% For Running Profile Script
+clear caught goodData
+goodData = [1:1:7]';%[1;2;3;5;6;14;17;23;31;34;43;44;47;49;50;48;11;12;19;25;28;36];
+for i = 1:size(goodData,1)
 try
-[normXY,normZ,normAxis,cell_boundary] = profFunc(dirList{i,1});
+[normXY,normZ,normAxis,cell_boundary] = profFunc(dirList{goodData(i,1),1});
 profBook(1,1:size(normAxis,2),i) = normAxis;
 profBook(2,1:size(normXY,2),i) = normXY;
 profBook(3,1:size(normZ,2),i) = normZ;
 cb(i) = cell_boundary;
 save('Profile Data\ProfileOutputData.mat','normXY','normZ','normAxis')
-catch
-    caught(i) = 1;
-    i
-    dirList{i,1}
-end
+ catch
+     caught(i) = 1;
+     i
+     dirList{goodData(i,:),1}
+ end
 end
 cbf = mean(cb);
 save(strcat(ListPath,prefix,'Profiles.mat'),'profBook','cb','cbf')
@@ -101,20 +164,30 @@ keep2 = keep(2,:);
 keep2(:,~keep(1,:)) = [];
 [keep3,sortIdx] = sort(keep2);
 
+colOptions{1,1} = 'white';
+colOptions{2,1} = 'black';
+colOptions{1,2} = 'black';
+colOptions{2,2} = 'white';
 map = brewermap(size(profBook2,3),'*spectral');
+
+for i = 1:size(colOptions,2)
+ fcolor = colOptions{1,i};
+bcolor = colOptions{2,i};   
+    
+set(0,'defaultfigurecolor',bcolor)
 ProfileOverlays = figure;
 hold on
 for i = 1:size(profBook2,3)
 plot(profBook2(1,:,sortIdx(i))*aScale,profBook2(2,:,sortIdx(i)),'color',[map(i,1:3)])
 plot(profBook2(1,:,sortIdx(i))*aScale,profBook2(3,:,sortIdx(i)),'color',[map(i,1:3)],'linestyle','-.')
 end
-p1= plot(profBook2(1,:,sortIdx(i))*aScale,mean(profBook2(2,:,sortIdx(:)),3,'omitnan'),'color',[0 0 0],'linewidth',3);
-p2=plot(profBook2(1,:,sortIdx(i))*aScale,mean(profBook2(3,:,sortIdx(:)),3,'omitnan'),'color',[0 0 0],'linestyle','-.','linewidth',3);
-p3=plot([cbf2 cbf2]*aScale,[min(min(min(profBook2))),max(max(max(profBook2)))],'color',[.3 .3 .3],'linestyle','--','linewidth',1);
+p1= plot(profBook2(1,:,sortIdx(i))*aScale,mean(profBook2(2,:,sortIdx(:)),3,'omitnan'),'color',fcolor,'linewidth',3);
+p2=plot(profBook2(1,:,sortIdx(i))*aScale,mean(profBook2(3,:,sortIdx(:)),3,'omitnan'),'color',fcolor,'linestyle','-.','linewidth',3);
+p3=plot([cbf2 cbf2]*aScale,[min(min(min(profBook2))),max(max(max(profBook2)))],'color',[.5 .5 .5],'linestyle','--','linewidth',1);
+set(gca,'Color',bcolor)
+text(1.05,-.8,'\leftarrowAvg. Cell Boundary','fontsize',16,'color',fcolor)
 
-text(1.05,-.8,'\leftarrowAvg. Cell Boundary','fontsize',16)
-
-set(gca,'fontsize',28)
+set(gca,'fontsize',28,'XColor',fcolor,'YColor',fcolor)
 xt = 'Location on Trace(AU)';% input('enter the xaxis label','s');
 yt = 'Displacement (\mum)'; %input('enter the yaxis label','s');
 tt = 'Line-Profile Displacements';%input('enter the title','s');
@@ -125,15 +198,16 @@ xl = xlabel(xt);
 yl = ylabel(yt); 
 %tl = title(tt);
 
-set(xl, 'fontweight','bold','fontsize',28); 
-set(yl,'fontweight','bold','fontsize',28);
-leg = legend([p1 p2],le,le2,'location','northwest');
+set(xl, 'fontweight','bold','fontsize',28,'color',fcolor); 
+set(yl,'fontweight','bold','fontsize',28,'color',fcolor);
+leg = legend([p1 p2],['\color{' fcolor '}' le],['\color{' fcolor '}' le2],'location','northwest');
 leg.FontSize = 20;
+legend boxoff
 %set(tl,'fontweight','bold','fontsize',title_font_size)
 axis([0 2 min(min(min(profBook2))) max(max(max(profBook2)))])
 
 
-title = strcat(prefix,'All_Data');
+title = strcat(prefix,['All_Data ' fcolor ' on ' bcolor]);
 savefile = [ListPath title];
 export_fig(ProfileOverlays,savefile,'-native');
 
@@ -150,13 +224,13 @@ for i = 1:size(profBook3,3)
 plot(profBook3(1,:,sortIdx(i))*aScale,profBook3(2,:,sortIdx(i)),'color',[map(i,1:3)])
 plot(profBook3(1,:,sortIdx(i))*aScale,profBook3(3,:,sortIdx(i)),'color',[map(i,1:3)],'linestyle','-.')
 end
-p1 = plot(profBook3(1,:,sortIdx(i))*aScale,mean(profBook3(2,:,sortIdx(:)),3,'omitnan'),'color',[0 0 0],'linewidth',3);
-p2 = plot(profBook3(1,:,sortIdx(i))*aScale,mean(profBook3(3,:,sortIdx(:)),3,'omitnan'),'color',[0 0 0],'linestyle','-.','linewidth',3);
-p3 = plot([cbf2 cbf2]*aScale,[min(min(min(profBook3))),1],'color',[.3 .3 .3],'linestyle','--','linewidth',1);
+p1 = plot(profBook3(1,:,sortIdx(i))*aScale,mean(profBook3(2,:,sortIdx(:)),3,'omitnan'),'color',fcolor,'linewidth',3);
+p2 = plot(profBook3(1,:,sortIdx(i))*aScale,mean(profBook3(3,:,sortIdx(:)),3,'omitnan'),'color',fcolor,'linestyle','-.','linewidth',3);
+p3 = plot([cbf2 cbf2]*aScale,[min(min(min(profBook3))),1],'color',[.5 .5 .5],'linestyle','--','linewidth',1);
+set(gca,'Color',bcolor)
+text(1.05,-.3,'\leftarrowAvg. Cell Boundary','fontsize',16,'color',fcolor)
 
-text(1.05,-.3,'\leftarrowAvg. Cell Boundary','fontsize',16)
-
-set(gca,'fontsize',28)
+set(gca,'fontsize',28,'XColor',fcolor,'YColor',fcolor)
 xt = 'Location on Trace(AU)';% input('enter the xaxis label','s');
 yt = 'Displacement (AU)'; %input('enter the yaxis label','s');
 tt = 'Line-Profile Displacements';%input('enter the title','s');
@@ -166,16 +240,17 @@ le3 = 'Border';
 xl = xlabel(xt);
 yl = ylabel(yt); 
 %tl = title(tt);
-set(xl, 'fontweight','bold','fontsize',28); 
-set(yl,'fontweight','bold','fontsize',28);
-leg = legend([p1 p2],le,le2,'location','northwest');
+set(xl, 'fontweight','bold','fontsize',28,'color',fcolor); 
+set(yl,'fontweight','bold','fontsize',28,'color',fcolor);
+leg = legend([p1 p2],['\color{' fcolor '}' le],['\color{' fcolor '}' le2],'location','northwest');
 leg.FontSize = 20;
+legend boxoff
 axis([0 2 min(min(min(profBook3))) max(max(max(profBook3)))])
 
 %set(tl,'fontweight','bold','fontsize',title_font_size)
 
 
-title = strcat(prefix,'All_Data_Normalized');
+title = strcat(prefix,['All_Data_Normalized ' fcolor ' on ' bcolor]);
 savefile = [ListPath title];
 export_fig(ProfileOverlaysNorm,savefile,'-native');
-
+end

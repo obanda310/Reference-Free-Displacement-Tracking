@@ -3,7 +3,7 @@
 function y1 = OutputSelector(auto)
 % Create figure
 if auto == 1
-    y1 = [1,12,15,16];
+    y1 = [1,15];
 else
     h.f = figure('units','pixels','name','Select Outputs','position',[300,480,750,205],...
         'toolbar','none','menu','none');
@@ -74,10 +74,10 @@ else
     h.c(15) = uicontrol('style','checkbox','units','pixels',...
         'position',[360,80,300,15],'string','XY Heatmap','Value',1);
     h.c(13) = uicontrol('style','checkbox','units','pixels',...
-        'position',[370,60,300,15],'string','Through-Z Normal');
+        'position',[370,60,300,15],'string','Through-Z Shear');
     
     h.c(12) = uicontrol('style','checkbox','units','pixels',...
-        'position',[370,60,300,15],'string','Through-Z Normal','Value',1);
+        'position',[370,60,300,15],'string','Through-Z Shear','Value',1);
     
     h.c(16) = uicontrol('style','checkbox','units','pixels',...
         'position',[360,20,300,15],'string','Z Heatmap','Value',1);
