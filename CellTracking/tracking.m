@@ -136,9 +136,9 @@ numPillars = max(lub(:,7));
 problems = find(lub(:,20)>0);
 
 %View pillars and overlay "Problems"
-plotTracks(lub,maxMasks)
-hold on
-scatter3(lub(problems,1),lub(problems,2),lub(problems,6))
+% plotTracks(lub,maxMasks)
+% hold on
+% scatter3(lub(problems,1),lub(problems,2),lub(problems,6))
 
 %% Automated Problem Pillar Selection with Manual Track Adjustment
 %This code will allow the user to select a region from an image to address

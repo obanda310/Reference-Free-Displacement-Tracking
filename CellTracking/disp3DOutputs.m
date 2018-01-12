@@ -2,87 +2,87 @@ function disp3DOutputs(directory,redo)
 tic
 close all
 if nargin == 1 || nargin == 2
-cd(directory);
+    cd(directory);
 end
 clear all
 load('3Ddata.mat')
 %% Redo Displacement calculations
 if nargin == 2 && redo ==1
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 1st METHOD FOR MEASURING DISPLACEMENTS
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp('Fitting Rows with Independent Slopes - Method 1')
-% Extend the fit Lines passed the edge of the dot area Method 1
-m1 = DispData3D;
-m1 = method1fit(m1,r,rows,rowV);
-% Calculate Displacements from Fit Lines Method 1
-m1 = calcDisp(m1,r,rows,rowsNDCU); %based on fits of non-deformed markers
-m1 = calcDispSC(m1,r,shear); %includes shift correction in reference approximation
-%ViewMethodRef(m1,r)
-m1.disp = r.r(:,1:3)-m1.refSC(:,1:3);
-% Displacement Statistics for Planes at least 4.5 microns from surface
-% Find all dots farther than 4.5 microns from surface
-% Calculate Average Displacement per Row per Plane Method 1
-m1 = dispStats(m1,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
-% Filter out noise in Displacements Method 1
-m1 = dispNoise(m1,r,planesLocFiltList);
-disp('done Fitting Rows with Independent Slopes - Method 1')
-% Scatter3/Plot3 of Dots/Fits Method 2
-%ViewRowFits(m1,r,rowPlanes)
-% Quiver Plot of Displacements Method 2
-%ViewQuiverPlot(m1,r)
-NoiseHists(m1,planesLocFiltList,r,'1')
-
-
-
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 2nd METHOD FOR MEASURING DISPLACEMENTS V2
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp('Fitting Rows with Row Slope - Method 2')
-m2 = DispData3D;
-m2 = method2fit(m2,m1,r,raw,image.ADil,rows,rowPlanesIdx);
-% Calculate Displacements from Fit Lines Method 2
-m2 = calcDisp(m2,r,rows,rowsNDCU); %based on fits of non-deformed markers
-m2 = calcDispSC(m2,r,shear); %includes shift correction in reference approximation
-%ViewMethodRef(m2,r)
-m2.disp = r.r(:,1:3)-m2.refSC(:,1:3);
-% Calculate Average Displacement per Row per Plane Method 2
-m2 = dispStats(m2,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
-% Filter out noise in Displacements Method 1
-m2 = dispNoise(m2,r,planesLocFiltList);
-disp('done Fitting Rows with Row Slope - Method 2')
-% Scatter3/Plot3 of Dots/Fits Method 2
-%ViewRowFits(m2,r,rowPlanes)
-% Quiver Plot
-%ViewQuiverPlot(m2,r)
-NoiseHists(m2,planesLocFiltList,r,'2')
-
-
-
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 3RD METHOD FOR FITTING ROWS (METHOD 1 AND 2 COMBINED)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp('Picking Best Case Row Fit - Method 3')
-m3 = DispData3D;
-m3 = method3fit(m3,m1,m2,rows);
-% Calculate Displacements from Fit Lines Method 3
-m3 = calcDisp(m3,r,rows,rowsNDCU); %based on fits of non-deformed markers
-m3 = calcDispSC(m3,r,shear); %includes shift correction in reference approximation
-%ViewMethodRef(m3,r)
-m3.disp = r.r(:,1:3)-m3.refSC(:,1:3);
-% Calculate Average Displacement per Row per Plane Method 3
-m3 = dispStats(m3,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
-% Filter out noise in Displacements Method 1
-m3 = dispNoise(m3,r,planesLocFiltList);
-disp('done Picking Best Case Row Fit - Method 3')
-% Scatter3/Plot3 of Dots/Fits Method 3
-%ViewRowFits(m3,r,rowPlanes)
-% Quiver Plot of Displacements Method 3
-%ViewQuiverPlot(m3,r)
-NoiseHists(m3,planesLocFiltList,r,'3')
-
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % 1st METHOD FOR MEASURING DISPLACEMENTS
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    disp('Fitting Rows with Independent Slopes - Method 1')
+    % Extend the fit Lines passed the edge of the dot area Method 1
+    m1 = DispData3D;
+    m1 = method1fit(m1,r,rows,rowV);
+    % Calculate Displacements from Fit Lines Method 1
+    m1 = calcDisp(m1,r,rows,rowsNDCU); %based on fits of non-deformed markers
+    m1 = calcDispSC(m1,r,shear); %includes shift correction in reference approximation
+    %ViewMethodRef(m1,r)
+    m1.disp = r.r(:,1:3)-m1.refSC(:,1:3);
+    % Displacement Statistics for Planes at least 4.5 microns from surface
+    % Find all dots farther than 4.5 microns from surface
+    % Calculate Average Displacement per Row per Plane Method 1
+    m1 = dispStats(m1,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
+    % Filter out noise in Displacements Method 1
+    m1 = dispNoise(m1,r,planesLocFiltList);
+    disp('done Fitting Rows with Independent Slopes - Method 1')
+    % Scatter3/Plot3 of Dots/Fits Method 2
+    %ViewRowFits(m1,r,rowPlanes)
+    % Quiver Plot of Displacements Method 2
+    %ViewQuiverPlot(m1,r)
+    NoiseHists(m1,planesLocFiltList,r,'1')
+    
+    
+    
+    %%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % 2nd METHOD FOR MEASURING DISPLACEMENTS V2
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    disp('Fitting Rows with Row Slope - Method 2')
+    m2 = DispData3D;
+    m2 = method2fit(m2,m1,r,raw,image.ADil,rows,rowPlanesIdx);
+    % Calculate Displacements from Fit Lines Method 2
+    m2 = calcDisp(m2,r,rows,rowsNDCU); %based on fits of non-deformed markers
+    m2 = calcDispSC(m2,r,shear); %includes shift correction in reference approximation
+    %ViewMethodRef(m2,r)
+    m2.disp = r.r(:,1:3)-m2.refSC(:,1:3);
+    % Calculate Average Displacement per Row per Plane Method 2
+    m2 = dispStats(m2,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
+    % Filter out noise in Displacements Method 1
+    m2 = dispNoise(m2,r,planesLocFiltList);
+    disp('done Fitting Rows with Row Slope - Method 2')
+    % Scatter3/Plot3 of Dots/Fits Method 2
+    %ViewRowFits(m2,r,rowPlanes)
+    % Quiver Plot
+    %ViewQuiverPlot(m2,r)
+    NoiseHists(m2,planesLocFiltList,r,'2')
+    
+    
+    
+    %%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % 3RD METHOD FOR FITTING ROWS (METHOD 1 AND 2 COMBINED)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    disp('Picking Best Case Row Fit - Method 3')
+    m3 = DispData3D;
+    m3 = method3fit(m3,m1,m2,rows);
+    % Calculate Displacements from Fit Lines Method 3
+    m3 = calcDisp(m3,r,rows,rowsNDCU); %based on fits of non-deformed markers
+    m3 = calcDispSC(m3,r,shear); %includes shift correction in reference approximation
+    %ViewMethodRef(m3,r)
+    m3.disp = r.r(:,1:3)-m3.refSC(:,1:3);
+    % Calculate Average Displacement per Row per Plane Method 3
+    m3 = dispStats(m3,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
+    % Filter out noise in Displacements Method 1
+    m3 = dispNoise(m3,r,planesLocFiltList);
+    disp('done Picking Best Case Row Fit - Method 3')
+    % Scatter3/Plot3 of Dots/Fits Method 3
+    %ViewRowFits(m3,r,rowPlanes)
+    % Quiver Plot of Displacements Method 3
+    %ViewQuiverPlot(m3,r)
+    NoiseHists(m3,planesLocFiltList,r,'3')
+    
 end
 
 %%

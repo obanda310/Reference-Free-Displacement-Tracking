@@ -1,13 +1,15 @@
 %% Methods script for creating figures to accompany discriptions of reference generation and displacement calculations
-load('3DnormalData.mat')
+load('3Ddata.mat')
 mkdir('MethodsExpFigs')
+colOptions{1,1} = 'white';
+colOptions{2,1} = 'black';
 %%
 close all
 [~,figBounds] =  imcrop(HeatMap3(:,:,:,1));
-figLimits(1,1) = figBounds(1,1) *xyScale;
-figLimits(1,2) = (figBounds(1,1) + figBounds(1,3))*xyScale;
-figLimits(1,3) = figBounds(1,2) *xyScale;
-figLimits(1,4) = (figBounds(1,2) + figBounds(1,4))*xyScale;
+figLimits(1,1) = figBounds(1,1) *raw.dataKey(9,1);
+figLimits(1,2) = (figBounds(1,1) + figBounds(1,3))*raw.dataKey(9,1);
+figLimits(1,3) = figBounds(1,2) *raw.dataKey(9,1);
+figLimits(1,4) = (figBounds(1,2) + figBounds(1,4))*raw.dataKey(9,1);
 % Figure 1 - Forming columns and references for XY data: initial references
 %%
 save('figBounds.mat','figLimits','figBounds')
@@ -25,9 +27,9 @@ ele = 50;
 f0 = figure;
 
 hold on
-for i = 1:size(book1,3)    
-    %plot3(ones(size(book1,2),1)*book1(1,1,i),size(res,2)*xyScale-ones(size(book1,2),1)*book1(2,1,i),((1:1:size(book1,2))*zScale)','r')
-    scatter3(book1(1,:,i),size(res,2)*xyScale-book1(2,:,i),(1:1:size(book1,2))*zScale,'.')
+for i = 1:size(shear.rawX,2)    
+    %plot3(ones(shear.numFrames,1)*shear.rawX1(i),size(res,2)*raw.dataKey(9,1)-ones(shear.numFrames,1)*shear.rawY1(i),((1:1:shear.numFrames)*raw.dataKey(10,1))','r')
+    scatter3(shear.rawX(:,i),size(res,2)*raw.dataKey(9,1)-shear.rawY(:,i),shear.rawZ(:,i),'.')
 end
 xlim([figLimits(1,1) figLimits(1,2)])
 ylim([figLimits(1,3) figLimits(1,4)])
@@ -42,11 +44,9 @@ view([az ele])
     %%
 f0b = figure;
 
-hold on
-for i = 1:size(book1,3)    
-    %plot3(ones(size(book1,2),1)*book1(1,1,i),size(res,2)*xyScale-ones(size(book1,2),1)*book1(2,1,i),((1:1:size(book1,2))*zScale)','r')
-    scatter3(book1(1,:,i),size(res,2)*xyScale-book1(2,:,i),(1:1:size(book1,2))*zScale,'.','b')
-end
+hold on    
+    %plot3(ones(shear.numFrames,1)*shear.rawX1(i),size(res,2)*raw.dataKey(9,1)-ones(shear.numFrames,1)*shear.rawY1(i),((1:1:shear.numFrames)*raw.dataKey(10,1))','r')
+scatter3(shear.rawX(:),size(res,2)*raw.dataKey(9,1)-shear.rawY(:),shear.rawZ(:),'.')
 xlim([figLimits(1,1) figLimits(1,2)])
 ylim([figLimits(1,3) figLimits(1,4)])
 xlabel('X (\mum)')
@@ -63,9 +63,9 @@ view([az ele])
 f1 = figure;
 
 hold on
-for i = 1:size(book1,3)    
-    plot3(ones(size(book1,2),1)*book1(1,1,i),size(res,2)*xyScale-ones(size(book1,2),1)*book1(2,1,i),((1:1:size(book1,2))*zScale)','r')
-    scatter3(book1(1,:,i),size(res,2)*xyScale-book1(2,:,i),(1:1:size(book1,2))*zScale,'.')
+for i = 1:shear.numTraj    
+    plot3(ones(shear.numFrames,1)*shear.rawX1(i),size(res,2)*raw.dataKey(9,1)-ones(shear.numFrames,1)*shear.rawY1(i),((1:1:shear.numFrames)*raw.dataKey(10,1))','r')
+    scatter3(shear.rawX(:,i),size(res,2)*raw.dataKey(9,1)-shear.rawY(:,i),shear.rawZ(:,i),'.')
 end
 xlim([figLimits(1,1) figLimits(1,2)])
 ylim([figLimits(1,3) figLimits(1,4)])
@@ -78,14 +78,16 @@ view([az ele])
     savefile = [strcat(filePath,'\MethodsExpFigs\') 'fig1.tif'];
     export_fig(f1,savefile,'-native');
 %%
-book1(22,:,:) = book1(1,:,:) - book1(13,:,:)*xyScale;
-book1(23,:,:) = book1(2,:,:) - book1(14,:,:)*xyScale;
+vX(:,:) = shear.rawX(:,:) - shear.ltdX(:,:);
+vY(:,:) = shear.rawY(:,:) - shear.ltdY(:,:);
+vX(vX == 0) = NaN;
+vY(vY == 0) = NaN;
 %Figure 2 - Tilt Corrected
 f2 = figure;
 hold on
-for i = 1:size(book1,3)    
-    plot3(book1(22,:,i),size(res,2)*xyScale-book1(23,:,i),((1:1:size(book1,2))*zScale)','r')
-    scatter3(book1(1,:,i),size(res,2)*xyScale-book1(2,:,i),(1:1:size(book1,2))*zScale,'.')
+for i = 1:shear.numTraj    
+    plot3(vX(:,i),size(res,2)*raw.dataKey(9,1)-vY(:,i),((1:1:shear.numFrames)*raw.dataKey(10,1))','r')
+    scatter3(shear.rawX(:,i),size(res,2)*raw.dataKey(9,1)-shear.rawY(:,i),(1:1:shear.numFrames)*raw.dataKey(10,1),'.')
 end
 xlim([figLimits(1,1) figLimits(1,2)])
 ylim([figLimits(1,3) figLimits(1,4)])
@@ -100,10 +102,10 @@ savefile = [strcat(filePath,'\MethodsExpFigs\') 'fig2.tif'];
 
 f3 = figure;
 hold on
-for i = 1:size(book1,3)    
-    plot3(book1(22,:,i),size(res,2)*xyScale-book1(23,:,i),((1:1:size(book1,2))*zScale)','r')
-    scatter3(book1(1,:,i),size(res,2)*xyScale-book1(2,:,i),(1:1:size(book1,2))*zScale,'.')
-    quiver3(book1(22,:,i),size(res,2)*xyScale-book1(23,:,i),((1:1:size(book1,2))*zScale),book1(13,:,i)*xyScale,-1*book1(14,:,i)*xyScale,zeros(size(book1,2),1)',0)
+for i = 1:shear.numTraj    
+    plot3(vX(:,i),size(res,2)*raw.dataKey(9,1)-vY(:,i),((1:1:shear.numFrames)*raw.dataKey(10,1))','r')
+    scatter3(shear.rawX(:,i),size(res,2)*raw.dataKey(9,1)-shear.rawY(:,i),(1:1:shear.numFrames)*raw.dataKey(10,1),'.')
+    quiver3(vX(:,i),size(res,2)*raw.dataKey(9,1)-vY(:,i),((1:1:shear.numFrames)*raw.dataKey(10,1))',shear.ltdX(:,i),-1*shear.ltdY(:,i),zeros(shear.numFrames,1),0)
 end
 
 xlim([figLimits(1,1) figLimits(1,2)])
@@ -119,8 +121,8 @@ savefile = [strcat(filePath,'\MethodsExpFigs\') 'fig3.tif'];
 
 f4 = figure;
 hold on
-for i = 1:size(book1,3)    
-    quiver3(book1(22,:,i),size(res,2)*xyScale-book1(23,:,i),((1:1:size(book1,2))*zScale),book1(13,:,i)*xyScale,-1*book1(14,:,i)*xyScale,zeros(size(book1,2),1)',0)
+for i = 1:shear.numTraj    
+    quiver3(vX(:,i),size(res,2)*raw.dataKey(9,1)-vY(:,i),((1:1:shear.numFrames)*raw.dataKey(10,1))',shear.ltdX(:,i),-1*shear.ltdY(:,i),zeros(shear.numFrames,1),0)
 end
 
 xlim([figLimits(1,1) figLimits(1,2)])
@@ -138,20 +140,20 @@ az = -110;
 ele = 15;
 
 %% Gather detection rows in window
-rZone = unique(r(r(:,1)>figLimits(1,1)&r(:,1)<figLimits(1,2)&r(:,2)<size(res,2)*xyScale-figLimits(1,3)&r(:,2)>size(res,2)*xyScale-figLimits(1,4),8));
-rZonePts = find(r(:,1)>figLimits(1,1)&r(:,1)<figLimits(1,2)&r(:,2)<size(res,2)*xyScale-figLimits(1,3)&r(:,2)>size(res,2)*xyScale-figLimits(1,4));
+rZone = unique(r.r(r.r(:,1)>figLimits(1,1)&r.r(:,1)<figLimits(1,2)&r.r(:,2)<size(res,2)*raw.dataKey(9,1)-figLimits(1,3)&r.r(:,2)>size(res,2)*raw.dataKey(9,1)-figLimits(1,4),8));
+rZonePts = find(r.r(:,1)>figLimits(1,1)&r.r(:,1)<figLimits(1,2)&r.r(:,2)<size(res,2)*raw.dataKey(9,1)-figLimits(1,3)&r.r(:,2)>size(res,2)*raw.dataKey(9,1)-figLimits(1,4));
 %%
 %Figure 5 - 3D Detections
 
 f5 = figure;
 hold on
-for i = 1:size(book1,3)    
+for i = 1:shear.numTraj    
     
-    scatter3(book1(1,:,i),size(res,2)*xyScale-book1(2,:,i),(1:1:size(book1,2))*zScale,'.')
+    scatter3(shear.rawX(:,i),size(res,2)*raw.dataKey(9,1)-shear.rawY(:,i),(1:1:shear.numFrames)*raw.dataKey(10,1),'.')
 end
 
 for i =1:size(planesFinal,2)
-scatter3(r(planesFinal(1:nnz(planesFinal(:,i)),i),1),size(res,2)*xyScale-r(planesFinal(1:nnz(planesFinal(:,i)),i),2),r(planesFinal(1:nnz(planesFinal(:,i)),i),3))
+scatter3(r.r(planesFinal(1:nnz(planesFinal(:,i)),i),1),size(res,2)*raw.dataKey(9,1)-r.r(planesFinal(1:nnz(planesFinal(:,i)),i),2),r.r(planesFinal(1:nnz(planesFinal(:,i)),i),3))
 end
 xlim([figLimits(1,1) figLimits(1,2)])
 ylim([figLimits(1,3) figLimits(1,4)])
@@ -171,10 +173,10 @@ hold on
 colorMapFig7 = brewermap(size(rZone,1),'*spectral');
 clear temp
 for i = 1:size(rZone,1)
-    scatter3(r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1),(size(imageBinary,1)*xyScale)-r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),2),r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
-    temp(1:nnz(rows(rZone(i,1),:)),1:3,i) = sortrows(r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1:3),1);
-    plot3(temp(:,1,i),(size(imageBinary,1)*xyScale)-temp(:,2,i),temp(:,3,i),'-','Color',[colorMapFig7(i,1:3)])
-    %plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(i,2,1) (size(imageBinary,1)*xyScale)-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)],'Color',[colorMapFig7(i,1:3)])
+    scatter3(r.r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1),(size(imageBinary,1)*raw.dataKey(9,1))-r.r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),2),r.r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
+    temp(1:nnz(rows(rZone(i,1),:)),1:3,i) = sortrows(r.r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1:3),1);
+    plot3(temp(:,1,i),(size(imageBinary,1)*raw.dataKey(9,1))-temp(:,2,i),temp(:,3,i),'-','Color',[colorMapFig7(i,1:3)])
+    %plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*raw.dataKey(9,1))-rowFits3(i,2,1) (size(imageBinary,1)*raw.dataKey(9,1))-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)],'Color',[colorMapFig7(i,1:3)])
 end
 scatter3(0,0,0)
 
@@ -204,15 +206,15 @@ for i = 1:size(rZone,1)
 end
 
 for i = 1:size(rZone,1)
-    scatter3(r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1),(size(imageBinary,1)*xyScale)-r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),2),r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),3),'MarkerEdgeColor',[.5 .5 .5])
-    plot3(temp(:,1,i),(size(imageBinary,1)*xyScale)-temp(:,2,i),temp(:,3,i),'-','Color',[.5 .5 .5])
-    plot3([rowFits3(rZone(i,1),1,1) rowFits3(rZone(i,1),1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(rZone(i,1),2,1) (size(imageBinary,1)*xyScale)-rowFits3(rZone(i,1),2,2)],[rowFits3(rZone(i,1),3,1) rowFits3(rZone(i,1),3,2)],'r')
+    scatter3(r.r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1),(size(imageBinary,1)*raw.dataKey(9,1))-r.r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),2),r.r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),3),'MarkerEdgeColor',[.5 .5 .5])
+    plot3(temp(:,1,i),(size(imageBinary,1)*raw.dataKey(9,1))-temp(:,2,i),temp(:,3,i),'-','Color',[.5 .5 .5])
+    plot3([rowFits3(rZone(i,1),1,1) rowFits3(rZone(i,1),1,2)],[(size(imageBinary,1)*raw.dataKey(9,1))-rowFits3(rZone(i,1),2,1) (size(imageBinary,1)*raw.dataKey(9,1))-rowFits3(rZone(i,1),2,2)],[rowFits3(rZone(i,1),3,1) rowFits3(rZone(i,1),3,2)],'r')
 end
 
 for i = 1:size(rZone,1)
-    scatter3(r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),1),(size(imageBinary,1)*xyScale)-r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),2),r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
-    temp2(:,1:3) = sortrows(r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),1:3),1);
-    plot3(temp2(:,1),(size(imageBinary,1)*xyScale)-temp2(:,2),temp2(:,3),'Color',[colorMapFig7(i,1:3)])
+    scatter3(r.r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),1),(size(imageBinary,1)*raw.dataKey(9,1))-r.r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),2),r.r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
+    temp2(:,1:3) = sortrows(r.r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),1:3),1);
+    plot3(temp2(:,1),(size(imageBinary,1)*raw.dataKey(9,1))-temp2(:,2),temp2(:,3),'Color',[colorMapFig7(i,1:3)])
 end
 
 %xlim([figLimits(1,1) figLimits(1,2)])
@@ -238,15 +240,15 @@ for i = 1:size(rZone,1)
 end
 
 for i = 1:size(rZone,1)
-    scatter3(r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1),(size(imageBinary,1)*xyScale)-r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),2),r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),3),'MarkerEdgeColor',[.5 .5 .5])
-    plot3(temp(:,1,i),(size(imageBinary,1)*xyScale)-temp(:,2,i),temp(:,3,i),'-','Color',[.5 .5 .5])
-    plot3([rowFits3(rZone(i,1),1,1) rowFits3(rZone(i,1),1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(rZone(i,1),2,1) (size(imageBinary,1)*xyScale)-rowFits3(rZone(i,1),2,2)],[rowFits3(rZone(i,1),3,1) rowFits3(rZone(i,1),3,2)],'r')
+    scatter3(r.r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),1),(size(imageBinary,1)*raw.dataKey(9,1))-r.r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),2),r.r(rows(rZone(i,1),1:nnz(rows(rZone(i,1),:))),3),'MarkerEdgeColor',[.5 .5 .5])
+    plot3(temp(:,1,i),(size(imageBinary,1)*raw.dataKey(9,1))-temp(:,2,i),temp(:,3,i),'-','Color',[.5 .5 .5])
+    plot3([rowFits3(rZone(i,1),1,1) rowFits3(rZone(i,1),1,2)],[(size(imageBinary,1)*raw.dataKey(9,1))-rowFits3(rZone(i,1),2,1) (size(imageBinary,1)*raw.dataKey(9,1))-rowFits3(rZone(i,1),2,2)],[rowFits3(rZone(i,1),3,1) rowFits3(rZone(i,1),3,2)],'r')
 end
 
 for i = 1:size(rZone,1)
-    scatter3(r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),1),(size(imageBinary,1)*xyScale)-r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),2),r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
-    temp2(:,1:3) = sortrows(r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),1:3),1);
-    plot3(temp2(:,1),(size(imageBinary,1)*xyScale)-temp2(:,2),temp2(:,3),'Color',[colorMapFig7(i,1:3)])
+    scatter3(r.r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),1),(size(imageBinary,1)*raw.dataKey(9,1))-r.r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),2),r.r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
+    temp2(:,1:3) = sortrows(r.r(rowsFilt(rZone(i,1),1:nnz(rowsFilt(rZone(i,1),:))),1:3),1);
+    plot3(temp2(:,1),(size(imageBinary,1)*raw.dataKey(9,1))-temp2(:,2),temp2(:,3),'Color',[colorMapFig7(i,1:3)])
 end
 
 %xlim([figLimits(1,1) figLimits(1,2)])
@@ -267,15 +269,15 @@ f7a = figure;
 hold on
 colorMapFig7 = brewermap(size(rows,1),'*spectral');
 
-for i = 1:size(book1,3)    
-    plot3(book1(22,:,i),size(res,2)*xyScale-book1(23,:,i),((1:1:size(book1,2))*zScale)','b')
+for i = 1:shear.numTraj    
+    plot3(vX(:,i),size(res,2)*raw.dataKey(9,1)-vY(:,i),((1:1:shear.numFrames)*raw.dataKey(10,1))','b')
 end
 
 for i = 1:size(rowFits3,1)
     
-    plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(i,2,1) (size(imageBinary,1)*xyScale)-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)],'Color','r')
+    plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*raw.dataKey(9,1))-rowFits3(i,2,1) (size(imageBinary,1)*raw.dataKey(9,1))-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)],'Color','r')
 end
-scatter3(rRef3b(:,1),(size(imageBinary,1)*xyScale)-rRef3b(:,2),rRef3b(:,3),'x','r')
+scatter3(rRef3b(:,1),(size(imageBinary,1)*raw.dataKey(9,1))-rRef3b(:,2),rRef3b(:,3),'x','r')
 scatter3(0,0,0)
 
 xlim([figLimits(1,1) figLimits(1,2)])
@@ -295,10 +297,10 @@ hold on
 colorMapFig7 = brewermap(size(rows,1),'*spectral');
 
 for i = 1:size(rowFits3,1)
-    scatter3(r(rows(i,1:nnz(rows(i,:))),1),(size(imageBinary,1)*xyScale)-r(rows(i,1:nnz(rows(i,:))),2),r(rows(i,1:nnz(rows(i,:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
-    plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(i,2,1) (size(imageBinary,1)*xyScale)-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)],'Color',[colorMapFig7(i,1:3)])
+    scatter3(r.r(rows(i,1:nnz(rows(i,:))),1),(size(imageBinary,1)*raw.dataKey(9,1))-r.r(rows(i,1:nnz(rows(i,:))),2),r.r(rows(i,1:nnz(rows(i,:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
+    plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*raw.dataKey(9,1))-rowFits3(i,2,1) (size(imageBinary,1)*raw.dataKey(9,1))-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)],'Color',[colorMapFig7(i,1:3)])
 end
-scatter3(rRef3b(:,1),(size(imageBinary,1)*xyScale)-rRef3b(:,2),rRef3b(:,3),'x','r')
+scatter3(rRef3b(:,1),(size(imageBinary,1)*raw.dataKey(9,1))-rRef3b(:,2),rRef3b(:,3),'x','r')
 scatter3(0,0,0)
 
 xlim([figLimits(1,1) figLimits(1,2)])
@@ -317,11 +319,11 @@ hold on
 colorMapFig7 = brewermap(size(rows,1),'*spectral');
 
 for i = 1:size(rowFits3,1)
-    scatter3(r(rows(i,1:nnz(rows(i,:))),1),(size(imageBinary,1)*xyScale)-r(rows(i,1:nnz(rows(i,:))),2),r(rows(i,1:nnz(rows(i,:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
-    plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*xyScale)-rowFits3(i,2,1) (size(imageBinary,1)*xyScale)-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)],'Color',[colorMapFig7(i,1:3)])
+    scatter3(r.r(rows(i,1:nnz(rows(i,:))),1),(size(imageBinary,1)*raw.dataKey(9,1))-r.r(rows(i,1:nnz(rows(i,:))),2),r.r(rows(i,1:nnz(rows(i,:))),3),'MarkerEdgeColor',[colorMapFig7(i,1:3)])
+    plot3([rowFits3(i,1,1) rowFits3(i,1,2)],[(size(imageBinary,1)*raw.dataKey(9,1))-rowFits3(i,2,1) (size(imageBinary,1)*raw.dataKey(9,1))-rowFits3(i,2,2)],[rowFits3(i,3,1) rowFits3(i,3,2)],'Color',[colorMapFig7(i,1:3)])
 end
 scatter3(0,0,0)
-quiver3(rRef3b(:,1),(size(imageBinary,1)*xyScale)-rRef3b(:,2),rRef3b(:,3),rDisp3(:,1),rDisp3(:,2)*-1,rDisp3(:,3),0)
+quiver3(rRef3b(:,1),(size(imageBinary,1)*raw.dataKey(9,1))-rRef3b(:,2),rRef3b(:,3),rDisp3(:,1),rDisp3(:,2)*-1,rDisp3(:,3),0)
 xlim([figLimits(1,1) figLimits(1,2)])
 ylim([figLimits(1,3) figLimits(1,4)])
 xlabel('X (\mum)')
@@ -341,7 +343,7 @@ ele= 30;
 f9 = figure;
 hold on
 for i = 1:size(planesFinal,2)
-quiver3(rRef3b(planesFinal(1:nnz(planesFinal(:,i)),i),1),(size(imageBinary,1)*xyScale)-rRef3b(planesFinal(1:nnz(planesFinal(:,i)),i),2),rRef3b(planesFinal(1:nnz(planesFinal(:,i)),i),3),rDisp3(planesFinal(1:nnz(planesFinal(:,i)),i),1),rDisp3(planesFinal(1:nnz(planesFinal(:,i)),i),2)*-1,rDisp3(planesFinal(1:nnz(planesFinal(:,i)),i),3),0)
+quiver3(rRef3b(planesFinal(1:nnz(planesFinal(:,i)),i),1),(size(imageBinary,1)*raw.dataKey(9,1))-rRef3b(planesFinal(1:nnz(planesFinal(:,i)),i),2),rRef3b(planesFinal(1:nnz(planesFinal(:,i)),i),3),rDisp3(planesFinal(1:nnz(planesFinal(:,i)),i),1),rDisp3(planesFinal(1:nnz(planesFinal(:,i)),i),2)*-1,rDisp3(planesFinal(1:nnz(planesFinal(:,i)),i),3),0)
 end
 xlabel('X (\mum)')
 ylabel('Y (\mum)')

@@ -47,8 +47,8 @@ for i = 1:size(planesGroups,1)
     if method ~=0
     vq = vq.*imageBinary.*Borders;
     end
-    disp(num2str(max(max((vq)))))
-    disp(num2str(min(min((vq)))))
+%     disp(num2str(max(max((vq)))))
+%     disp(num2str(min(min((vq)))))
     MaximumHeatMap = imagesc(xq2,yq2,vq);
     vqFinal(:,:,i) = single(vq);
     imageHeat = MaximumHeatMap.CData;%.*(imageBinary==0);
@@ -80,8 +80,8 @@ for i = 1:size(planesGroups,1)
     if method ~=0
     vq = vq.*imageBinary.*Borders;
     end
-    disp(num2str(max(max((vq)))))
-    disp(num2str(min(min((vq)))))
+%     disp(num2str(max(max((vq)))))
+%     disp(num2str(min(min((vq)))))
     MaximumHeatMap = imagesc(xq2,yq2,vq);
     vqFinalXY(:,:,i) = single(vq);
     imageHeat = MaximumHeatMap.CData;%.*(imageBinary==0);

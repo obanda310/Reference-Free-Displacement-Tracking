@@ -1,21 +1,27 @@
 function [r,rows] = buildRows2(r,rowV,planesFinal)
 
-%scale rowV to length 2.12 in XY dimensions
+%Note: Currently if there are seemingly duplicate features (two detections per ellipsoid),
+%the code will break a row at that location. Stricter feature detection can
+%solve this.
+
+%scale rowV to length 2.17 in XY dimensions
 rowV = rowV';
-distX = 2.12; %microns
+distX = 2.17; %microns
 rowScale = sqrt(((distX)^2)/(rowV(1,1)^2+rowV(2,1)^2));
 rowV = rowV*rowScale;
 
 %set limits for row filters (microns)
 limit1 = 4; %distance from line (rowV passing through j)
-limit2 = 2; %distance from point (rowV+j)
+limit2 = 1; %distance from point (rowV+j)
 
 
 rlist = find(r.X(:)); %subtract from this list to remove used points
 rowN = 0;
+
 for j = 1:r.l % run through every object
     if ismember(j,rlist) %check if current object has already been assign
         rowN = rowN+1;
+
         [jrow,jplane] = find(planesFinal==j);
         rlistP = planesFinal(1:nnz(planesFinal(:,jplane)),jplane);
         clear currentRow
@@ -41,6 +47,12 @@ for j = 1:r.l % run through every object
         end
         rLUCand = rLU(differences(:,1)<limit1);
         
+%         if j > 10
+%             h = figure
+%             scatter3(r.X(rLUCand(:)),r.Y(rLUCand(:)),r.Z(rLUCand(:)))
+%             waitfor(h)
+%         end
+%             
         
         %build rows feature by feature, assumption is that the closest
         %feature to j+/-rowV is the next row member
@@ -54,18 +66,19 @@ for j = 1:r.l % run through every object
                 d1proceed = 1;
                 seed = j;
                 rowVS = 1;
+                
                 while d1proceed == 1
                     clear differences
                     differences(:,1) = sqrt(((r.X(seed)*ones(size(rLUCand,1),1))+(rowV(1,1)*rowVS)-r.X(rLUCand(:,1))).^2+(((r.Y(seed)*ones(size(rLUCand,1),1))+(rowV(2,1)*rowVS))-r.Y(rLUCand(:,1))).^2);
                     rLUMatch = find(differences<limit2);
                     if size(rLUMatch,1)>0
-                        seed = rLUCand(find(differences==min(differences)));
+                        seed = rLUCand((differences==min(differences)));
                         r.row(seed) = rowN;
                         rlist(rlist(:,1)==seed,:) = [];
                         rowVS = 1;
                     else
                         rowVS =rowVS+1;
-                        if r.X(seed)+(rowV(1,1)*rowVS)>max(r.X(:))+distX || r.Y(seed)+(rowV(2,1)*rowVS)>max(r.Y(:))+distX || r.X(seed)+(rowV(1,1)*rowVS)>min(r.X(:))-distX || r.Y(seed)+(rowV(2,1)*rowVS)>min(r.Y(:))-distX
+                        if r.X(seed)+(rowV(1,1)*rowVS)>max(r.X(:))+distX || r.Y(seed)+(rowV(2,1)*rowVS)>max(r.Y(:))+distX || r.X(seed)+(rowV(1,1)*rowVS)<min(r.X(:))-distX || r.Y(seed)+(rowV(2,1)*rowVS)<min(r.Y(:))-distX
                             d1proceed=0;
                         end
                     end
@@ -85,13 +98,13 @@ for j = 1:r.l % run through every object
                     differences(:,1) = sqrt(((r.X(seed,1)*ones(size(rLUCand,1),1))-(rowV(1,1)*rowVS)-r.X(rLUCand(:,1),1)).^2+((r.Y(seed,1)*ones(size(rLUCand,1),1))-(rowV(2,1)*rowVS)-r.Y(rLUCand(:,1),1)).^2);
                     rLUMatch = find(differences<limit2);
                     if size(rLUMatch,1)>0
-                        seed = rLUCand(find(differences==min(differences)));
+                        seed = rLUCand((differences==min(differences)));
                         r.row(seed) = rowN;
                         rlist(rlist(:,1)==seed,:) = [];
                         rowVS = 1;
                     else
                         rowVS =rowVS+1;
-                        if r.X(seed)-(rowV(1,1)*rowVS)>max(r.X(:))+distX || r.Y(seed)-(rowV(2,1)*rowVS)>max(r.Y(:))+distX || r.X(seed)-(rowV(1,1)*rowVS)>min(r.X(:))-distX || r.Y(seed)-(rowV(2,1)*rowVS)>min(r.Y(:))-distX
+                        if r.X(seed)-(rowV(1,1)*rowVS)>max(r.X(:))+distX || r.Y(seed)-(rowV(2,1)*rowVS)>max(r.Y(:))+distX || r.X(seed)-(rowV(1,1)*rowVS)<min(r.X(:))-distX || r.Y(seed)-(rowV(2,1)*rowVS)<min(r.Y(:))-distX
                             d2proceed=0;
                         end
                     end                                        

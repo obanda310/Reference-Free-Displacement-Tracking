@@ -50,6 +50,7 @@ classdef DispData3D
                     rowFits(i,1:3,1) = xyzFinal'-rowV;
                     rowFits(i,1:3,2) = xyzFinal'+rowV;
                 end
+                
             end
             clear obj.rowFits
             
@@ -121,13 +122,13 @@ classdef DispData3D
             
             
             % View ends and average fits
-%             figure
-%             hold on
-%             scatter3(r.X(obj.rowEnds(:,1)),r.Y(obj.rowEnds(:,1)),r.Z(obj.rowEnds(:,1)))
-%             scatter3(r.X(obj.rowEnds(:,2)),r.Y(obj.rowEnds(:,2)),r.Z(obj.rowEnds(:,2)))
-%             scatter3(0,0,0)
-%             plot3([0 rowPlanesFits(1,1)],[0 rowPlanesFits(1,2)],[0 rowPlanesFits(1,3)])
-%             axis([0 r.s(1,2) 0 r.s(2,2)])
+            %             figure
+            %             hold on
+            %             scatter3(r.X(obj.rowEnds(:,1)),r.Y(obj.rowEnds(:,1)),r.Z(obj.rowEnds(:,1)))
+            %             scatter3(r.X(obj.rowEnds(:,2)),r.Y(obj.rowEnds(:,2)),r.Z(obj.rowEnds(:,2)))
+            %             scatter3(0,0,0)
+            %             plot3([0 rowPlanesFits(1,1)],[0 rowPlanesFits(1,2)],[0 rowPlanesFits(1,3)])
+            %             axis([0 r.s(1,2) 0 r.s(2,2)])
             
             
             
@@ -146,7 +147,7 @@ classdef DispData3D
                     [xyzFinal,rowP] = transLine3D(rowPlanesFits(rPIdxX,1:3),r.r(obj.rowEnds(i,1:2),1:3),r.s(1:3,1));
                     preRowFits(i,1:3,1) = xyzFinal-rowPlanesFits(rPIdxX,1:3)';
                     preRowFits(i,1:3,2) = xyzFinal+rowPlanesFits(rPIdxX,1:3)';
-                    i
+                    
                 end
                 
             end
@@ -245,8 +246,8 @@ classdef DispData3D
             fprintf(planesLocTxt,p1Format);
             for i = 1:size(planesGroups,1)
                 fprintf(planesLocTxt,p2Format,i,mean(planesLoc2(1,planesGroups(i,(planesGroups(i,:)>0)))),...
-                mean(obj.MeanPlanes(1,planesGroups(i,(planesGroups(i,:)>0)))),mean(obj.StdPlanes(1,planesGroups(i,(planesGroups(i,:)>0))))...
-                ,obj.PosTotal(i,1),obj.PosMax(i,1),obj.NegTotal(i,1),obj.NegMax(i,1));
+                    mean(obj.MeanPlanes(1,planesGroups(i,(planesGroups(i,:)>0)))),mean(obj.StdPlanes(1,planesGroups(i,(planesGroups(i,:)>0))))...
+                    ,obj.PosTotal(i,1),obj.PosMax(i,1),obj.NegTotal(i,1),obj.NegMax(i,1));
             end
             fclose(planesLocComma);
             
@@ -256,36 +257,137 @@ classdef DispData3D
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %% Plotting Functions
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function ViewMethodRef(obj,r)
-            figure
-            hold on
-            scatter3(obj.refSC(:,1),obj.refSC(:,2),obj.refSC(:,3))
-            for i = 1:size(obj.rowFits,1)
-                plot3([obj.rowFits(i,1,1) obj.rowFits(i,1,2)],[obj.rowFits(i,2,1) obj.rowFits(i,2,2)],[obj.rowFits(i,3,1) obj.rowFits(i,3,2)])
-            end
-            axis([0 r.s(1,2) 0 r.s(2,2)])
-        end
-        
-        function ViewRowFits(obj,r,rowPlanes)
-            figure
-            hold on
-            for j = 1:size(rowPlanes,3)
-                for i = 1:size(rowPlanes,1)
-                    n = nnz(rowPlanes(i,:,j));
-                    scatter3(r.X(rowPlanes(i,1:n,j)),r.Y(rowPlanes(i,1:n,j)),r.Z(rowPlanes(i,1:n,j)))
+        function ViewMethodRef(obj,r,method)
+            AxisFontSize = 24;
+            AxisTitleFontSize = 24;
+            LegendFontSize = 14;
+            colOptions{1,1} = 'white';
+            colOptions{2,1} = 'black';
+            colOptions{1,2} = 'black';
+            colOptions{2,2} = 'white';
+            
+            for k = 1:size(colOptions,2)
+                fcolor = colOptions{1,k};
+                bcolor = colOptions{2,k};
+                refLocs = figure;
+                set(gcf,'unit','pixels','position',[500,200,1000,500])
+                
+                hold on
+                scatter3(obj.refSC(:,1),obj.refSC(:,2),obj.refSC(:,3))
+                for i = 1:size(obj.rowFits,1)
+                    plot3([obj.rowFits(i,1,1) obj.rowFits(i,1,2)],[obj.rowFits(i,2,1) obj.rowFits(i,2,2)],[obj.rowFits(i,3,1) obj.rowFits(i,3,2)])
                 end
+                axis([0 r.s(1,2) 0 r.s(2,2)])
+                xt = 'X-axis (\mum)';% input('enter the xaxis label','s');
+                yt = 'Y-axis (\mum)'; %input('enter the yaxis label','s');
+                zt = 'Z-axis (\mum)'; %input('enter the yaxis label','s');
+                le{1} = 'Ref. Locs'; %input('enter the legend','s');
+                %             le{2} = 'Time-Lapse 1';
+                %             le{3} = 'Time-Lapse 2';
+                label{1} = xlabel(xt);
+                label{2} = ylabel(yt);
+                label{3} = zlabel(zt);
+                view(1) = -45; view(2) = 8;
+                ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,1,view)
+                
+                %Export Image
+                mkdir '3D Plots'
+                title = ['\' method ' Reference Locations ' fcolor ' on ' bcolor];
+                savefile = [cd '\3D Plots' title];
+                export_fig(refLocs,savefile,'-native');
             end
             
-            for i = 1:size(obj.rowFits,1)
-                plot3([obj.rowFits(i,1,1) obj.rowFits(i,1,2)],[obj.rowFits(i,2,1) obj.rowFits(i,2,2)],[obj.rowFits(i,3,1) obj.rowFits(i,3,2)])
-            end
-            scatter3(0,0,0)
-            axis([0 r.s(1,2) 0 r.s(2,2)])
         end
         
-        function ViewQuiverPlot(obj,r)
-            figure
-            quiver3(obj.refSC(:,1),r.s(2,2)-obj.refSC(:,2),obj.refSC(:,3),obj.disp(:,1),obj.disp(:,2)*-1,obj.disp(:,3),0)
+        function ViewRowFits(obj,r,rowPlanes,rowPlanesIdx,method)
+            AxisFontSize = 24;
+            AxisTitleFontSize = 24;
+            LegendFontSize = 14;
+            colOptions{1,1} = 'white';
+            colOptions{2,1} = 'black';
+            colOptions{1,2} = 'black';
+            colOptions{2,2} = 'white';
+            
+            for k = 1:size(colOptions,2)
+                fcolor = colOptions{1,k};
+                bcolor = colOptions{2,k};
+                Locs = figure;
+                set(gcf,'unit','pixels','position',[500,200,1000,500])
+                
+                hold on
+                
+                hold on
+                for j = 1:size(rowPlanes,3)
+                    for i = 1:size(rowPlanes,1)
+                        n = nnz(rowPlanes(i,:,j));
+                        scatter3(r.X(rowPlanes(i,1:n,j)),r.Y(rowPlanes(i,1:n,j)),r.Z(rowPlanes(i,1:n,j)))
+                    end
+                end
+                
+                
+                for j = 1:size(rowPlanes,3)
+                    for i = rowPlanesIdx(j,1):rowPlanesIdx(j,2)
+                        plot3([obj.rowFits(i,1,1) obj.rowFits(i,1,2)],[obj.rowFits(i,2,1) obj.rowFits(i,2,2)],[obj.rowFits(i,3,1) obj.rowFits(i,3,2)])
+                    end
+                end
+                
+                axis([0 r.s(1,2) 0 r.s(2,2)])
+                
+                xt = 'X-axis (\mum)';% input('enter the xaxis label','s');
+                yt = 'Y-axis (\mum)'; %input('enter the yaxis label','s');
+                zt = 'Z-axis (\mum)'; %input('enter the yaxis label','s');
+                le{1} = 'Centroids'; %input('enter the legend','s');
+                %             le{2} = 'Time-Lapse 1';
+                %             le{3} = 'Time-Lapse 2';
+                label{1} = xlabel(xt);
+                label{2} = ylabel(yt);
+                label{3} = zlabel(zt);
+                view(1) = -45; view(2) = 8;
+                ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,1,view)
+                
+                %Export Image
+                mkdir '3D Plots'
+                title = ['\' method ' Marker Locations ' fcolor ' on ' bcolor];
+                savefile = [cd '\3D Plots' title];
+                export_fig(Locs,savefile,'-native');
+            end
+        end
+        
+        function ViewQuiverPlot(obj,r,method)
+            AxisFontSize = 24;
+            AxisTitleFontSize = 24;
+            LegendFontSize = 14;
+            colOptions{1,1} = 'white';
+            colOptions{2,1} = 'black';
+            colOptions{1,2} = 'black';
+            colOptions{2,2} = 'white';
+            
+            for k = 1:size(colOptions,2)
+                fcolor = colOptions{1,k};
+                bcolor = colOptions{2,k};
+                Quiver = figure;
+                set(gcf,'unit','pixels','position',[500,200,1000,500])
+                hold on
+                quiver3(obj.refSC(:,1),r.s(2,2)-obj.refSC(:,2),obj.refSC(:,3),obj.disp(:,1),obj.disp(:,2)*-1,obj.disp(:,3),0)
+                axis([0 r.s(1,2) 0 r.s(2,2)])
+                xt = 'X-axis (\mum)';% input('enter the xaxis label','s');
+                yt = 'Y-axis (\mum)'; %input('enter the yaxis label','s');
+                zt = 'Z-axis (\mum)'; %input('enter the yaxis label','s');
+                le{1} = 'Disp. Vector'; %input('enter the legend','s');
+                %             le{2} = 'Time-Lapse 1';
+                %             le{3} = 'Time-Lapse 2';
+                label{1} = xlabel(xt);
+                label{2} = ylabel(yt);
+                label{3} = zlabel(zt);
+                view(1) = -45; view(2) = 8;
+                ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,1,view)
+                
+                %Export Image
+                mkdir '3D Plots'
+                title = ['\' method ' Quiver Plot ' fcolor ' on ' bcolor];
+                savefile = [cd '\3D Plots' title];
+                export_fig(Quiver,savefile,'-native');
+            end
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -293,41 +395,53 @@ classdef DispData3D
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function NoiseHists(obj,planesLocFiltList,r,method)
             %% Create Histogram
-            zdispdist = figure;
-            hold on
-            bins = [-400:20:400];
-            SigColor = [.1 .7 .7];
-            histogram(obj.disp(intersect(planesLocFiltList(:,1),r.ND),3)*1000,bins,'FaceColor',[.6 .6 .6],'Normalization','probability')
-            histmax = max(histcounts(obj.disp(intersect(planesLocFiltList(:,1),r.ND),3)*1000,bins,'Normalization','probability'));
-            p1 = plot([obj.noiseCutoff/2*1000 obj.noiseCutoff/2*1000],[0 round(histmax,2)+.01],'color',[.3 .3 .3],'linestyle','--','linewidth',1);
-            plot([(obj.noiseCutoff*-1)/2*1000 (obj.noiseCutoff*-1)/2*1000],[0 round(histmax,2)+.01],'color',[.3 .3 .3],'linestyle','--','linewidth',1)
-            p2 = plot([obj.noiseCutoff*1000 obj.noiseCutoff*1000],[0 round(histmax,2)+.01],'color',SigColor ,'linestyle','--','linewidth',1);
-            plot([obj.noiseCutoff*-1*1000 obj.noiseCutoff*-1*1000],[0 round(histmax,2)+.01],'color',SigColor ,'linestyle','--','linewidth',1)
-            set(gca,'fontsize',28)
-            xt = 'Z-Displacement (nm)';% input('enter the xaxis label','s');
-            yt = 'Probability'; %input('enter the yaxis label','s');
-            tt = 'Line-Profile Displacements';%input('enter the title','s');
-            le = '\sigma'; %input('enter the legend','s');
-            le2 = '2*\sigma';
-            le3 = 'Cell Border';
-            xl = xlabel(xt);
-            yl = ylabel(yt);
-            %tl = title(tt);
+            AxisFontSize = 28;
+            AxisTitleFontSize = 28;
+            LegendFontSize = 20;
+            colOptions{1,1} = 'white';
+            colOptions{2,1} = 'black';
+            colOptions{1,2} = 'black';
+            colOptions{2,2} = 'white';
             
-            set(xl, 'fontweight','bold','fontsize',28);
-            set(yl,'fontweight','bold','fontsize',28);
-            leg = legend([p1 p2],le,le2,'location','northwest');
-            leg.FontSize = 20;
-            axis([-400 400 0 round(histmax,2)+.01])
             
-            text((double(obj.noiseCutoff)*1.01*1000),(histmax*.5),strcat('2\sigma= ',num2str(round(obj.noiseCutoff*1000,0)),'nm'),'color',SigColor ,'fontsize',20)
-            text((double(obj.noiseCutoff)*1.01*1000),(histmax*.5-.01),'Noise Cutoff','color',SigColor ,'fontsize',18 )
-            
-            title = strcat('Z-Displacement Histogram',method);
-            filePath = cd;
-            savefile = [filePath '\Histograms\' title];
-            export_fig(zdispdist,savefile,'-native');
-            
+            for k = 1:size(colOptions,2)
+                fcolor = colOptions{1,k};
+                bcolor = colOptions{2,k};
+                zdispdist = figure;
+                hold on
+                bins = [-400:20:400];
+                SigColor = [.1 .7 .7];
+                histogram(obj.disp(intersect(planesLocFiltList(:,1),r.ND),3)*1000,bins,'FaceColor',fcolor,'Normalization','probability','EdgeColor',fcolor)
+                histmax = max(histcounts(obj.disp(intersect(planesLocFiltList(:,1),r.ND),3)*1000,bins,'Normalization','probability'));
+                p1 = plot([obj.noiseCutoff/2*1000 obj.noiseCutoff/2*1000],[0 .5],'color',[.7 .7 .7],'linestyle','--','linewidth',1);
+                plot([(obj.noiseCutoff*-1)/2*1000 (obj.noiseCutoff*-1)/2*1000],[0 .5],'color',[.7 .7 .7],'linestyle','--','linewidth',1)
+                p2 = plot([obj.noiseCutoff*1000 obj.noiseCutoff*1000],[0 .5],'color',fcolor,'linestyle','--','linewidth',1);
+                plot([obj.noiseCutoff*-1*1000 obj.noiseCutoff*-1*1000],[0 .5],'color',fcolor,'linestyle','--','linewidth',1)
+                set(gca,'fontsize',28,'YMinorTick','on')
+                xt = 'Z-Displacement (nm)';% input('enter the xaxis label','s');
+                yt = 'Probability'; %input('enter the yaxis label','s');
+                tt = 'Line-Profile Displacements';%input('enter the title','s');
+                le{1} = {'0'};
+                le2 = ['\color{' fcolor '}\sigma']; %input('enter the legend','s');
+                le3 = ['\color{' fcolor '}2*\sigma'];
+                label{1} = xlabel(xt);
+                label{2} = ylabel(yt);
+                %tl = title(tt);
+                ytickformat('%.2f')
+                ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,0,0)
+                leg = legend([p1 p2],le2,le3,'location',[ .8 .8 .1 .1]);
+                leg.EdgeColor = fcolor;
+                leg.FontSize = LegendFontSize;
+                axis([-400 400 0 .3])
+                
+                text((double(obj.noiseCutoff)*1000+20),(.15),strcat('2\sigma= ',num2str(round(obj.noiseCutoff*1000,0)),'nm'),'color',fcolor ,'fontsize',18)
+                text((double(obj.noiseCutoff)*1000+20),(.12),'Noise Cutoff','color',fcolor ,'fontsize',16 )
+                legend boxoff
+                title = ['Z-Displacement Histogram '  method ' ' fcolor ' on ' bcolor];
+                filePath = cd;
+                savefile = [filePath '\Histograms\' title];
+                export_fig(zdispdist,savefile,'-native');
+            end
         end
     end
 end

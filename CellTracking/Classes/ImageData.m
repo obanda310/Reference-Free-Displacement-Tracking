@@ -140,6 +140,9 @@ classdef ImageData
             obj.squares = FindLargestSquares(obj.ADil==255);
             [row,col]=find(obj.squares == max(max(obj.squares)),1,'first');
             length = obj.squares(row,col)-1;
+             if length>200
+               length = 200;
+             end
             obj.SquareBounds(1,1) = col;
             obj.SquareBounds(1,2) = row;
             obj.SquareBounds(1,3) = col+length;

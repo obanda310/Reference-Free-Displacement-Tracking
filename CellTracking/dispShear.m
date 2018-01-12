@@ -1,6 +1,6 @@
 function dispShear(directory)
 if nargin == 1
-cd(directory);
+    cd(directory);
 end
 tic
 mkdir('Shear Mat Files')
@@ -233,22 +233,22 @@ disp('done Creating Centroid and Vector Plot Overlay Image Outputs')
 disp('5.0 Creating Shear HeatMaps')
 
 if ismember(15,outputs) == 1
-[imageHeatXY,vqXY,vqXYtotal,imageHeatNaN,imageHeatXYColor]=customHeatMap(shear,shear.ltLastdXY,image,raw.dataKey,outputs,filePath);
+    [imageHeatXY,vqXY,vqXYtotal,imageHeatNaN,imageHeatXYColor]=customHeatMap(shear,shear.ltLastdXY,image,raw.dataKey,outputs,filePath);
 end
 SE = strel('disk',30);
 vqXYBinary = imdilate(vqXY ==0,SE);
 BinaryFile = [filePath,'\HeatMaps\Shear\','Binary_Shear.tif'];
-        imwrite(vqXYBinary,BinaryFile);
+imwrite(vqXYBinary,BinaryFile);
 %%
 imageHeatXY2 = imresize(vqXY,[size(image.Area,1) size(image.Area,2)]);
 imageHeatXY2(isnan(imageHeatXY2)) = 0;
 %%
 clear  imageHeatXYTotalScale imageHeatXYtotal2
 if size(vqXYtotal,1) ~= 1
-for i = 1:size(vqXYtotal,3)
-    
-imageHeatXYtotal2(:,:,i) = imresize(vqXYtotal(:,:,i),[size(image.Area,1) size(image.Area,2)]);
-end
+    for i = 1:size(vqXYtotal,3)
+        
+        imageHeatXYtotal2(:,:,i) = imresize(vqXYtotal(:,:,i),[size(image.Area,1) size(image.Area,2)]);
+    end
 else
     imageHeatXYtotal2 = 1;
 end
@@ -288,64 +288,64 @@ save('Shear Mat Files\Surface.mat','fitSurface')
 %%
 if ismember(16,outputs) == 1
     disp('Calculating Approximate Surface Deformations')
-%% Calculate Z-Displacement at Surface (Quick Method)
-clear cellSurface
-for i = 1:shear.numTraj
-shear.Top1(i) = feval(fitSurface{1},shear.rawY(shear.lastFrame(i),i),shear.rawX(shear.lastFrame(i),i));
-shear.Top2(i) = feval(fitSurface{2},shear.rawY(shear.lastFrame(i),i),shear.rawX(shear.lastFrame(i),i));
-shear.dTop1(i) = 0;
-shear.dTop2(i) = 0;
-end
-
-cellSurface = zeros(1,1);
-for i = 1:shear.numTraj
-    %if it is under the cell
-    if image.Area(ceil(shear.rawY1(i)),ceil(shear.rawX1(i)))==0 && image.Area(ceil(shear.lastY(i)),ceil(shear.lastX(i)))==0       
-        cellSurface = cat(1,cellSurface,i);
+    %% Calculate Z-Displacement at Surface (Quick Method)
+    clear cellSurface
+    for i = 1:shear.numTraj
+        shear.Top1(i) = feval(fitSurface{1},shear.rawY(shear.lastFrame(i),i),shear.rawX(shear.lastFrame(i),i));
+        shear.Top2(i) = feval(fitSurface{2},shear.rawY(shear.lastFrame(i),i),shear.rawX(shear.lastFrame(i),i));
+        shear.dTop1(i) = 0;
+        shear.dTop2(i) = 0;
     end
-end
-%shift cells up 1 to get rid of initial zero
-cellSurface(1,:) = [];
-
-for i = 1:size(cellSurface,1)
-shear.dTop1(cellSurface(i,1)) = shear.lastFrame(cellSurface(i,1))-shear.Top1(cellSurface(i,1));
-shear.dTop2(cellSurface(i,1)) = shear.lastFrame(cellSurface(i,1))-shear.Top2(cellSurface(i,1));
-end
-
-
-interpSurface{1} = fit([(shear.rawY1(:) + shear.gtLastdY(:)),(shear.rawX1(:) + shear.gtLastdX(:))],(shear.Top1(:)+shear.dTop1(:)),'lowess','Span',.01);
-
-%% Calculate Z-Displacement at Surface (Quick Method 2)
-for i = 1:shear.numTraj
-shear.Top1(i) = feval(fitSurface{1},shear.rawY(shear.lastFrame(i),i),shear.rawX(shear.lastFrame(i),i));
-shear.Top2(i) = feval(fitSurface{2},shear.rawY(shear.lastFrame(i),i),shear.rawX(shear.lastFrame(i),i));
-shear.dTop1(i) = shear.lastFrame(i)-shear.Top1(i);
-shear.dTop2(i) = shear.lastFrame(i)-shear.Top2(i);
-end
-
-
-interpSurface{1} = fit([(shear.rawY1(:) + shear.gtLastdY(:)),(shear.rawX1(:) + shear.gtLastdX(:))],(shear.Top1(:)+shear.dTop1(:)),'lowess','Span',.005);
-
-%%
-% close all
-% figure
-% quiver3(shear.rawY1(:),shear.rawX1(:),shear.Top1(:),shear.gtLastdY(:),shear.gtLastdX(:),shear.dTop1(:))
-% hold on
-% plot3(0,0,0)
-% plot(interpSurface{1})
-% xlim([0 size(image.ROIstack,1)])
-% ylim([0 size(image.ROIstack,2)])
-% zlim([0 size(image.ROIstack,3)]) 
-% hold off
-
-[imageHeatZ,vqZ] = customHeatMapZ(shear,image.Black,raw.dataKey,outputs,filePath);
-
-%% Isolating Cell-Body Normal Forces
-%Filter Z-Deformation to accept only normal deformation within the cell's boundary
-imageHeatZScale = size(image.Area,1)/size(vqZ,1);
-imageHeatZ2 = imresize(vqZ,[size(image.Area,1) size(image.Area,2)]);
-imageHeatZ3 = double(imageHeatZ2) .* double(image.Area==0);
-imageHeatZ3(isnan(imageHeatZ3)) = 0;
+    
+    cellSurface = zeros(1,1);
+    for i = 1:shear.numTraj
+        %if it is under the cell
+        if image.Area(ceil(shear.rawY1(i)),ceil(shear.rawX1(i)))==0 && image.Area(ceil(shear.lastY(i)),ceil(shear.lastX(i)))==0
+            cellSurface = cat(1,cellSurface,i);
+        end
+    end
+    %shift cells up 1 to get rid of initial zero
+    cellSurface(1,:) = [];
+    
+    for i = 1:size(cellSurface,1)
+        shear.dTop1(cellSurface(i,1)) = shear.lastFrame(cellSurface(i,1))-shear.Top1(cellSurface(i,1));
+        shear.dTop2(cellSurface(i,1)) = shear.lastFrame(cellSurface(i,1))-shear.Top2(cellSurface(i,1));
+    end
+    
+    
+    interpSurface{1} = fit([(shear.rawY1(:) + shear.gtLastdY(:)),(shear.rawX1(:) + shear.gtLastdX(:))],(shear.Top1(:)+shear.dTop1(:)),'lowess','Span',.01);
+    
+    %% Calculate Z-Displacement at Surface (Quick Method 2)
+    for i = 1:shear.numTraj
+        shear.Top1(i) = feval(fitSurface{1},shear.rawY(shear.lastFrame(i),i),shear.rawX(shear.lastFrame(i),i));
+        shear.Top2(i) = feval(fitSurface{2},shear.rawY(shear.lastFrame(i),i),shear.rawX(shear.lastFrame(i),i));
+        shear.dTop1(i) = shear.lastFrame(i)-shear.Top1(i);
+        shear.dTop2(i) = shear.lastFrame(i)-shear.Top2(i);
+    end
+    
+    
+    interpSurface{1} = fit([(shear.rawY1(:) + shear.gtLastdY(:)),(shear.rawX1(:) + shear.gtLastdX(:))],(shear.Top1(:)+shear.dTop1(:)),'lowess','Span',.005);
+    
+    %%
+    % close all
+    % figure
+    % quiver3(shear.rawY1(:),shear.rawX1(:),shear.Top1(:),shear.gtLastdY(:),shear.gtLastdX(:),shear.dTop1(:))
+    % hold on
+    % plot3(0,0,0)
+    % plot(interpSurface{1})
+    % xlim([0 size(image.ROIstack,1)])
+    % ylim([0 size(image.ROIstack,2)])
+    % zlim([0 size(image.ROIstack,3)])
+    % hold off
+    
+    [imageHeatZ,vqZ] = customHeatMapZ(shear,image.Black,raw.dataKey,outputs,filePath);
+    
+    %% Isolating Cell-Body Normal Forces
+    %Filter Z-Deformation to accept only normal deformation within the cell's boundary
+    imageHeatZScale = size(image.Area,1)/size(vqZ,1);
+    imageHeatZ2 = imresize(vqZ,[size(image.Area,1) size(image.Area,2)]);
+    imageHeatZ3 = double(imageHeatZ2) .* double(image.Area==0);
+    imageHeatZ3(isnan(imageHeatZ3)) = 0;
 end
 
 
@@ -360,17 +360,17 @@ propsArea = sum(sum(image.Area==0));
 propsSumDisp = sum(sum(shear.coltdXY(:,:)));
 propsMeanDisp = mean(mean(shear.coltdXY(:,:)));
 if propsArea > 0
-propsCircularity = ((sum(cat(1,imageAreaProps.Perimeter)))^2 )/(4*(pi*(sum(cat(1,imageAreaProps.Area)))));
-ratioArea = propsSumDisp/propsArea;
-ratioPerimeter = propsSumDisp/cat(1,imageAreaProps.Perimeter);
+    propsCircularity = ((sum(cat(1,imageAreaProps.Perimeter)))^2 )/(4*(pi*(sum(cat(1,imageAreaProps.Area)))));
+    ratioArea = propsSumDisp/propsArea;
+    ratioPerimeter = propsSumDisp/cat(1,imageAreaProps.Perimeter);
 else
     clear imageAreaProps
     imageAreaProps = struct('centroid',0,'Area',0,'Eccentricity',0,'Perimeter',0,'MajorAxisLength',0,'MinorAxisLength',0);
-%     imageAreaProps.Perimeter =0;
-%     imageAreaProps.Area = 0;
-%     imageAreaProps(1,1).MajorAxisLength = 0;
-%     imageAreaProps(1,1).MinorAxisLength = 0;
-%     imageAreaProps(1,1).Eccentricity = 0;
+    %     imageAreaProps.Perimeter =0;
+    %     imageAreaProps.Area = 0;
+    %     imageAreaProps(1,1).MajorAxisLength = 0;
+    %     imageAreaProps(1,1).MinorAxisLength = 0;
+    %     imageAreaProps(1,1).Eccentricity = 0;
     propsCircularity = 0;
     ratioArea = 0;
     ratioPerimeter = 0;
@@ -424,6 +424,7 @@ save('Profile Data\HeatMapXY.mat','imageHeatXYColor')
 save('Shear Mat Files\DataShear.mat','shear')
 disp(['done Saving Mat Variables @' num2str(toc) 'seconds'])
 %% Noise Histograms
+clear le
 mkdir('Histograms')
 set(0,'defaultfigurecolor',[1 1 1])
 
@@ -431,8 +432,16 @@ set(0,'defaultfigurecolor',[1 1 1])
 AxisFontSize = 28;
 AxisTitleFontSize = 28;
 LegendFontSize = 20;
+colOptions{1,1} = 'white';
+colOptions{2,1} = 'black';
+colOptions{1,2} = 'black';
+colOptions{2,2} = 'white';
 
 close all
+for k = 1:size(colOptions,2)
+    SigColor = [.1 .7 .7]; %[.9 .3 .3]
+    fcolor = colOptions{1,k};
+    bcolor = colOptions{2,k};
 bins = [-400:20:400];
 xdispdist = figure;
 hold on
@@ -441,68 +450,85 @@ xStd = std2(shear.ltdX(:,shear.noCellTraj))*1000;
 xVals = shear.ltdX(:,shear.noCellTraj);
 xVals(xVals == 0) = NaN;
 xStd = std(xVals(:),'omitnan')*1000;
-histogram(shear.ltdX(:,shear.noCellTraj)*1000,bins,'FaceColor',[.6 .6 .6],'Normalization','probability')
+histogram(shear.ltdX(:,shear.noCellTraj)*1000,bins,'FaceColor',fcolor,'EdgeColor',fcolor,'Normalization','probability')
 histmax = max(histcounts(shear.ltdX(:,:)*1000,bins,'Normalization','probability'));
-p1 = plot([xStd xStd],[0 round(histmax,2)+.01],'color',[.3 .3 .3],'linestyle','--','linewidth',1);
-plot([(xStd*-1) (xStd*-1)],[0 round(histmax,2)+.01],'color',[.3 .3 .3],'linestyle','--','linewidth',1)
-p2 = plot([xStd*2 xStd*2],[0 round(histmax,2)+.01],'color',[.9 .3 .3],'linestyle','--','linewidth',1);
-plot([xStd*-2 xStd*-2],[0 round(histmax,2)+.01],'color',[.9 .3 .3],'linestyle','--','linewidth',1)
-set(gca,'fontsize',AxisFontSize)
-xt = 'X-Displacement (\mum)';% input('enter the xaxis label','s');
+p1 = plot([xStd xStd],[0 .5],'color',[.7 .7 .7],'linestyle','--','linewidth',1);
+plot([(xStd*-1) (xStd*-1)],[0 .5],'color',[.7 .7 .7],'linestyle','--','linewidth',1)
+p2 = plot([xStd*2 xStd*2],[0 .5],'color',fcolor,'linestyle','--','linewidth',1);
+plot([xStd*-2 xStd*-2],[0 .5],'color',fcolor,'linestyle','--','linewidth',1)
+set(gca,'fontsize',AxisFontSize,'YMinorTick','on')
+xt = 'X-Displacement (nm)';% input('enter the xaxis label','s');
 yt = 'Probability'; %input('enter the yaxis label','s');
 tt = 'Line-Profile Displacements';%input('enter the title','s');
-le = '\sigma'; %input('enter the legend','s');
-le2 = '2*\sigma';
-le3 = 'Cell Border';
-xl = xlabel(xt);
-yl = ylabel(yt); 
+le{1} = {'0'};
+le2 = ['\color{' fcolor '}\sigma']; %input('enter the legend','s');
+le3 = ['\color{' fcolor '}2*\sigma'];
+label{1} = xlabel(xt);
+label{2} = ylabel(yt);
 %tl = title(tt);
+text(xStd*2+20,.15,strcat('2\sigma= ',num2str(round(xStd*2,0)),'nm'),'color',fcolor,'fontsize',20)
+text(xStd*2+20,.12,'Noise Cutoff','color',fcolor,'fontsize',20 )
+ytickformat('%.2f')
 
-set(xl, 'fontweight','bold','fontsize',AxisTitleFontSize); 
-set(yl,'fontweight','bold','fontsize',AxisTitleFontSize);
-leg = legend([p1 p2],le,le2,'location','northwest');
+axis([-400 400 0 .3])
+ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,0,0)
+leg = legend([p1 p2],le2,le3,'location','northwest');
+leg.EdgeColor = fcolor;
 leg.FontSize = LegendFontSize;
-axis([-400 400 0 round(histmax,2)+.01])
-
-title = '\X-Displacement Histogram';
+legend boxoff
+title = ['\X-Displacement Histogram ' fcolor ' on ' bcolor];
 savefile = [filePath '\Histograms' title];
 export_fig(xdispdist,savefile,'-native');
+end
 
+for k = 1:size(colOptions,2)
+    SigColor = [.1 .7 .7]; %[.9 .3 .3]
+    fcolor = colOptions{1,k};
+    bcolor = colOptions{2,k};
+bins = [-400:20:400];
 ydispdist = figure;
 hold on
-%histogram(shear.rawdY(:,:),50)
+%histogram(shear.rawdX(:,:),50)
+yStd = std2(shear.ltdY(:,shear.noCellTraj))*1000;
 yVals = shear.ltdY(:,shear.noCellTraj);
 yVals(yVals == 0) = NaN;
-yStd = std2(shear.ltdY(:,shear.noCellTraj))*1000;
 yStd = std(yVals(:),'omitnan')*1000;
-histogram(shear.ltdY(:,shear.noCellTraj)*1000,bins ,'FaceColor',[.6 .6 .6],'Normalization','probability')
+histogram(shear.ltdY(:,shear.noCellTraj)*1000,bins,'FaceColor',fcolor,'EdgeColor',fcolor,'Normalization','probability')
 histmax = max(histcounts(shear.ltdY(:,:)*1000,bins,'Normalization','probability'));
-p1 = plot([yStd yStd],[0 round(histmax,2)+.01],'color',[.3 .3 .3],'linestyle','--','linewidth',1);
-plot([(yStd*-1) (yStd*-1)],[0 round(histmax,2)+.01],'color',[.3 .3 .3],'linestyle','--','linewidth',1)
-p2 = plot([yStd*2 yStd*2],[0 round(histmax,2)+.01],'color',[.9 .3 .3],'linestyle','--','linewidth',1);
-plot([yStd*-2 yStd*-2],[0 round(histmax,2)+.01],'color',[.9 .3 .3],'linestyle','--','linewidth',1)
-set(gca,'fontsize',AxisFontSize)
+p1 = plot([yStd yStd],[0 .5],'color',[.7 .7 .7],'linestyle','--','linewidth',1);
+plot([(yStd*-1) (yStd*-1)],[0 .5],'color',[.7 .7 .7],'linestyle','--','linewidth',1)
+p2 = plot([yStd*2 yStd*2],[0 .5],'color',fcolor,'linestyle','--','linewidth',1);
+plot([yStd*-2 yStd*-2],[0 .5],'color',fcolor,'linestyle','--','linewidth',1)
+set(gca,'fontsize',AxisFontSize,'YMinorTick','on')
 xt = 'Y-Displacement (nm)';% input('enter the xaxis label','s');
 yt = 'Probability'; %input('enter the yaxis label','s');
 tt = 'Line-Profile Displacements';%input('enter the title','s');
-le = '\sigma'; %input('enter the legend','s');
-le2 = '2*\sigma';
-le3 = 'Cell Border';
-xl = xlabel(xt);
-yl = ylabel(yt); 
+le{1} = {'0'};
+le2 = ['\color{' fcolor '}\sigma']; %input('enter the legend','s');
+le3 = ['\color{' fcolor '}2*\sigma'];
+label{1} = xlabel(xt);
+label{2} = ylabel(yt);
+
+text(yStd*2+20,.15,strcat('2\sigma= ',num2str(round(yStd*2,0)),'nm'),'color',fcolor,'fontsize',20)
+text(yStd*2+20,.12,'Noise Cutoff','color',fcolor,'fontsize',20 )
 %tl = title(tt);
-
-set(xl, 'fontweight','bold','fontsize',AxisTitleFontSize); 
-set(yl,'fontweight','bold','fontsize',AxisTitleFontSize);
-leg = legend([p1 p2],le,le2,'location','northwest');
+ytickformat('%.2f')
+axis([-400 400 0 .3])
+ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,0,0)
+leg = legend([p1 p2],le2,le3,'location','northwest');
+leg.EdgeColor = fcolor;
 leg.FontSize = LegendFontSize;
-axis([-400 400 0 round(histmax,2)+.01])
-
-title = '\Y-Displacement Histogram';
+legend boxoff
+title = ['\Y-Displacement Histogram ' fcolor ' on ' bcolor];
 savefile = [filePath '\Histograms' title];
 export_fig(ydispdist,savefile,'-native');
+end
 
 
+
+for k = 1:size(colOptions,2)
+    fcolor = colOptions{1,k};
+    bcolor = colOptions{2,k};
 SigColor = [.1 .7 .7]; %[.9 .3 .3]
 bins = [-400:20:400];
 filePath = cd;
@@ -515,40 +541,40 @@ xyVals = cat(1,xyVals,-1*xyVals);
 xyVals(xyVals == 0) = NaN;
 xyStd = std(xyVals(:),'omitnan')*1000;
 xyStd2 = 2*xyStd;
-histogram(shear.ltdXY(:,shear.noCellTraj)*1000,bins ,'FaceColor',[.6 .6 .6],'Normalization','probability')
+histogram(shear.ltdXY(:,shear.noCellTraj)*1000,bins ,'FaceColor', fcolor ,'Normalization','probability','EdgeColor',fcolor)
 histmax = max(histcounts(shear.ltdXY(:,:)*1000,bins,'Normalization','probability'));
-p1 = plot([xyStd xyStd],[0 round(histmax,2)+.01],'color',[.3 .3 .3],'linestyle','--','linewidth',1);
-p2 = plot([xyStd2 xyStd2],[0 round(histmax,2)+.01],'color',SigColor,'linestyle','--','linewidth',1);
-set(gca,'fontsize',AxisFontSize)
+p1 = plot([xyStd xyStd],[0 .3],'color',[.7 .7 .7],'linestyle','--','linewidth',1);
+p2 = plot([xyStd2 xyStd2],[0 .3],'color',fcolor,'linestyle','--','linewidth',1);
+set(gca,'fontsize',AxisFontSize,'YMinorTick','on')
 xt = 'XY-Displacement (nm)';% input('enter the xaxis label','s');
 yt = 'Probability'; %input('enter the yaxis label','s');
 tt = 'Line-Profile Displacements';%input('enter the title','s');
-le = '\sigma'; %input('enter the legend','s');
-le2 = '2*\sigma';
-le3 = 'Cell Border';
-xl = xlabel(xt);
-yl = ylabel(yt); 
+le{1} = {'0'};
+le2 = ['\color{' fcolor '}\sigma']; %input('enter the legend','s');
+le3 = ['\color{' fcolor '}2*\sigma'];
+label{1} = xlabel(xt);
+label{2} = ylabel(yt);
 %tl = title(tt);
 
-text(xyStd2*1.01,histmax*.5,strcat('2\sigma= ',num2str(round(xyStd2,0)),'nm'),'color',SigColor,'fontsize',20)
-text(xyStd2*1.01,histmax*.5-.02,'Noise Cutoff','color',SigColor,'fontsize',20 )
-
-set(xl, 'fontweight','bold','fontsize',AxisTitleFontSize,'fontname','Arial'); 
-set(yl,'fontweight','bold','fontsize',AxisTitleFontSize,'fontname','Arial');
-leg = legend([p1 p2],le,le2,'location','northeast');
+text(xyStd2+10,.15,strcat('2\sigma= ',num2str(round(xyStd2,0)),'nm'),'color',fcolor,'fontsize',20)
+text(xyStd2+10,.12,'Noise Cutoff','color',fcolor,'fontsize',20 )
+ytickformat('%.2f')
+ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,0,0)
+leg = legend([p1 p2],le2,le3,'location','best');
+leg.EdgeColor = fcolor;
 leg.FontSize = LegendFontSize;
-leg.FontName = 'Arial';
-axis([0 400 0 round(histmax,2)+.01])
+legend boxoff
+axis([0 400 0 .3])
 
-title = '\XY-Displacement Histogram';
+title = ['\XY-Displacement Histogram' fcolor ' on ' bcolor];
 savefile = [filePath '\Histograms' title];
 export_fig(xydispdist,savefile,'-native');
-
+end
 %% Calculate Z-Displacement at Surface (Quick Method 2 in microns)
 
 % %interpSurface{1} = fit([(shear.rawY1(:) + shear.gtLastdY(:)),(shear.rawX1(:) + shear.gtLastdX(:))],(shear.Top1(:)+shear.dTop1(:))*0.4,'lowess','Span',.01);
 % interpSurface{1} = fit([(shear.rawY1(:) + shear.gtLastdY(:)),(shear.rawX1(:) + shear.gtLastdX(:))],(shear.Top2(:)+shear.dTop2(:))*0.4,'lowess','Span',.01);
-% 
+%
 % close all
 % figure
 % quiver3(shear.rawY1(:),shear.rawX1(:),shear.Top1(:)*0.4,shear.gtLastdY(:),shear.gtLastdX(:),shear.dTop1(:)*0.4,'r')

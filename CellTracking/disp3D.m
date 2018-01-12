@@ -1,6 +1,6 @@
 function disp3D(directory)
 if nargin ==1
-cd(directory);
+    cd(directory);
 end
 clear all
 close all
@@ -19,47 +19,74 @@ image = TransDots(image);
 
 %% Kilfoil Stack Filter
 disp('Processing Images')
-res=bpass3dMB(image.RawStack, [1 1 1], [4 4 4],[0 0]);
+res=bpass3dMB(image.RawStack, [1 1 1], [7 7 11],[0 0]);
 %ShowStack(res)
 disp(['done Processing Images at '  num2str(toc) ' seconds'])
 
 %% Kilfoil Object Detection 3D
+
 disp('Detecting 3D Centroids')
 raw3D=RawData3D(res,raw);
 raw3D=TranscribeR(raw3D);
 disp(['done Detecting 3D Centroids at ' num2str(toc) ' seconds'])
 %viewDetections(raw3D,raw)
 
-%% Build Planes Dot by Dot
+% Build Planes Dot by Dot
+%%
 disp('Building Planes')
 %Set a search window size and establish neighbors
 radXY =  2.5; %microns
 radZ = .3;
-plane = PlanesData(raw3D,radXY,radZ);
-
+plane = PlanesData(raw3D);
+plane = nborsPlanesF(plane,raw3D,radXY,radZ);
 %Grow from starting point until no more plane members are found
 plane = growPlanes(plane,raw3D);
+
 disp(['done Building Planes at ' num2str(toc) ' seconds'])
-% View all detected planes
+
+%%
+% % View all detected planes
 % figure
 % hold on
 % for i = 1:size(plane.raw,2)
 %     scatter3(raw3D.X(plane.raw(1:nnz(plane.raw(:,i)),i)),raw3D.Y(plane.raw(1:nnz(plane.raw(:,i)),i)),raw3D.Z(plane.raw(1:nnz(plane.raw(:,i)),i)))
 % end
 % hold off
-
+%%
 % Filter planes with too few members (and update r)
 [plane,r] = cleanPlanes(plane,raw3D);
 r = RawData3D(res,raw,r);
 r = TranscribeR(r);
+toc
 %%
-% View Filtered Planes
-figure
+%View Filtered Planes
+pf = figure;
 hold on
-for i = 3:size(plane.final,2)
+for i = 1:size(plane.final,2)
     scatter3(r.X(plane.final(1:nnz(plane.final(:,i)),i)),r.Y(plane.final(1:nnz(plane.final(:,i)),i)),r.Z(plane.final(1:nnz(plane.final(:,i)),i)))
 end
+fcolor = 'white';
+bcolor = 'black';
+AxisFontSize = 24;
+LegendFontSize = 14;
+xt = 'X';% input('enter the xaxis label','s');
+    yt = 'Y'; %input('enter the yaxis label','s');
+    zt = 'Z';
+    label{1} = xlabel(xt);
+    label{2} = ylabel(yt);
+    label{3} = zlabel(zt);
+    set(gca,'YMinorTick','on','color',bcolor)
+    ytickformat('%.1f')
+        le{1} = 'plane 1'; %input('enter the legend','s');
+    le{2} = 'plane 2';
+    ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,1,[0 0])
+    %errorbar(meanDisplacements(1,1:3),meanDisplacements(2,1:3),'.','color',[0 0 0],'MarkerSize',1)
+    axis([0 max(r.X) 0 max(r.Y) 0 ceil(max(r.Z))])
+    legend off
 hold off
+
+ savefile = 'XZ Indent.tif';
+    export_fig(pf,savefile,'-native');
 %% Dots in Cell Region
 %Determine which features fall outside of a dilated mask of cell area
 image = DilateBinary(image,50);
@@ -82,12 +109,15 @@ image = FindNDSquare(image);
 if size(loc,2)>0
     load('rowV.mat')
     disp('Found a previous row slope!')
-else    
-    [rowV, rROI, rROIplane] = rowVselector(r,raw,image);
+else
+    [rowV,rowV2, rROI, rROIplane] = rowVselector(r,raw,image);
+    %rowV = rowV2;
 end
+rowV(1,3) = 0;
 disp(['done Generating Row Slope at ' num2str(toc) ' seconds'])
 
 %%
+
 disp('Building Rows')
 [r,rows] = buildRows2(r,rowV,plane.final);
 disp(['done Building Rows at ' num2str(toc) ' seconds'])
@@ -148,7 +178,7 @@ end
 %%
 % figure
 % hold on
-% for j = 1:size(rowPlanes,3)
+% for j = 1%1:size(rowPlanes,3)
 %     for i = 1:size(rowPlanes,1)
 %         n = nnz(rowPlanes(i,:,j));
 %         scatter3(r.X(rowPlanes(i,1:n,j)),r.Y(rowPlanes(i,1:n,j)),r.Z(rowPlanes(i,1:n,j)))
@@ -192,34 +222,41 @@ planesLocFiltList(planesLocFiltList==0) = [];
 % plot(fitSurface)
 % hold off
 %%
+
 disp('Matching 3D detections to 2D-based pillars')
-r.col = zeros(1,r.l);
+
+%r.col = zeros(1,r.l);
+tempZ = r.Z;
+tempcol = zeros(1,r.l);
 for i = 1:r.l
-    clear differences 
-    differences = min(squeeze(sqrt((shear.rawX(:,:)-r.X(i)).^2+(shear.rawY(:,:)-r.Y(i)).^2+(shear.rawZ(:,:)-r.Z(i)).^2)));    
-    if min(differences)<.5       
-    r.col(i) = find(differences==min(differences));
+    tl = floor(tempZ(i)/raw.dataKey(10,1))-1;
+    tu = ceil(tempZ(i)/raw.dataKey(10,1))+1;
+    differences = min(squeeze(sqrt((shear.rawX(tl:tu,:)-r.X(i)).^2+(shear.rawY(tl:tu,:)-r.Y(i)).^2+(shear.rawZ(tl:tu,:)-r.Z(i)).^2)));
+    if min(differences)<.5
+        tempcol(i) = find(differences==min(differences));
     end
 end
-disp('done Matching 3D detections to 2D-based pillars')
+
+r.col = tempcol;
+disp(['done Matching 3D detections to 2D-based pillars at ' num2str(toc) ' seconds'])
 % Row Shift Correction
 % figure
 % hold on
 % for i=1:size(rows,1)
 % scatter3(r.X(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)),r.Y(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)),r.Z(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)))
 % end
-
+%%
 for i = 1:size(rows,1)
     rowsSCtest(i,1:length(r.X(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)))) = r.X(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:));
     rowsSC(i,1) = mean(r.X(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:))-shear.rawX1(r.col(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)))');
     %rowsSC(i,3) = length(r.X(r.col(rowsNDCU(rowsNDCU(i,:)>0))>0)-shear.rawX1(r.col(r.col(rowsNDCU(rowsNDCU(i,:)>0))>0))');
-    rowsSC(i,2) = mean(r.Y(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:))-shear.rawY1(r.col(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)))');   
+    rowsSC(i,2) = mean(r.Y(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:))-shear.rawY1(r.col(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)))');
 end
 
 %store shift correction in r
 for i = 1:r.l
-   r.XSC(i) = rowsSC(r.row(i),1);
-    r.YSC(i) = rowsSC(r.row(i),2); 
+    r.XSC(i) = rowsSC(r.row(i),1);
+    r.YSC(i) = rowsSC(r.row(i),2);
 end
 % figure
 % hold on
@@ -228,7 +265,7 @@ end
 %     if size(current,1)>0
 %         plot3(r.X(current),r.Y(current),r.Z(current))
 %     end
-%     
+%
 % end
 % for i = 1:size(shear.rawX,2)
 % scatter3(shear.rawX(:,i),shear.rawY(:,i),shear.rawZ(:,i),'.')
@@ -246,7 +283,7 @@ m1 = method1fit(m1,r,rows,rowV);
 % Calculate Displacements from Fit Lines Method 1
 m1 = calcDisp(m1,r,rows,rowsNDCU); %based on fits of non-deformed markers
 m1 = calcDispSC(m1,r,shear); %includes shift correction in reference approximation
-%ViewMethodRef(m1,r)
+%ViewMethodRef(m1,r,'m1')
 m1.disp = r.r(:,1:3)-m1.refSC(:,1:3);
 % Displacement Statistics for Planes at least 4.5 microns from surface
 % Find all dots farther than 4.5 microns from surface
@@ -254,11 +291,11 @@ m1.disp = r.r(:,1:3)-m1.refSC(:,1:3);
 m1 = dispStats(m1,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
 % Filter out noise in Displacements Method 1
 m1 = dispNoise(m1,r,planesLocFiltList);
-disp('done Fitting Rows with Independent Slopes - Method 1')
+disp(['done Fitting Rows with Independent Slopes - Method 1 at ' num2str(toc) ' seconds'])
 % Scatter3/Plot3 of Dots/Fits Method 2
-%ViewRowFits(m1,r,rowPlanes)
+%ViewRowFits(m1,r,rowPlanes,'m1')
 % Quiver Plot of Displacements Method 2
-%ViewQuiverPlot(m1,r)
+%ViewQuiverPlot(m1,r,'m1')
 NoiseHists(m1,planesLocFiltList,r,'1')
 
 
@@ -273,17 +310,17 @@ m2 = method2fit(m2,m1,r,raw,image.ADil,rows,rowPlanesIdx);
 % Calculate Displacements from Fit Lines Method 2
 m2 = calcDisp(m2,r,rows,rowsNDCU); %based on fits of non-deformed markers
 m2 = calcDispSC(m2,r,shear); %includes shift correction in reference approximation
-%ViewMethodRef(m2,r)
+%ViewMethodRef(m2,r,'m2')
 m2.disp = r.r(:,1:3)-m2.refSC(:,1:3);
 % Calculate Average Displacement per Row per Plane Method 2
 m2 = dispStats(m2,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
 % Filter out noise in Displacements Method 1
 m2 = dispNoise(m2,r,planesLocFiltList);
-disp('done Fitting Rows with Row Slope - Method 2')
+disp(['done Fitting Rows with Row Slope - Method 2 at ' num2str(toc) ' seconds'])
 % Scatter3/Plot3 of Dots/Fits Method 2
-%ViewRowFits(m2,r,rowPlanes)
+%ViewRowFits(m2,r,rowPlanes,'m2')
 % Quiver Plot
-%ViewQuiverPlot(m2,r)
+%ViewQuiverPlot(m2,r,'m2')
 NoiseHists(m2,planesLocFiltList,r,'2')
 
 
@@ -298,17 +335,19 @@ m3 = method3fit(m3,m1,m2,rows);
 % Calculate Displacements from Fit Lines Method 3
 m3 = calcDisp(m3,r,rows,rowsNDCU); %based on fits of non-deformed markers
 m3 = calcDispSC(m3,r,shear); %includes shift correction in reference approximation
-%ViewMethodRef(m3,r)
 m3.disp = r.r(:,1:3)-m3.refSC(:,1:3);
 % Calculate Average Displacement per Row per Plane Method 3
 m3 = dispStats(m3,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
 % Filter out noise in Displacements Method 1
 m3 = dispNoise(m3,r,planesLocFiltList);
-disp('done Picking Best Case Row Fit - Method 3')
-% Scatter3/Plot3 of Dots/Fits Method 3
-%ViewRowFits(m3,r,rowPlanes)
-% Quiver Plot of Displacements Method 3
-%ViewQuiverPlot(m3,r)
+disp(['done Picking Best Case Row Fit - Method 3 at ' num2str(toc) ' seconds'])
+%%
+%ViewMethodRef(m3,r,'m3')
+%Scatter3/Plot3 of Dots/Fits Method 3
+%ViewRowFits(m3,r,rowPlanes,rowPlanesIdx,'m3')
+%Quiver Plot of Displacements Method 3
+%ViewQuiverPlot(m3,r,'m3')
+%%
 NoiseHists(m3,planesLocFiltList,r,'3')
 
 
@@ -431,7 +470,7 @@ mkdir(filePath,folderName)
 save('Profile Data\vqZ.mat','vqN','vq3','image','HeatMapN','HeatMap3')
 
 %%
-%save('rowV.mat','rowV')
+save('rowV.mat','rowV')
 
 %% Attempt to interpolate normal displacements in 3D
 % rDispFilt = rDisp;
