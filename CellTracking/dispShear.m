@@ -471,7 +471,7 @@ text(xStd*2+20,.12,'Noise Cutoff','color',fcolor,'fontsize',20 )
 ytickformat('%.2f')
 
 axis([-400 400 0 .3])
-ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,0,0)
+ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,0,360)
 leg = legend([p1 p2],le2,le3,'location','northwest');
 leg.EdgeColor = fcolor;
 leg.FontSize = LegendFontSize;
@@ -514,7 +514,7 @@ text(yStd*2+20,.12,'Noise Cutoff','color',fcolor,'fontsize',20 )
 %tl = title(tt);
 ytickformat('%.2f')
 axis([-400 400 0 .3])
-ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,0,0)
+ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,0,360)
 leg = legend([p1 p2],le2,le3,'location','northwest');
 leg.EdgeColor = fcolor;
 leg.FontSize = LegendFontSize;
@@ -559,7 +559,7 @@ label{2} = ylabel(yt);
 text(xyStd2+10,.15,strcat('2\sigma= ',num2str(round(xyStd2,0)),'nm'),'color',fcolor,'fontsize',20)
 text(xyStd2+10,.12,'Noise Cutoff','color',fcolor,'fontsize',20 )
 ytickformat('%.2f')
-ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,0,0)
+ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,0,360)
 leg = legend([p1 p2],le2,le3,'location','best');
 leg.EdgeColor = fcolor;
 leg.FontSize = LegendFontSize;

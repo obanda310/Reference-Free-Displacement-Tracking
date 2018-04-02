@@ -44,4 +44,4 @@ imACentroid = regionprops(imageAreaPosFilt,'Centroid');
 xCent = round(imACentroid.Centroid(1,1));
 yCent = round(imACentroid.Centroid(1,2));
 %%
-[normXY,normZ,normAxis,dispProfXY,dispProfZ,heatMap,cell_boundary] = profileDisp(HeatMapN(:,:,:,zPlane),imageHeatXYColor,vqXY,vqN(:,:,zPlane),[xCent yCent],[yMax xMax],imageArea);
+[normXY,normZ,normAxis,dispProfXY,dispProfZ,heatMap,cell_boundary] = profileDisp(HeatMapN(:,:,:,zPlane),imageHeatXYColor,vqXY,vqN(:,:,zPlane),[xCent yCent],[yMax xMax],imageArea,HeatMap3(:,:,:,1));

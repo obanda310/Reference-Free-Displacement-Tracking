@@ -3,7 +3,7 @@ function [imageHeat2max,vq2max,vq2total,imageHeatNaN,imageHeatColorM]=customHeat
 %Input Variables to Specify
 maxD = 3; %maximum value on the heat map color bar (microns)
 res = 1; % number of original pixels between interpolated points (value of 1 should return a heat map with original image dimensions)
-res2 = res*4;
+res2 = res;
 
 % Create Edge Clearing Mask
 Edges = (image.ADil == 0);

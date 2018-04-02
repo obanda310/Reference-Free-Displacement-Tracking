@@ -428,7 +428,7 @@ classdef DispData3D
                 label{2} = ylabel(yt);
                 %tl = title(tt);
                 ytickformat('%.2f')
-                ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,0,0)
+                ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,0,360)
                 leg = legend([p1 p2],le2,le3,'location',[ .8 .8 .1 .1]);
                 leg.EdgeColor = fcolor;
                 leg.FontSize = LegendFontSize;

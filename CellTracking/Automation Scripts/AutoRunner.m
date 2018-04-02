@@ -125,7 +125,11 @@ for i2 = 1:size(goodData,1)
     vqT(i2,6) = max(max(vqXY));
     vqT(i2,7) = max(max(abs(vq3(:,:,zPlane))));
 end
-save([ListPath 'ShearNormalStats.mat'],'vqT')
+vqT(:,8) = vqT(:,2)./vqT(:,1);
+vqT(:,9) = vqT(:,1)>prctile(vqT(:,1),50);
+vqTM = mean(vqT(vqT(:,9)==1,8));
+vqTS = std(vqT(vqT(:,9)==1,8));
+save([ListPath 'ShearNormalStats.mat'],'vqT','vqTS','vqTM')
 figure
 scatter(vqT(:,1),vqT(:,2))
 figure
@@ -169,7 +173,7 @@ cbf = mean(cb);
 save(strcat(ListPath,prefix,'Profiles.mat'),'profBook','cb','cbf')
 
 %%
-
+prefix = '\Gels';
 cb(cb<25 | cb>75)=NaN;
 cbf2 = mean(cb,'omitnan')/100;
 aScale = 1/cbf2;
@@ -209,11 +213,13 @@ for i = 1:size(colOptions,2)
     p1= plot(profBook2(1,:,sortIdx(i))*aScale,mean(profBook2(2,:,sortIdx(:)),3,'omitnan'),'color',fcolor,'linewidth',3);
     p2=plot(profBook2(1,:,sortIdx(i))*aScale,mean(profBook2(3,:,sortIdx(:)),3,'omitnan'),'color',fcolor,'linestyle','-.','linewidth',3);
     p3=plot([cbf2 cbf2]*aScale,[min(min(min(profBook2))),max(max(max(profBook2)))],'color',[.5 .5 .5],'linestyle','--','linewidth',1);
+    p4=plot([.4 .4],[min(min(min(profBook2))),2.2],'color',[1,.5,.5],'linestyle','--','linewidth',1);
+    p5=plot([1.6 1.6],[min(min(min(profBook2))),max(max(max(profBook2)))],'color',[1,.5,.5],'linestyle','--','linewidth',1);
     set(gca,'Color',bcolor)
     text(1.05,-.8,'\leftarrowAvg. Cell Boundary','fontsize',16,'color',fcolor)
     
     set(gca,'fontsize',28,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
-    xt = 'Location on Trace(AU)';% input('enter the xaxis label','s');
+    xt = 'Location on Trace (AU)';% input('enter the xaxis label','s');
     yt = 'Displacement (\mum)'; %input('enter the yaxis label','s');
     tt = 'Line-Profile Displacements';%input('enter the title','s');
     le = 'Shear'; %input('enter the legend','s');
@@ -252,11 +258,13 @@ for i = 1:size(colOptions,2)
     p1 = plot(profBook3(1,:,sortIdx(i))*aScale,mean(profBook3(2,:,sortIdx(:)),3,'omitnan'),'color',fcolor,'linewidth',3);
     p2 = plot(profBook3(1,:,sortIdx(i))*aScale,mean(profBook3(3,:,sortIdx(:)),3,'omitnan'),'color',fcolor,'linestyle','-.','linewidth',3);
     p3 = plot([cbf2 cbf2]*aScale,[min(min(min(profBook3))),1],'color',[.5 .5 .5],'linestyle','--','linewidth',1);
+    p4=plot([.4 .4],[min(min(min(profBook2))),.6],'color',[1,.5,.5],'linestyle','--','linewidth',1);
+    p5=plot([1.6 1.6],[min(min(min(profBook2))),max(max(max(profBook2)))],'color',[1,.5,.5],'linestyle','--','linewidth',1);
     set(gca,'Color',bcolor)
-    text(1.05,-.3,'\leftarrowAvg. Cell Boundary','fontsize',16,'color',fcolor)
+    text(1.05,-.25,'\leftarrowAvg. Cell Boundary','fontsize',16,'color',fcolor)
     
     set(gca,'fontsize',28,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
-    xt = 'Location on Trace(AU)';% input('enter the xaxis label','s');
+    xt = 'Location on Trace (AU)';% input('enter the xaxis label','s');
     yt = 'Displacement (AU)'; %input('enter the yaxis label','s');
     tt = 'Line-Profile Displacements';%input('enter the title','s');
     le = 'Shear'; %input('enter the legend','s');
@@ -338,4 +346,13 @@ title = ['\Mean Indentation Profile'];
 savefile = [ListPath title];
 export_fig(mInd,savefile,'-native');
 cd(ListPath)
+
+%% Calculate Overlap of Dilated Cell Area and Z-Deformation
+%This code is to determine whether 8.125 micron dilation (50pixels@.1625)
+%is sufficient to encompass all Z-deformation information
+goodData = [1;2;3;5;6;14;17;23;31;34;43;44;47;49;50;48;11;12;19;25;28;36];
+clear OverlapPct
+for i = 1:size(goodData)
+    OverlapPct(i) = nonDefOverlap(dirList{goodData(i)});
+end
 

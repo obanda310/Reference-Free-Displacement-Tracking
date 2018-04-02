@@ -1,12 +1,18 @@
+load('ShearNormalStatsBleb.mat');
+vqB = vqT;
+
+load('ShearNormalStatsSpread.mat');
+vqS = vqT;
+
 % clear all
-% close all
+close all
 set(0,'defaultfigurecolor',[1 1 1])
 ListPath = cd;
 
 %CHANGE FONT SIZES HERE
 AxisFontSize = 24;
 AxisTitleFontSize = 24;
-LegendFontSize = 14;
+LegendFontSize = 20;
 
 colOptions{1,1} = 'white';
 colOptions{2,1} = 'black';
@@ -14,9 +20,7 @@ colOptions{1,2} = 'black';
 colOptions{2,2} = 'white';
 
 
-singles =load('ShearNormalStatsSingles.mat','vqT');
-bleb =load('ShearNormalStatsBleb.mat','vqT');
-spread =load('ShearNormalStatsSpread.mat','vqT');
+%singles =load('ShearNormalStats.mat','vqT')
 
 %%
 for i = 1:size(colOptions,2)
@@ -29,18 +33,21 @@ for i = 1:size(colOptions,2)
     sheararea = figure;
     
     %Plot Data
-    scatter(singles.vqT(:,5),singles.vqT(:,1)/max(singles.vqT(:,1)),50,'square',bcolor,'markerfacecolor',fcolor)
+
+    scatter(0:15:90,vqS(:,1)/max(vqS(:,1)),50,'square',bcolor,'markerfacecolor','red')
     hold on
-    scatter(spread.vqT(:,5),spread.vqT(:,1)/max(singles.vqT(:,1)),50,'square',bcolor,'markerfacecolor','red')
-    scatter(bleb.vqT(:,5),bleb.vqT(:,1)/max(singles.vqT(:,1)),50,'square',bcolor,'markerfacecolor','green')
+    scatter(0:15:90,vqB(:,1)/max(vqS(:,1)),50,'square',bcolor,'markerfacecolor','green')
+    
+    
+    
     set(gca,'Color',bcolor)
     %Axes, Text, Legends
     set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
     ytickformat('%.1f')
-    xt = 'Cell Spread Area (\mum^{2})';% input('enter the xaxis label','s');
+    xt = 'Time (min)';% input('enter the xaxis label','s');
     yt = '\Sigma |Shear| (AU)'; %input('enter the yaxis label','s');
     tt = 'Line-Profile Displacements';%input('enter the title','s');
-    le = 'Single'; %input('enter the legend','s');
+    %le = 'Single'; %input('enter the legend','s');
     le2 = 'Time-Lapse 1';
     le3 = 'Time-Lapse 2';
     xl = xlabel(xt);
@@ -49,33 +56,42 @@ for i = 1:size(colOptions,2)
     
     set(xl, 'fontweight','bold','fontsize',28,'color',fcolor);
     set(yl,'fontweight','bold','fontsize',28,'color',fcolor);
-    leg = legend(['\color{' fcolor '}' le],['\color{' fcolor '}' le2],['\color{' fcolor '}' le3],'location','southeast','fontcolor',fcolor);
-    legend boxoff
-    leg.FontSize = LegendFontSize;
+    %leg = legend(['\color{' fcolor '}' le2],['\color{' fcolor '}' le3],'location','west','fontcolor',fcolor);
+    %legend boxoff
+    %leg.FontSize = LegendFontSize;
     %set(tl,'fontweight','bold','fontsize',title_font_size)
-    
+    axis([0 90 0 1])
+    xticks([0 15 30 45 60 75 90])
     
     %Export Image
-    title = ['\ShearVsArea ' fcolor ' on ' bcolor];
+    title = ['\ShearVsTime ' fcolor ' on ' bcolor];
     savefile = [ListPath title];
     export_fig(sheararea,savefile,'-native');
-    %%
-    normalarea = figure;
     
+    
+        %%
+    fcolor = colOptions{1,i};
+    bcolor = colOptions{2,i};
+    set(0,'defaultfigurecolor',bcolor)
+    
+    normaltime = figure;
     
     %Plot Data
-    scatter(singles.vqT(:,5),singles.vqT(:,2)/max(singles.vqT(:,2)),50,'square',bcolor,'markerfacecolor',fcolor)
+   
+    scatter(0:15:90,vqS(:,2)/max(vqS(:,2)),50,'square',bcolor,'markerfacecolor','red')
     hold on
-    scatter(spread.vqT(:,5),spread.vqT(:,2)/max(singles.vqT(:,2)),50,'square',bcolor,'markerfacecolor','red')
-    scatter(bleb.vqT(:,5),bleb.vqT(:,2)/max(singles.vqT(:,2)),50,'square',bcolor,'markerfacecolor','green')
+    scatter(0:15:90,vqB(:,2)/max(vqS(:,2)),50,'square',bcolor,'markerfacecolor','green')
+    
+    
+    
     set(gca,'Color',bcolor)
     %Axes, Text, Legends
     set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
     ytickformat('%.1f')
-    xt = 'Cell Spread Area (\mum^{2})';% input('enter the xaxis label','s');
+    xt = 'Time (min)';% input('enter the xaxis label','s');
     yt = '\Sigma |Normal| (AU)'; %input('enter the yaxis label','s');
     tt = 'Line-Profile Displacements';%input('enter the title','s');
-    le = 'Single'; %input('enter the legend','s');
+    %le = 'Single'; %input('enter the legend','s');
     le2 = 'Time-Lapse 1';
     le3 = 'Time-Lapse 2';
     xl = xlabel(xt);
@@ -84,33 +100,40 @@ for i = 1:size(colOptions,2)
     
     set(xl, 'fontweight','bold','fontsize',28,'color',fcolor);
     set(yl,'fontweight','bold','fontsize',28,'color',fcolor);
-%     leg = legend(['\color{' fcolor '}' le],['\color{' fcolor '}' le2],['\color{' fcolor '}' le3],'location','southeast','fontcolor',fcolor);
-%     legend boxoff
-%     leg.FontSize = LegendFontSize;
+    %leg = legend(['\color{' fcolor '}' le2],['\color{' fcolor '}' le3],'location','northeast','fontcolor',fcolor);
+    %legend boxoff
+    %leg.FontSize = LegendFontSize;
     %set(tl,'fontweight','bold','fontsize',title_font_size)
     
-    
+    axis([0 90 0 1])
+    xticks([0 15 30 45 60 75 90])
     %Export Image
-    title = ['\NormalVsArea ' fcolor ' on ' bcolor];
+    title = ['\NormalVsTime ' fcolor ' on ' bcolor];
     savefile = [ListPath title];
-    export_fig(normalarea,savefile,'-native');
-    %%
+    export_fig(normaltime,savefile,'-native');
+    
+            %%
+    fcolor = colOptions{1,i};
+    bcolor = colOptions{2,i};
+    set(0,'defaultfigurecolor',bcolor)
+    
     shearnormal = figure;
     
-    
     %Plot Data
-    scatter(singles.vqT(:,2)/max(singles.vqT(:,2)),singles.vqT(:,1)/max(singles.vqT(:,1)),50,'square',bcolor,'markerfacecolor',fcolor)
+
+    scatter(vqS(:,2)/max(vqS(:,2)),vqS(:,1)/max(vqS(:,1)),50,'square',bcolor,'markerfacecolor','red')
     hold on
-    scatter(spread.vqT(:,2)/max(singles.vqT(:,2)),spread.vqT(:,1)/max(singles.vqT(:,1)),50,'square',bcolor,'markerfacecolor','red')
-    scatter(bleb.vqT(:,2)/max(singles.vqT(:,2)),bleb.vqT(:,1)/max(singles.vqT(:,1)),50,'square',bcolor,'markerfacecolor','green')
+    scatter(vqB(:,2)/max(vqS(:,2)),vqB(:,1)/max(vqS(:,1)),50,'square',bcolor,'markerfacecolor','green')
+    
+    
     set(gca,'Color',bcolor)
     %Axes, Text, Legends
     set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
     ytickformat('%.1f')
-    xt = '\Sigma |Normal| (AU)';% input('enter the xaxis label','s');
-    yt = '\Sigma |Shear| (AU)'; %input('enter the yaxis label','s');
+    yt = '\Sigma |Shear| (AU)';% input('enter the xaxis label','s');
+    xt = '\Sigma |Normal| (AU)'; %input('enter the yaxis label','s');
     tt = 'Line-Profile Displacements';%input('enter the title','s');
-    le = 'Single'; %input('enter the legend','s');
+    %le = 'Single'; %input('enter the legend','s');
     le2 = 'Time-Lapse 1';
     le3 = 'Time-Lapse 2';
     xl = xlabel(xt);
@@ -119,9 +142,9 @@ for i = 1:size(colOptions,2)
     
     set(xl, 'fontweight','bold','fontsize',28,'color',fcolor);
     set(yl,'fontweight','bold','fontsize',28,'color',fcolor);
-%     leg = legend(['\color{' fcolor '}' le],['\color{' fcolor '}' le2],['\color{' fcolor '}' le3],'location','southeast','fontcolor',fcolor);
-%     legend boxoff
-%     leg.FontSize = LegendFontSize;
+    leg = legend(['\color{' fcolor '}' le2],['\color{' fcolor '}' le3],'location','southeast','fontcolor',fcolor);
+    legend boxoff
+    leg.FontSize = LegendFontSize;
     %set(tl,'fontweight','bold','fontsize',title_font_size)
     
     
