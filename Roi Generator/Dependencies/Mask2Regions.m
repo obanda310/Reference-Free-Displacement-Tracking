@@ -60,6 +60,21 @@ for i = 1:size(polygons2,1)
         scatter([polygons2{i,1}(:,1);polygons2{i,1}(1,1)]/(10^-6),[polygons2{i,1}(:,2);polygons2{i,1}(1,2)]/(-1*10^-6))
     end
 end
+for i = 1:size(polygons2,1)
+    xmin(i,1) = min(polygons2{i,1}(:,1));
+    xmax(i,1) = max(polygons2{i,1}(:,1));
+    ymin(i,1) = min(polygons2{i,1}(:,2));
+    ymax(i,1) = max(polygons2{i,1}(:,2));
+end
+xMin = min(xmin);
+xMax = max(xmax);
+yMin = min(ymin);
+yMax = max(ymax);
+xwidth = (xMax-xMin) *10^6;
+ywidth = (yMax-yMin) *10^6;
+
+text(-finalRes(1,1)/2*pixlength+5,-finalRes(1,2)/2*pixlength+25,['Width: ',num2str(xwidth)])
+text(-finalRes(1,1)/2*pixlength+5,-finalRes(1,2)/2*pixlength+10,['Height: ',num2str(ywidth)])
 
 %% Create the .Regions file for ZEN
 %Define path and file name for .rls file
