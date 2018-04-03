@@ -2,12 +2,19 @@ function [polygons,polyFull] = Mask2Regions(raw,pixlength,outputName,TarDir,fina
 %Converts a binary image into a .Regions file and a .ovl file to be read by
 %the Zen application.
 
+
+%Make sure there are no features within 'EDGE' pixels of border
+EDGE = 1; %round(4000/(xsize*LSS));
+raw2 = zeros(size(raw,1)+2*EDGE,size(raw,1)+2*EDGE);
+raw2(2:end-1,2:end-1) = raw;
+clear raw
+raw = raw2;
+
 %Set variables based on input arguments
-a=raw;
-temp=size(a);
+temp=size(raw);
 ysize=temp(1);
 xsize=temp(2);
-
+save('raw.mat','raw')
 %%
 [polyFull,polygonsOld,polygons] = Mask2Polyv3(raw);
 

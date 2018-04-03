@@ -29,7 +29,10 @@ raw = rawN2==0;
 raw = bwareaopen(raw, 10, 4);
 
 %% Open closed regions
-% This is difficult to code well...could use some work.
+figure
+imshow(raw,[])
+
+
 
 %% Divide the image to break open large closed spaces
 div = 10;

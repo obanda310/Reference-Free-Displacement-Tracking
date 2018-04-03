@@ -5,6 +5,7 @@
 funcName = length(mfilename);
 funcPath = mfilename('fullpath');
 funcPath = funcPath(1:end-funcName);
+cd(funcPath)
 addpath(genpath([funcPath 'Dependencies']));
 %% Dialogue options for all inputs
 % Open images
