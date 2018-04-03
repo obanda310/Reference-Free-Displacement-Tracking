@@ -14,7 +14,7 @@ raw = raw2;
 temp=size(raw);
 ysize=temp(1);
 xsize=temp(2);
-save('raw.mat','raw')
+% save('raw.mat','raw')
 %%
 [polyFull,polygonsOld,polygons] = Mask2Polyv3(raw);
 

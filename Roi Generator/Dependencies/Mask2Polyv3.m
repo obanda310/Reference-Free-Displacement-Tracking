@@ -16,8 +16,6 @@ LSS =1; % Change this value to change how Version 2 (old version) works.
 
 
 %% Identify closed regions in image
-close all
-clear rawLabel2
 rawN = raw==0;
 %Remove small closed regions
 rawN2 = bwareaopen(rawN, round(xsize/50)^2, 4);
@@ -49,10 +47,8 @@ end
 
 %% Identify features that do not need to be broken up.
 smallraw = xor(bwareaopen(raw,round((xsize/13)^2),4),raw);
-round((xsize/22.5)^2)
 DivMask2 = smallraw | DivMask;
-figure
-imshow(DivMask2,[])
+
 %% Update 'raw'
 IM2 = (raw.*DivMask2); %Update 'raw' image by convolution with DivMask
 poly1 = bwboundaries(IM2,8); %Find boundaries to start building polygons
@@ -155,7 +151,7 @@ end
 %of relying on corner finding algorithms, which don't seem to be exclusive
 %enough
 
-for i2 = 1:size(poly1,1);
+for i2 = 1:size(poly1,1)
     %% Start by setting pT to the boundary of a polygon "i2" from poly
     clear pT3 pT4 pT5 pT6
     pT3 = zeros(size(poly1{i2,1},1),6);
