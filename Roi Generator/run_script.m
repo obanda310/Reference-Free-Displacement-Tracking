@@ -5,7 +5,7 @@
 funcName = length(mfilename);
 funcPath = mfilename('fullpath');
 funcPath = funcPath(1:end-funcName);
-addpath(genpath([funcPath 'Dependancies']));
+addpath(genpath([funcPath 'Dependencies']));
 %% Dialogue options for all inputs
 % Open images
 [ListName,ListPath] = uigetfile('*.tif','Choose an image or stack to convert');
