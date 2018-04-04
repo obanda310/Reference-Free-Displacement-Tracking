@@ -1,5 +1,5 @@
 %% RUN THIS SCRIPT TO MAKE REGIONS AND OVL FILES
-% This code uses 
+
 % OAB  April 2018
 %% Adds relevant functions to path
 % Works as long as folders have not been moved around
@@ -31,6 +31,9 @@ options(1,1) = 0;
 options(2,1) = 0;
 %Convert single pixels to squares
 options(5,1) = 1;
+if options(5,1)==1
+    options(2,1)=0;
+end
 %Run version 2 of Mask2Poly
 options(3,1) = 0;
 %Divide image horizontally to break open stuctures
