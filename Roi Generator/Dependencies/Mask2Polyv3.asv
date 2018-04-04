@@ -32,23 +32,22 @@ end
 % This is difficult to code well...could use some work.
 
 %% Divide the image to break open large closed spaces
-
+if options(4,1) == 1
 div = 10;
 IMsize = ysize;
 IMdiv = round(IMsize/div);
-DivMask= ones(ysize,xsize);
-
-Dz= zeros(ysize,xsize);
+DivMask= ones(xsize,ysize);
+else
+end
+Dz= zeros(xsize,ysize);
 D = Dz;
 % The image 'D' will contain only the edges created by dividing the raw
 % image (used in v2)
-if options(4,1) == 1
 for i =1:div-1
     DivMask(IMdiv*i,:) = 0;
     %A(:,IMdiv*i) = 0;
     D(IMdiv*i-1,:) = 1;
     D(IMdiv*i+1,:) = 1;    
-end
 end
 
 %% Identify features that do not need to be broken up.
@@ -150,7 +149,6 @@ for i = 1:size(poly2,1)
 end
 else
     poly2 = 'Change the option to run Mask2Poly version 2 if you want this output';
-    corners = [0,0];
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%VERSION 2 End%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

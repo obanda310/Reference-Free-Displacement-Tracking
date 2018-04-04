@@ -28,13 +28,7 @@ tic
 %Remove small regions?
 options(1,1) = 0;
 %Convert single pixels to triangles
-options(2,1) = 0;
-%Convert single pixels to squares
-options(5,1) = 1;
-%Run version 2 of Mask2Poly
-options(3,1) = 0;
-%Divide image horizontally to break open stuctures
-options(4,1) = 0;
+options(2,1) = 1;
 
 %% Iterative .Regions and .ovl outputs
 for i = 1:size(images,3)
