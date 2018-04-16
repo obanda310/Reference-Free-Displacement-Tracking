@@ -312,11 +312,10 @@ classdef ShearData
             
             
             for i = 1:obj.numTraj
-                
-                obj.ltdX(isnan(obj.ltdX)) = 0;
-                obj.ltdY(isnan(obj.ltdY)) = 0;
-                obj.ltLastdX(i) = obj.ltdX(find(abs(obj.ltdX) == max(abs(obj.ltdX(:,i))),1,'last'));%obj.ltdX(obj.lastFrame(i),i);
-                obj.ltLastdY(i) = obj.ltdY(find(abs(obj.ltdY) == max(abs(obj.ltdY(:,i))),1,'last'));%obj.ltdY(obj.lastFrame(i),i);
+                tempX = obj.ltdX;
+                tempY
+                obj.ltLastdX(i) = obj.ltdX(find(abs(obj.ltdX) == max(abs(obj.ltdX(:,i)),'omitnan'),1,'last'));%obj.ltdX(obj.lastFrame(i),i);
+                obj.ltLastdY(i) = obj.ltdY(find(abs(obj.ltdY) == max(abs(obj.ltdY(:,i)),'omitnan'),1,'last'));%obj.ltdY(obj.lastFrame(i),i);
                 obj.ltLastdXY(i) = max(obj.ltdXY(:,i));%(obj.ltLastdX(i).^2 + obj.ltLastdY(i).^2).^0.5;
                 
             end
