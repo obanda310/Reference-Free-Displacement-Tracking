@@ -90,7 +90,7 @@ hold off
 %% Dots in Cell Region
 %Determine which features fall outside of a dilated mask of cell area
 image = DilateBinary(image,50);
-r = regionCheck(r,image,raw);
+r = regionCheck(r,image.ADil,raw);
 
 %% Check to see if a previous row slope exists
 clear files check
@@ -116,66 +116,18 @@ end
 rowV(1,3) = 0;
 disp(['done Generating Row Slope at ' num2str(toc) ' seconds'])
 
-%%
-
+%% Assign detections to Rows
 disp('Building Rows')
 [r,rows] = buildRows2(r,rowV,plane.final);
 disp(['done Building Rows at ' num2str(toc) ' seconds'])
-
-%%
 % figure
 % hold on
 % for i = 1:size(rows,1)
 %     scatter3(r.X(rows(i,1:nnz(rows(i,:)))),r.Y(rows(i,1:nnz(rows(i,:)))),r.Z(rows(i,1:nnz(rows(i,:)))))
 % end
-%%
-% Separate Rows by Plane
-clear rowPlanes
-for i = 1:size(plane.final,2)
-    for j = 1:size(rows,1)
-        rowPlanes(j,1:size(intersect(rows(j,:),plane.final(1:nnz(plane.final(:,i)),i)),1),i) = intersect(rows(j,:),plane.final(1:nnz(plane.final(:,i)),i));
-    end
-end
-%%
-% Remake 'rows' variable with rows ordered by plane
-clear newRows
-nRS = find(rowPlanes(:,1,1)>0);
-newRows(:,:) = rowPlanes(nRS,:,1);
-rowPlanesIdx(1,1) = 1;
-rowPlanesIdx(1,2) = size(nRS,1);
-for i = 2:size(rowPlanes,3)
-    clear currentPlanes
-    nRS = find(rowPlanes(:,1,i)>0,1,'first');
-    currentPlanes(:,:) =  rowPlanes((rowPlanes(:,1,i)>0),:,i);
-    rowPlanesIdx(i,1) = size(newRows,1)+1;
-    newRows = cat(1,newRows,currentPlanes);
-    rowPlanesIdx(i,2) = size(newRows,1);
-end
-rows = newRows;
 
-% Label Objects in 'r' with Their Row Number
-for i = 1:size(rows,1)
-    for j = 1:size(rows,2)
-        if rows(i,j)>0
-            r.row(rows(i,j)) = i;
-        end
-    end
-end
-
-% Determine non-deformed members of each row
-clear rowsNDCU rowsNDC
-rowsNDC = rows;
-for i = 1:size(rows,1)
-    for j = 1:size(rows,2)
-        if ismember(rows(i,j),r.ND) == 0
-            rowsNDC(i,j) = 0;
-        end
-    end
-    rowsNDC(i,find(rowsNDC(i,:)==0)) = max(rowsNDC(i,:));
-    rowsNDCU(i,1:size(unique(rowsNDC(i,:)),2)) = unique(rowsNDC(i,:));
-end
-
-%%
+%% Format rows to include plane information
+[rows,rowPlanes,rowPlanesIdx,rowsNDCU,r] = formatRows(rows,plane,r);
 % figure
 % hold on
 % for j = 1%1:size(rowPlanes,3)
@@ -188,76 +140,24 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Calculate plane distance from surface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-fS = open('Shear Mat Files\Surface.mat');
-try
-    fitSurface = fS.fitSurface{3};
-catch
-    xtemp = [1;2;3;4;5];
-    ytemp = [5;8;3;5;7];
-    ztemp = size(res,3)*raw.dataKey(10,1)*ones(5,1);
-    fitSurface = fit([xtemp,ytemp],ztemp,'lowess','Span',0.1);
-end
-for j = 1:size(plane.final,2)
-    for i = 1:nnz(plane.final(:,j))
-        planesLoc(i,j) = (feval(fitSurface,r.X(plane.final(i,j)),r.Y(plane.final(i,j)))) - r.Z(plane.final(i,j));
-    end
-end
-planesLoc(planesLoc==0)=nan;
-planesLoc2 = mean(planesLoc,'omitnan');
-planesLocFilt = find(planesLoc2>4.5);
-planesLocFiltList = plane.final(:,planesLocFilt(1,1));
-if size(planesLocFilt,2)>1
-    for i = 2:size(planesLocFilt,2)
-        planesLocFiltList = cat(1,planesLocFiltList,plane.final(:,planesLocFilt(1,i)));
-    end
-end
-planesLocFiltList(planesLocFiltList==0) = [];
+disp('Approximating Surface Coordinates')
+[Surface2,SurfaceAll,Zeros] = findSurface2(shear,image,raw);
+disp(['Done Approximating Surface Coordinates at ' num2str(toc)])
 
-%%
+[planesLoc2,planesLocFiltList] = placePlanes(r,plane,Surface2);
+%% Plot Interpolated Surface and Detections
 % figure
+% xlim([0 max(shear.rawX(:))])
+% ylim([0 max(shear.rawY(:))])
+% zlim([0 size(image.RawStack,3)*raw.dataKey(10,1)])
 % hold on
 % for i = 1:size(plane.final,2)
-%     scatter3(r(plane.final(1:nnz(plane.final(:,i)),i),1),r(plane.final(1:nnz(plane.final(:,i)),i),2),r(plane.final(1:nnz(plane.final(:,i)),i),3))
+%     scatter3(r.r(plane.final(1:nnz(plane.final(:,i)),i),1),r.r(plane.final(1:nnz(plane.final(:,i)),i),2),r.r(plane.final(1:nnz(plane.final(:,i)),i),3))
 % end
-% plot(fitSurface)
+% plot(SurfaceAll)
 % hold off
-%%
-
-disp('Matching 3D detections to 2D-based pillars')
-
-%r.col = zeros(1,r.l);
-tempZ = r.Z;
-tempcol = zeros(1,r.l);
-for i = 1:r.l
-    tl = floor(tempZ(i)/raw.dataKey(10,1))-1;
-    tu = ceil(tempZ(i)/raw.dataKey(10,1))+1;
-    differences = min(squeeze(sqrt((shear.rawX(tl:tu,:)-r.X(i)).^2+(shear.rawY(tl:tu,:)-r.Y(i)).^2+(shear.rawZ(tl:tu,:)-r.Z(i)).^2)));
-    if min(differences)<.5
-        tempcol(i) = find(differences==min(differences));
-    end
-end
-
-r.col = tempcol;
-disp(['done Matching 3D detections to 2D-based pillars at ' num2str(toc) ' seconds'])
-% Row Shift Correction
-% figure
-% hold on
-% for i=1:size(rows,1)
-% scatter3(r.X(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)),r.Y(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)),r.Z(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)))
-% end
-%%
-for i = 1:size(rows,1)
-    rowsSCtest(i,1:length(r.X(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)))) = r.X(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:));
-    rowsSC(i,1) = mean(r.X(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:))-shear.rawX1(r.col(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)))');
-    %rowsSC(i,3) = length(r.X(r.col(rowsNDCU(rowsNDCU(i,:)>0))>0)-shear.rawX1(r.col(r.col(rowsNDCU(rowsNDCU(i,:)>0))>0))');
-    rowsSC(i,2) = mean(r.Y(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:))-shear.rawY1(r.col(rowsNDCU(i,(r.col(rowsNDCU(i,rowsNDCU(i,:)>0))>0),:)))');
-end
-
-%store shift correction in r
-for i = 1:r.l
-    r.XSC(i) = rowsSC(r.row(i),1);
-    r.YSC(i) = rowsSC(r.row(i),2);
-end
+%% Match 3D detections to 2D-based pillars
+[r] = match2D(r,raw,shear,rowsNDCU);
 % figure
 % hold on
 % for i=1:max(r.col(:))
@@ -271,7 +171,7 @@ end
 % scatter3(shear.rawX(:,i),shear.rawY(:,i),shear.rawZ(:,i),'.')
 % end
 %
-
+%%
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 1st METHOD FOR MEASURING DISPLACEMENTS
@@ -461,7 +361,7 @@ cd(filePath)
 %%
 save 3Ddata
 %%
-disp(['Script has Completed in ' num2str(toc) ' seconds'])
+
 % Save data for profile views
 %%
 filePath = cd;
@@ -490,4 +390,4 @@ save('rowV.mat','rowV')
 % vq2 = uint16(vq2Scale*vq2);
 % ShowStack(vq2,1,1)
 
-toc
+disp(['Script has Completed in ' num2str(toc) ' seconds'])

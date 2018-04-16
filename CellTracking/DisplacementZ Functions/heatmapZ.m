@@ -44,7 +44,7 @@ for i = 1:size(planesGroups,1)
     SE = strel('disk',round(5/xyScale));
     %vqEdgeFilter = isnan(vq); %imdilate(isnan(vq),SE);
     %vq = vq.*(vqEdgeFilter==0);
-    if method ~=0
+    if cutoff ~= 0
     vq = vq.*imageBinary.*Borders;
     end
 %     disp(num2str(max(max((vq)))))
