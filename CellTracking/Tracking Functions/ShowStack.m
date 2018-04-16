@@ -1,7 +1,7 @@
 % InputStack should be a 3D image matrix where dimensions 1 and 2 contain
 % pixel information in y and x, respectively, and dimension 3 indexes
 % separate images in the stack
-function ShowStack(InputStack,Subplot,A) %,centroids
+function ShowStack(InputStack,A) %,centroids
 
     noImgs = size(InputStack,3);
 if nargin == 1
@@ -9,14 +9,16 @@ if nargin == 1
     handles.axes1 = axes('Units','normalized','Position',[0 0 1 1]);
     noScale = 0;
 elseif nargin == 2
-    hFig = subplot(4,3,11);
-    noScale = 0;
-elseif nargin == 3
+    if size(A,2) ~=0
+    lb = min(InputStack(:));
+    ub = max(InputStack(:));
+    else
+    lb = uint16(A(1));
+    ub = uint16(A(2));
+    end
     hFig = figure('Position',[100 100 800 800]);
     handles.axes1 = axes('Units','normalized','Position',[0 0 1 1]);
     noScale = 1;
-    lb = uint16(1);
-    ub = uint16(65000);
 end
 
 

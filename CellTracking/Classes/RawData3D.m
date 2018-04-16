@@ -43,10 +43,12 @@ classdef RawData3D
             obj.X = obj.r(:,1);
             obj.Y = obj.r(:,2);
             obj.Z = obj.r(:,3);
+            if size(obj.r,2)>3
             obj.Mass = obj.r(:,4);
             obj.rg = obj.r(:,5);
             obj.MaxI = obj.r(:,6);
             obj.PctAbove = obj.r(:,7);
+            end
         end
         
         function viewDetections(obj,raw,offset,image)
@@ -61,11 +63,11 @@ classdef RawData3D
             end
         end
         
-        function obj = regionCheck(obj,image,raw)
+        function obj = regionCheck(obj,imageADil,raw)
             obj.ND = zeros(1,1);
             for i = 1:obj.l
                 %if it is under the cell
-                if image.ADil(round(obj.Y(i)/raw.dataKey(9,1)),round(obj.X(i)/raw.dataKey(9,1)))~=0
+                if imageADil(round(obj.Y(i)/raw.dataKey(9,1)),round(obj.X(i)/raw.dataKey(9,1)))~=0
                     obj.ND = cat(1,obj.ND,i);
                 end
             end
