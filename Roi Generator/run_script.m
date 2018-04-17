@@ -26,7 +26,7 @@ finalRes(1,2) = input('What is the final Y resolution in pixels (desired frame s
 tic
 %% Add other options here:
 %Remove small regions?
-options(1,1) = 0;
+options(1,1) = 1;
 %Convert single pixels to triangles
 options(2,1) = 0;
 %Convert single pixels to squares
@@ -37,7 +37,7 @@ end
 %Run version 2 of Mask2Poly
 options(3,1) = 0;
 %Divide image horizontally to break open stuctures
-options(4,1) = 0;
+options(4,1) = 1;
 
 %% Iterative .Regions and .ovl outputs
 for i = 1:size(images,3)
