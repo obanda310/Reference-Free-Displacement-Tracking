@@ -1,11 +1,12 @@
 function [r] = match2D(r,raw,shear,rowsNDCU)
 
-disp('Matching 3D detections to 2D-based pillars')
+progressbar('Matching 3D Detections to 2D Pillars')
 
 %r.col = zeros(1,r.l);
 tempZ = r.Z;
 tempcol = zeros(r.l,2);
 for i = 1:r.l
+    progressbar(i/r.l)
     tl = floor(tempZ(i)/raw.dataKey(10,1))-1;
     tu = ceil(tempZ(i)/raw.dataKey(10,1))+1;
     differences = min(squeeze(sqrt((shear.rawX(tl:tu,:)-r.X(i)).^2+(shear.rawY(tl:tu,:)-r.Y(i)).^2+(shear.rawZ(tl:tu,:)-r.Z(i)).^2)));

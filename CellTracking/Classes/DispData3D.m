@@ -35,7 +35,9 @@ classdef DispData3D
         
         function obj = method1fit(obj,r,rows,rowV)
             rowFits = zeros(size(rows,1),3,2);
+            progressbar('Method 1 Fits')
             for i = 1:size(rows,1)
+                progressbar(i/(2*size(rows,1)))
                 if size(intersect(rows(i,:),r.ND),1)>1
                     [A,B] = fitLine3D(r.X(intersect(rows(i,:),r.ND)),r.Y(intersect(rows(i,:),r.ND)),r.Z(intersect(rows(i,:),r.ND)));
                     rowFits(i,1:3,1) = A';
@@ -57,6 +59,7 @@ classdef DispData3D
             ty = (0 - rowFits(1,2,1))/(rowFits(1,2,2)-rowFits(1,2,1));
             tx = (0 - rowFits(1,1,1))/(rowFits(1,1,2)-rowFits(1,1,1));
             for i = 1:size(rowFits,1)
+                progressbar(i+size(rows,1)/(2*size(rows,1)))
                 if abs(ty)<abs(tx)
                     t = (0 - rowFits(i,2,1))/(rowFits(i,2,2)-rowFits(i,2,1));
                     obj.rowFits(i,1:3,1) = rowFits(i,1:3,1) + t*(rowFits(i,1:3,2)-rowFits(i,1:3,1));
@@ -84,7 +87,12 @@ classdef DispData3D
             
             % Determine what the ends of each row are
             clear rowsEdgeDist obj.rowEnds
-            for i = 1:size(rows,1)
+            progressbar('Method 2 Fits')
+            rowS = size(rows,1);
+            rowI = size(rowPlanesIdx,1);
+            ts = rowS + rowI + rowI + rowI + rowI + rowS;
+            for i = 1:rowS
+                 progressbar(i/ts)
                 clear distances currentRow currentMembers
                 currentRow = rows(i,1:nnz(rows(i,:)));
                 currentMembers = r.r(currentRow,1:3);
@@ -99,12 +107,13 @@ classdef DispData3D
             % Determine which rows are useful in calculating an average row slope
             % Both ends must be outside of image.ADil's Cell and the line width
             % must be at least 70 percent of maximum line width
-            for i = 1:size(rowPlanesIdx,1)
+            for i = 1:rowI
+                progressbar((i+rowS)/ts)
                 rowPlanesMaxWidth(i,1) = max(obj.rowEnds(rowPlanesIdx(i,1):rowPlanesIdx(i,2),3));
                 obj.rowEnds(rowPlanesIdx(i,1):rowPlanesIdx(i,2),5) = rowPlanesMaxWidth(i,1);
             end
             for i = 1:size(obj.rowEnds)
-                
+                progressbar((i+rowS+rowI)/ts)
                 if im(ceil(r.Y(obj.rowEnds(i,1))/raw.dataKey(9,1)),ceil(r.X(obj.rowEnds(i,1))/raw.dataKey(9,1)))>0 && im(ceil(r.Y(obj.rowEnds(i,2))/raw.dataKey(9,1)),ceil(r.X(obj.rowEnds(i,2))/raw.dataKey(9,1)))>0 && obj.rowEnds(i,3)>obj.rowEnds(i,5)*.7 %|| obj.rowEnds(i,?)>20
                     obj.rowEnds(i,4) = 1;
                 else
@@ -113,7 +122,8 @@ classdef DispData3D
             end
             
             % Calculate an average row slope per plane
-            for i = 1:size(rowPlanesIdx,1)
+            for i = 1:rowI
+                progressbar((i+rowS+rowI+rowI)/ts)
                 rowPlanesFits(i,1:3) = mean(m1.rowFits(find(obj.rowEnds(rowPlanesIdx(i,1):rowPlanesIdx(i,2),4)==1),1:3,2)-m1.rowFits(find(obj.rowEnds(rowPlanesIdx(i,1):rowPlanesIdx(i,2),4)==1),1:3,1));
                 if size(find(obj.rowEnds(rowPlanesIdx(i,1):rowPlanesIdx(i,2),4)==1),1) <1
                     rowPlanesFits(i,1:3) = mean(m1.rowFits(find(obj.rowEnds(rowPlanesIdx(i,1):rowPlanesIdx(i,2),4)==0),1:3,2)-m1.rowFits(find(obj.rowEnds(rowPlanesIdx(i,1):rowPlanesIdx(i,2),4)==0),1:3,1));
@@ -132,11 +142,13 @@ classdef DispData3D
             
             
             
-            for i = 1:size(rowPlanesIdx,1)
+            for i = 1:rowI
+                progressbar((i+rowS+rowI+rowI+rowI)/ts)
                 rowPlanesIdx2(i,1:pdist([rowPlanesIdx(i,1);rowPlanesIdx(i,2)])+1) = rowPlanesIdx(i,1):1:rowPlanesIdx(i,2);
             end
             %
-            for i = 1:size(rows,1)
+            for i = 1:rowS
+                progressbar((i+rowS+rowI+rowI+rowI+rowI)/ts)
                 [rPIdxX rPIdxY] = find(rowPlanesIdx2 == i);
                 if size(intersect(rows(i,:),r.ND),1)>0
                     %[xyzFinal,rowP] = transLine3D(rowV,r(rowsNDCU(i,1:n),1:3),imageSize);

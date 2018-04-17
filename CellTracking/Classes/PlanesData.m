@@ -136,11 +136,14 @@ classdef PlanesData
             
             working = 1;
             searched = 1:raw3D.l;
+            ss =size(searched,1);
             %start at first row in preplane
             planes = obj.nbors(1,1:nnz(obj.nbors(1,:)))';
-            
+            progressbar('Growing Planes')
             j=1; %designates starting at plane 1
+           
             while working == 1
+                progressbar(size(find(planes(:)),1)/ss)
                 newlist = intersect(searched,planes);
                 if size(newlist,2)>0                   
                     for i = 1:size(newlist,1)

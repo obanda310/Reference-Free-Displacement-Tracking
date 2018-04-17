@@ -34,19 +34,20 @@ for i = 1:size(shear.Int,2)
     end
 end
 %%
-% figure
-% hold on
-% for i = 1:size(Int2,2)
-%     plot(Int2(:,i))
-% end
-% plot([0 size(image.RawStack,3)], [0 0])
+figure
+hold on
+for i = 1:size(Int2,2)
+    plot(Int2(:,i))
+end
+plot([0 size(image.RawStack,3)], [0 0])
     
 
 %% Fit intensity profiles and find where they become noise
 %(i.e. intersect the surface)
 Int2 = double(Int2);
-
+progressbar('Approximating Substrate Surface')
 for i = 1:size(Int2,2)
+    progressbar(i/size(Int2,2))
     fitStart = shear.lastFrame(i)-5;
     fitEnd1 = shear.lastFrame(i) + find(Int2(shear.lastFrame(i):end,i)<0,1,'first')+2;
     tempInt = Int2(fitStart:fitEnd1,i);

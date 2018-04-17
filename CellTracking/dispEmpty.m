@@ -5,6 +5,7 @@ end
 %%
 clear all
 close all
+%%
 tic
 load('3Ddata.mat')
 
@@ -22,9 +23,10 @@ for i = 1:size(cols2,1)-1
 end
 coldist = mean(cols2(:,4),'omitnan');
 %%
-
+progressbar('Finding Minimum Intensity Detections')
 count = 1;
 for i = 1:max(cols2(:,1))
+    progressbar(i/max(cols2(:,1)))
     tempcol2 = cols2((cols2(:,1)==i),1:3);
     if size(tempcol2,1)>1
         tempcol2 = sortrows(tempcol2,2);
