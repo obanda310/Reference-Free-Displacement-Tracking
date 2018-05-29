@@ -184,7 +184,7 @@ end
 %%%%%%%%%%%%4.4 Plotting Transmitted Quiver Overlays v1%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if ismember(5,outputs) == 1
+if ismember(5,outputs) == 0
     trajOverlay = figure('Position',[0 0 1000 1000]);
     imshow(image.Fluor,[])
     hold on
@@ -437,7 +437,7 @@ colOptions{2,1} = 'black';
 colOptions{1,2} = 'black';
 colOptions{2,2} = 'white';
 
-close all
+
 for k = 1:size(colOptions,2)
     SigColor = [.1 .7 .7]; %[.9 .3 .3]
     fcolor = colOptions{1,k};
@@ -570,6 +570,7 @@ title = ['\XY-Displacement Histogram' fcolor ' on ' bcolor];
 savefile = [filePath '\Histograms' title];
 export_fig(xydispdist,savefile,'-native');
 end
+save([filePath '\Shear Mat Files\ShearXYCutOff.mat'],'xyStd2')
 %% Calculate Z-Displacement at Surface (Quick Method 2 in microns)
 
 % %interpSurface{1} = fit([(shear.rawY1(:) + shear.gtLastdY(:)),(shear.rawX1(:) + shear.gtLastdX(:))],(shear.Top1(:)+shear.dTop1(:))*0.4,'lowess','Span',.01);
@@ -593,6 +594,6 @@ end
 % plot(interpSurface{2})
 % plot3(0,0,0)
 
-
+save([filePath '\Shear Mat Files\ShearImages.mat'],'image')
 
 disp(['Trajectories Program has Completed Successfully at '  num2str(toc) ' seconds'])

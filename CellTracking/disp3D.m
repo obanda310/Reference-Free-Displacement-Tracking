@@ -1,7 +1,7 @@
-function disp3D(directory)
-if nargin ==1
-    cd(directory);
-end
+% function disp3D(directory)
+% if nargin ==1
+%     cd(directory);
+% end
 clear all
 close all
 set(0,'defaultfigurecolor',[1 1 1])

@@ -1,7 +1,7 @@
 function [Surface2,SurfaceAll,Zeros] = findSurface2(shear,image,raw)
 
-image.RawStack = permute(image.RawStack,[2,1,3]);
-originalTest = image.RawStack(:,:,35);
+RawStack = permute(image.RawStack,[2,1,3]);
+originalTest = image.RawStack(:,:,end);
 oMean = mean(originalTest(:));
 oStd = std(originalTest(:));
 intCutoff = oMean+2*oStd;
@@ -12,7 +12,7 @@ intCutoff = oMean+2*oStd;
 
 clear Int2
 for i = 1:size(shear.Int,2)
-    for j = 1:size(image.RawStack,3)
+    for j = 1:size(RawStack,3)
         if j>size(shear.Int,1)
         X = round(shear.rawX(shear.lastFrame(i),i)/raw.dataKey(9,1));
         Y = round(shear.rawY(shear.lastFrame(i),i)/raw.dataKey(9,1));
@@ -25,11 +25,11 @@ for i = 1:size(shear.Int,2)
         X = round(shear.rawX(shear.lastFrame(i),i)/raw.dataKey(9,1));
         Y = round(shear.rawY(shear.lastFrame(i),i)/raw.dataKey(9,1));
         end
-        if X>1 && X<size(image.RawStack,2) && Y>1 && Y<size(image.RawStack,1)
-        tempint = image.RawStack(Y-1:Y+1,X-1:X+1,j);
+        if X>1 && X<size(RawStack,2) && Y>1 && Y<size(RawStack,1)
+        tempint = RawStack(Y-1:Y+1,X-1:X+1,j);
         Int2(j,i) = mean(tempint(:))-intCutoff;
 %         else
-%             Int2(j,i) = image.RawStack(Y,X)-intCutoff;
+%             Int2(j,i) = RawStack(Y,X)-intCutoff;
         end
     end
 end
@@ -39,7 +39,7 @@ hold on
 for i = 1:size(Int2,2)
     plot(Int2(:,i))
 end
-plot([0 size(image.RawStack,3)], [0 0])
+plot([0 size(RawStack,3)], [0 0])
     
 
 %% Fit intensity profiles and find where they become noise
@@ -49,16 +49,25 @@ progressbar('Approximating Substrate Surface')
 for i = 1:size(Int2,2)
     progressbar(i/size(Int2,2))
     fitStart = shear.lastFrame(i)-5;
+    try
     fitEnd1 = shear.lastFrame(i) + find(Int2(shear.lastFrame(i):end,i)<0,1,'first')+2;
     tempInt = Int2(fitStart:fitEnd1,i);
     Xs = (fitStart:fitEnd1)';
-    tempInt(tempInt==0)=NaN;
+    %tempInt(tempInt==0)=NaN;
     fun1 = fit(Xs,tempInt,'smoothingspline');
+    catch
+        fitEnd1 = size(RawStack,3);
+    tempInt = Int2(fitStart:fitEnd1,i);
+    Xs = (fitStart:fitEnd1)';
+    %tempInt(tempInt==0)=NaN;
+    fun1 = fit(Xs,tempInt,'smoothingspline');    
+    end
+    
     
     found = 0;
     count = 0;
     nozero = 0;
-    maxF = size(image.RawStack,3);
+    maxF = size(RawStack,3);
     while found == 0 
         
         funcheck = feval(fun1,fitStart+count);
@@ -79,7 +88,13 @@ for i = 1:size(Int2,2)
     if nozero == 1
     Zeros(i,3) = NaN;    
     else
+        try
     Zeros(i,3) = fzero(fun1,[fitStart fitEnd]);
+        catch
+            [fitStart fitEnd]
+            feval(fun1, fitStart)
+            feval(fun1, fitEnd)
+        end
     end
     
     Zeros(i,1) = shear.rawX(shear.lastFrame(i),i);
@@ -98,7 +113,7 @@ Zeros(:,3) = Zeros(:,3)*raw.dataKey(10,1);
 % scatter3(zeros(:,1),zeros(:,2),zeros(:,3))
 % xlim([0 max(shear.rawX(:))])
 % ylim([0 max(shear.rawY(:))])
-% zlim([0 size(image.RawStack,3)*raw.dataKey(10,1)])
+% zlim([0 size(RawStack,3)*raw.dataKey(10,1)])
 % hold on
 % scatter3(r.r(:,1),r.r(:,2),r.r(:,3))
 % try
@@ -139,7 +154,7 @@ SurfaceAll = fit([Zeros(zerosnNaN,1),Zeros(zerosnNaN,2)],Zeros(zerosnNaN,3),'low
 % scatter3(Zeros(:,1),Zeros(:,2),Zeros(:,3))
 % xlim([0 max(shear.rawX(:))])
 % ylim([0 max(shear.rawY(:))])
-% zlim([0 size(image.RawStack,3)*raw.dataKey(10,1)])
+% zlim([0 size(RawStack,3)*raw.dataKey(10,1)])
 % hold on
 % scatter3(r.r(:,1),r.r(:,2),r.r(:,3))
 % %plot(Surface2)

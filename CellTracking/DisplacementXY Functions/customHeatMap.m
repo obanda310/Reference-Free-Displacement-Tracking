@@ -49,9 +49,9 @@ close
 [xq,yq] = meshgrid(1:res:size(Edges,2), 1:res:size(Edges,1));
 xq = xq*dataKey(9,1);
 yq = yq*dataKey(9,1);
-vq = dataKey(9,1)*griddata(shear.rawX1(:),shear.rawY1(:),deformation(:)/dataKey(9,1),xq,yq,'cubic');
+vq = dataKey(9,1)*griddata(shear.rawX1(:),shear.rawY1(:),deformation(:)/dataKey(9,1),xq,yq,'linear');
 %vq = vq.*Edges;
-vq2max = griddata(shear.rawX1(:),shear.rawY1(:),shear.coFilt(:),xq,yq,'cubic');
+vq2max = griddata(shear.rawX1(:),shear.rawY1(:),shear.coFilt(:),xq,yq,'linear');
 vq2max = vq2max.*Edges;
 disp(num2str(max(max(vq))))
 xq2 = linspace(0,size(Edges,2)*dataKey(9,1),size(vq,2));
@@ -74,6 +74,19 @@ imageHeatColor2 = ind2rgb(imageHeat2,colorMap2);
 imageHeat2max = imageHeat2;
 imageHeatColorM = imageHeatColor2;
 
+%Cutout the Area of cell or pattern
+MaximumHeatMap3 = imagesc(xq2,yq2,vq);
+vq3 = double(vq).*double(image.Area>0);
+imageHeat3 = MaximumHeatMap3.CData;
+imageHeat3(isnan(imageHeat3)) = 0;
+imageHeat3 = uint16(round(imageHeat3 * heatScale));
+imageHeat3 = imageHeat3.*uint16(image.Area>0);
+imageHeatColor3 = ind2rgb(imageHeat3,colorMap2);
+imageHeatColor3M = imageHeatColor3;
+
+save([filePath '\Shear Mat Files\ShearCutout.mat'],'vq3')
+
+
 %Save Max Heat Map Image
 close all
 maxHeatMap = figure;
@@ -84,16 +97,24 @@ maxHeatMap2 = figure;
 hold on
 imshow(imageHeatColor2);
 
+maxHeatMap3 = figure;
+hold on
+imshow(imageHeatColor3);
+
 if ismember(6,outputs) == 1
     savefile = [filePath '\HeatMaps\Shear\MaximumHeatMap.tif'];
     export_fig(maxHeatMap,savefile,'-native');
     savefile = [filePath '\HeatMaps\Shear\MaximumHeatMapNoiseCutoff.tif'];
     export_fig(maxHeatMap2,savefile,'-native');
+        savefile = [filePath '\HeatMaps\Shear\MaximumHeatMapBinaryCutout.tif'];
+    export_fig(maxHeatMap3,savefile,'-native');
 else
     savefile = [filePath '\HeatMaps\Shear\MaximumHeatMap.tif'];
     export_fig(maxHeatMap,savefile);
     savefile = [filePath '\HeatMaps\Shear\MaximumHeatMapNoiseCutoff.tif'];
     export_fig(maxHeatMap2,savefile);
+    savefile = [filePath '\HeatMaps\Shear\MaximumHeatMapBinaryCutout.tif'];
+    export_fig(maxHeatMap3,savefile);
 end
 
 

@@ -59,8 +59,14 @@ classdef ImageData
                 obj.Area = loadSpecific('Binary Mask.tif','*.tif','Select a Thresholded Image of the Cell Area');
                 
                 if size(obj.Area,1) ~= size(obj.Black,1) || size(obj.Area,2) ~= size(obj.Black,2)
+                    if round(size(obj.Area,1)/size(obj.Area,2)) == round(size(obj.Black,1)/size(obj.Black,2))
+                        scale = size(obj.Black,1)/size(obj.Area,1);
+                        obj.Area = imresize(obj.Area,scale);
+                    else
                     [nameAreaFile,filePath] = uigetfile('*.tif','Dimensions of Mask are Incorrect!!!Select a different Thresholded Image of the Cell Area');
                     obj.Area = imread([filePath,nameAreaFile]);
+                    obj.Area = imresize(obj.Area,size(obj.Black));
+                    end
                 end
             else
                 obj.Area = obj.Black==0;
@@ -115,6 +121,13 @@ classdef ImageData
             catch
                 obj.RawStack = single(getImages());
             end
+            if size(obj.RawStack,1) ~= size(obj.Black,1)
+                for i = 1:size(obj.RawStack,3)
+                RawStack2(:,:,i) = imresize(obj.RawStack(:,:,i),size(obj.Black));
+                end
+                obj.RawStack = RawStack2;
+            end
+            
         end
         
         function obj = TransDots(obj)
