@@ -65,9 +65,11 @@ for i = 1:size(images,3)
     [poly1,poly2] = Mask2Regions(b,pixelsize,outputName,TarPath,finalRes,options);
 end
 else
+    i=1;
     outputName = [prefix '_' num2str(i)];
     a=images;
     b=a>0;
+    options(8,1) = i;
     [poly1,poly2] = Mask2Regions(b,pixelsize,outputName,TarPath,finalRes,options);   
 end
 disp('Done!')

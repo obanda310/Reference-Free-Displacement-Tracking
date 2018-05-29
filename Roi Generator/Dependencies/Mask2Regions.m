@@ -146,7 +146,7 @@ Poly2Regions(filnm2,polygons2);
 Poly2OVL(filnm3,polygons2);
 
 %%
-disp(['Regions file has ',num2str(size(polygons,1)),' Regions and took ' num2str(toc) ' seconds!'])
+disp(['Regions file #' num2str(options(8,1)) ' has ',num2str(size(polygons,1)),' Regions and took ' num2str(toc) ' seconds!'])
 %End of program
 
 
