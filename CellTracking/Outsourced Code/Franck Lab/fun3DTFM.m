@@ -363,7 +363,6 @@ if ismatrix(I)
     
     Ix = -imfilter(Ix,d,'conv','same',padOpt);
     Iy = -imfilter(Iy,d','conv','same',padOpt);
-    
 else
     if length(w) > 1
         Ix = -imfilter(I,w','same',padOpt); Ix = -imfilter(Ix,reshape(w,1,1,[]),'same',padOpt);
@@ -376,8 +375,7 @@ else
     Ix = -imfilter(Ix,d,'same',padOpt);
     Iy = -imfilter(Iy,d','same',padOpt);
     Iz = -imfilter(Iz,reshape(d,1,1,[]),'same',padOpt);
-    varargout{3} = Iz;
-    
+    varargout{3} = Iz;   
 end
 
 varargout{1} = Ix; varargout{2} = Iy;
@@ -485,17 +483,7 @@ end
 
 
 tiPN = cell(maxTime,1);
-for k = 1:maxTime
-    ti{k}{1};% Probing
-    
-    n{k+1,1}{1}; %Probing
-    
-    ti{k}{2};%Probing
-    
-    n{k+1,1}{2}+ti{k}{3};%Probing
-    
-    n{k+1,1}{3};%Probing
-    
+for k = 1:maxTime  
     tiNormal{k} = abs(ti{k}{1}.*n{k+1,1}{1}+ti{k}{2}.*n{k+1,1}{2}+ti{k}{3}.*n{k+1,1}{3});
     for m = 1:3
         tiParallel_{k}{m} = ti{k}{m}-tiNormal{k}.*n{k+1,1}{m};
@@ -510,18 +498,7 @@ end
 
 %% ========================================================================
 function ti = funCalculateTractions(Sij,m,s,n,interpMethod)
-% size(m{1})
-% max(m{1}(:))
-% size(m{3})
-% max(m{3}(:))
-% size(s{1})
-% max(s{1}(:))
-% size(s{3})
-% max(s{3}(:))
-% 
-% size(Sij{3,3})
-% min(Sij{3,3}(:))
-% max(Sij{3,3}(:))
+
 s33 = sampleData3(Sij{3,3},m,s,interpMethod);
 s11 = sampleData3(Sij{1,1},m,s,interpMethod);
 s22 = sampleData3(Sij{2,2},m,s,interpMethod);
@@ -557,12 +534,6 @@ Sij = varargin{1};
 s = varargin{2};
 n = varargin{3};
 OS = varargin{4};
-
-% mSize = size(Sij{1}{1});
-% dm = s{1}{2}(2) - s{1}{2}(1);
-% idx = cell(1,3);
-% for i = 1:3;idx{i} = (1:dm:mSize(i)*dm); end
-% [m{1}, m{2}, m{3}] = meshgrid(idx{:});
 
 mSize = size(Sij{1}{1});
 dm = s{1}{2}(2) - s{1}{2}(1);
