@@ -38,6 +38,7 @@ end
 %This should help with image stacks that are not completely filled with dot
 %array. Without this, the object detection protocol detects false objects
 %in the noise of an unpatterned region.
+if ismember(5,experiment.ppOptions{1}) ==0 && ismember(6,experiment.ppOptions{1}) ==0
 close all
 se = strel('disk',5);
 se2 = strel('disk',10);
@@ -48,6 +49,9 @@ imshow(emptyMask,[])
 filePath = cd;
 savefile = [filePath '\Mask of Empty Regions.tif'];
 export_fig(emptyRegion,savefile,'-native');
+else
+    emptyMask = ones([size(roiMasks(:,:,1),1) size(roiMasks(:,:,1),2)]);
+end
 
 %% Viewing Pillars as a Frame Weighted Z-Projection
 %Frames are thresholded and projected through-Z. Pixels appearing in later
@@ -165,7 +169,7 @@ while fixProblems == 1
     pBds(1,3) = pBds(1,3)+pBds(1,1);
     pBds(1,4) = pBds(1,4)+pBds(1,2);
 
-    for j = 1:2
+    for j = 1
         problems(:,3) = 0;
         for l = 1:size(problems,1)
             if lub(problems(l,1),1)>pBds(1,1) && lub(problems(l,1),1)<pBds(1,3) && lub(problems(l,1),2)>pBds(1,2) && lub(problems(l,1),2)<pBds(1,4)

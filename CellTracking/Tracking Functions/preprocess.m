@@ -5,6 +5,29 @@ ppOptions = ppSelector();
 
 %use kilfoil pre-processing?
 if ismember(5,ppOptions{1}) == 1
+    if ismember(6,ppOptions{1})==1
+        images = uint16(removeLarge2(images,(metadata.scalingX*1000000)/0.1625));
+        rawFile = [metadata.filepath,metadata.filename,'Raw2.tif'];
+        if exist(rawFile,'file')
+            delete(rawFile)
+        end
+        
+        for i = 1:size(images,3)
+            thisImg = uint16(images(:,:,i));
+            imwrite(thisImg,rawFile,'WriteMode','append');
+        end
+    else
+        images = imresize(images,(metadata.scalingX*1000000)/0.1625);
+        rawFile = [metadata.filepath,metadata.filename,'Raw2.tif'];
+        if exist(rawFile,'file')
+            delete(rawFile)
+        end
+        
+        for i = 1:size(images,3)
+            thisImg = uint16(images(:,:,i));
+            imwrite(thisImg,rawFile,'WriteMode','append');
+        end
+    end
     filtMasks = (bpass3dMB(images, [1 1 1], [12 12 12],[0 0]));
     
     
@@ -86,7 +109,7 @@ else
             dilatedMask(:,:,i) = imdilate(filtMasks(:,:,i),SE);
             removeIsolatedMask(:,:,i) = bwareaopen(dilatedMask(:,:,i),round((15*d)^2));
             filtMasks(:,:,i) = filtMasks(:,:,i) .* removeIsolatedMask(:,:,i);
-        end       
+        end
         
         %         % Use regionprops to find the centroids of all the objects in the
         %         % new filtered masks, i.e. filtMasks

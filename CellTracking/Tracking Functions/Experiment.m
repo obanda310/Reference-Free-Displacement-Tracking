@@ -153,6 +153,11 @@ classdef Experiment
                 % Loop through each image in the ROI image stack, append the
                 % current image (thisImg) to the end of the series, and save it
                 % to the filepath specified in roiFile
+                if ismember(6,obj.ppOptions{1}) == 1 || ismember(5,obj.ppOptions{1}) == 1
+                    scaleCheck = .5;
+                else
+                    scaleCheck = 1;
+                end
                 for i = 1:noImgs
                     % We use imadjust so that the features of the images are
                     % visible after being saved
@@ -161,7 +166,7 @@ classdef Experiment
                     thisImg = imgaussfilt(imadjust(roiImgs(:,:,i),[noiseRng,highIn],[]));
                     imwrite(imresize(thisImg,scaleFactor),roiFile,'WriteMode','append');
                     thisImg2 = uint16(roiMasks(:,:,i));
-                    imwrite(imresize(thisImg2,scaleFactor),maskFile,'WriteMode','append');
+                    imwrite(thisImg2,maskFile,'WriteMode','append');
                     
                 end
                 
@@ -190,7 +195,7 @@ classdef Experiment
                 % generation purposes
                 bkImg = uint16(zeros(roiBounds(4),roiBounds(3)));
                 blackFile = [obj.metadata.filepath,obj.metadata.filename,'black.tif'];
-                imwrite(imresize(bkImg,scaleFactor),blackFile,'tif');
+                imwrite(bkImg,blackFile,'tif');
             end
         end
     end
