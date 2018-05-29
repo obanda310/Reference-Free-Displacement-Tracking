@@ -34,7 +34,7 @@ options(2,1) = 0; %feature on or off (1/0)
 %Convert single pixels to squares
 options(5,1) = 1; %feature on or off (1/0)
 if options(5,1)==1
-    options(2,1)=0; %feature on or off (1/0)
+    options(2,1)=0;
 end
 
 %Run version 2 of Mask2Poly

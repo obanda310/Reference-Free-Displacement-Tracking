@@ -85,7 +85,7 @@ elseif options(5,1) == 1
     end
 end
 
-if (options(7,1) == 0) || (options(7,1) == 1 && mod(options(8,1),10)==0)
+if (options(7,1) == 0) || (options(7,1) == 1 && mod(options(8,1),10)==1)
 %% View all polylines as Raw Image Overlay
 hFig = figure;
 set(hFig, 'Position', [50 50 1200 600]);
