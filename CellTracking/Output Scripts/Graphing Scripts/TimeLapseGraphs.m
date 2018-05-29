@@ -19,6 +19,7 @@ colOptions{2,1} = 'black';
 colOptions{1,2} = 'black';
 colOptions{2,2} = 'white';
 
+green = [.2 .7 .2];
 
 %singles =load('ShearNormalStats.mat','vqT')
 
@@ -36,7 +37,7 @@ for i = 1:size(colOptions,2)
 
     scatter(0:15:90,vqS(:,1)/max(vqS(:,1)),50,'square',bcolor,'markerfacecolor','red')
     hold on
-    scatter(0:15:90,vqB(:,1)/max(vqS(:,1)),50,'square',bcolor,'markerfacecolor','green')
+    scatter(0:15:90,vqB(:,1)/max(vqS(:,1)),50,'square',bcolor,'markerfacecolor',green)
     
     
     
@@ -80,7 +81,7 @@ for i = 1:size(colOptions,2)
    
     scatter(0:15:90,vqS(:,2)/max(vqS(:,2)),50,'square',bcolor,'markerfacecolor','red')
     hold on
-    scatter(0:15:90,vqB(:,2)/max(vqS(:,2)),50,'square',bcolor,'markerfacecolor','green')
+    scatter(0:15:90,vqB(:,2)/max(vqS(:,2)),50,'square',bcolor,'markerfacecolor',green)
     
     
     
@@ -123,7 +124,7 @@ for i = 1:size(colOptions,2)
 
     scatter(vqS(:,2)/max(vqS(:,2)),vqS(:,1)/max(vqS(:,1)),50,'square',bcolor,'markerfacecolor','red')
     hold on
-    scatter(vqB(:,2)/max(vqS(:,2)),vqB(:,1)/max(vqS(:,1)),50,'square',bcolor,'markerfacecolor','green')
+    scatter(vqB(:,2)/max(vqS(:,2)),vqB(:,1)/max(vqS(:,1)),50,'square',bcolor,'markerfacecolor',green)
     
     
     set(gca,'Color',bcolor)
