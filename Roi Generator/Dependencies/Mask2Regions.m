@@ -3,21 +3,42 @@ function [polygons2,polyFull] = Mask2Regions(raw,pixlength,outputName,TarDir,fin
 %the Zen application.
 
 
-%Make sure there are no features within 'EDGE' pixels of border
-EDGE = 1; %round(4000/(xsize*LSS));
-raw2 = zeros(size(raw,1)+2*EDGE,size(raw,2)+2*EDGE);
-raw2(2:end-1,2:end-1) = raw;
-clear raw
-raw = raw2;
-
 %Set variables based on input arguments
 temp=size(raw);
 ysize=temp(1);
 xsize=temp(2);
 % save('raw.mat','raw')
 %%
-[polyFull,polygonsOld,polygons] = Mask2Polyv3(raw,options);
+if size(raw,3)>1
+    for i = 1:size(raw,3)
+        clear raw3
+        raw3(:,:) = raw(:,:,i);
+        %Make sure there are no features within 'EDGE' pixels of border
+        EDGE = 1; %round(4000/(xsize*LSS));
+        raw2 = zeros(size(raw3,1)+2*EDGE,size(raw3,2)+2*EDGE);
+        raw2(2:end-1,2:end-1) = raw3;
+        clear raw3
+        raw3 = raw2;
+        [polyFull,polygonsOld,polygons] = Mask2Polyv3(raw3(:,:),options);
+        if i == 1
+            poly2 = polygons;
+        else
+            poly2 = cat(1,poly2,polygons);
+        end
+        clear polygons
+        polygons = poly2;
+    end
+else
+    %Make sure there are no features within 'EDGE' pixels of border
+    EDGE = 1; %round(4000/(xsize*LSS));
+    raw2 = zeros(size(raw,1)+2*EDGE,size(raw,2)+2*EDGE);
+    raw2(2:end-1,2:end-1) = raw;
+    clear raw
+    raw = raw2;
+    [polyFull,polygonsOld,polygons] = Mask2Polyv3(raw(:,:),options);
+end
 
+if iscell(polygons) ==1
 %% Dilate polygon vertices to the ZEN coordinate space
 %Convert pixel coordinates into real coordinates in units of micrometers by
 %scaling with pixlength
@@ -64,11 +85,13 @@ elseif options(5,1) == 1
     end
 end
 
+if (options(7,1) == 0) || (options(7,1) == 1 && mod(options(8,1),10)==0)
 %% View all polylines as Raw Image Overlay
 hFig = figure;
 set(hFig, 'Position', [50 50 1200 600]);
 subplot(1,2,1);
-imshow(raw);
+rawImage = max(raw,[],3);
+imshow(rawImage);
 hold on
 for i = 1:size(polygons,1)
     try
@@ -105,7 +128,10 @@ ywidth = (yMax-yMin) *10^6;
 
 text(-finalRes(1,1)/2*pixlength+5,-finalRes(1,2)/2*pixlength+25,['Width: ',num2str(xwidth)])
 text(-finalRes(1,1)/2*pixlength+5,-finalRes(1,2)/2*pixlength+10,['Height: ',num2str(ywidth)])
-
+end
+else
+   polygons2{1,1}(1:4,1:2) = 0; 
+end
 
 %% Create the .Regions file for ZEN
 %Define path and file name for .rls file
@@ -122,5 +148,6 @@ Poly2OVL(filnm3,polygons2);
 %%
 disp(['Regions file has ',num2str(size(polygons,1)),' Regions and took ' num2str(toc) ' seconds!'])
 %End of program
+
 
 end

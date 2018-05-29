@@ -232,7 +232,16 @@ end
 % end
 
 %% Calculate total number of vertices
+%if no regions, skip this
+try
 for i = 1:size(poly3,1)
     elemsizes(i,1) = size(poly3{i,1},1);
 end
 numVertices = sum(elemsizes,1);
+catch
+    numVertices = 0;
+    poly1 = 0;
+    poly2 = 0;
+    poly3 = 0;
+    disp('Warning! No vertices on current image! If that was intended, ignore this!')
+end
