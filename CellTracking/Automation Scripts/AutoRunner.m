@@ -7,6 +7,29 @@ load(strcat(ListPath,ListName),'dirList')
 parts = strsplit(ListName, 'List');
 prefix = parts{1};
 set(0,'defaultfigurecolor',[1 1 1])
+%% For updating paths (when files are moved)
+%set a as new path root
+%set b as old path root
+ak = strfind(fullListName,ListName);
+
+a = fullListName(1:ak-1);
+
+Schar = char(dirList{:});
+all_rows_same = all(diff(Schar, [], 1) == 0, 1);
+common_cols = find(~all_rows_same, 1, 'first');
+if isempty(common_cols)
+  b = '?'
+else
+  b = dirList{1}(1:common_cols-1);
+end
+
+for i = 1:size(dirList,1)
+    
+    dirList{i,1} = strrep(dirList{i,1},b,a);
+end
+%%
+save(fullListName,'dirList')
+
 %% For clearing old files
 for j = 1:2
     for i = 1:size(dirList,1)
@@ -26,6 +49,43 @@ for i = 1:size(dirList,1)
     end
 end
 
+%% For calculating mean deviations in a dataset
+clear StdVals
+for i2 = 1:size(dirList,1)
+    cd(dirList{i2,1})
+    load('3Ddata.mat')
+    xVals = shear.ltdX(:,shear.noCellTraj);
+    xVals(xVals == 0) = NaN;
+    
+    yVals = shear.ltdY(:,shear.noCellTraj);
+    yVals(yVals == 0) = NaN;
+    
+    xyVals = squeeze(shear.ltdXY(:,shear.noCellTraj));
+    xyVals = cat(1,xyVals,-1*xyVals);
+    xyVals(xyVals == 0) = NaN;
+    
+    StdVals(i2,1) = std(xVals(:),'omitnan')*1000;
+    StdVals(i2,2) = std(yVals(:),'omitnan')*1000;
+    StdVals(i2,3) = std(xyVals(:),'omitnan')*1000;
+    StdVals(i2,4) = m3.noiseCutoff*1000;
+    
+   i2
+
+end
+%%
+    xyzStats(1,1) = mean(StdVals(:,3)*2);
+    xyzStats(1,2) = std(StdVals(:,3)*2);
+    
+    xyzStats(1,3) = mean(StdVals((StdVals(:,3)<(xyzStats(1,1)+2*xyzStats(1,2))),3)*2);
+    xyzStats(1,4) = std(StdVals((StdVals(:,3)<(xyzStats(1,1)+2*xyzStats(1,2))),3)*2);
+    
+    xyzStats(2,1) = mean(StdVals(:,4));
+    xyzStats(2,2) = std(StdVals(:,4));
+    
+    xyzStats(2,3) = mean(StdVals((StdVals(:,4)<(xyzStats(2,1)+2*xyzStats(2,2))),4));
+    xyzStats(2,4) = std(StdVals((StdVals(:,4)<(xyzStats(2,1)+2*xyzStats(2,2))),4));
+    
+    
 %% For Running Z Script
 for i = 1:size(dirList,1)
     cd(dirList{i,1})

@@ -172,13 +172,21 @@ for i2 = 1:size(poly1,1)
         pT3(idx(1,1),6) = 1;
     end
     
+    
     %% Identify Pixels in Vertical or Horizontal Lines
     % Also making sure not to mark corners
     for i = 1:size(pT3,1)-2
+        
+        
         if ((pT3(i,1) == pT3(i+1,1) && pT3(i+1,2) ~= pT3(i+2,2)) || (pT3(i,2) == pT3(i+1,2) && pT3(i+1,1) ~= pT3(i+2,1))) && pT3(i,6)==0
             pT3(i+1,3) = 1;
         end
+        if pT3(i,1) == pT3(i+2,1) && pT3(i,2) == pT3(i+2,2)
+            pT3(i+1,6) = 1;
+            pT3(i+1,3) = 0;
+        end
     end
+    
     % Remove Pixels in Vertical or Horizontal Lines
     index = find(pT3(:,3)==0);
     pT4 = pT3(index,1:6);

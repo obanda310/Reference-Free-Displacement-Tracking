@@ -85,6 +85,39 @@ elseif options(5,1) == 1
     end
 end
 
+%% Deal with single pixel lines (thin rectangles)
+for i = 1:size(polygons2,1)
+    if size(unique(polygons2{i,1}(:,1)),1)==1
+        clear tempPoly
+        tempPoly(1) = min(polygons2{i,1}(:,2));
+        tempPoly(2) = max(polygons2{i,1}(:,2));
+        tempPoly(3) = polygons2{i,1}(1,1);
+        polygons2{i,1}(1,1) = tempPoly(3)+((pixlength*(10^-6))/2);
+        polygons2{i,1}(2,1) = tempPoly(3)+((pixlength*(10^-6))/2);
+        polygons2{i,1}(3,1) = tempPoly(3)-((pixlength*(10^-6))/2);
+        polygons2{i,1}(4,1) = tempPoly(3)-((pixlength*(10^-6))/2);
+        polygons2{i,1}(1,2) = tempPoly(1)-((pixlength*(10^-6))/2);
+        polygons2{i,1}(2,2) = tempPoly(2)+((pixlength*(10^-6))/2);
+        polygons2{i,1}(3,2) = tempPoly(2)+((pixlength*(10^-6))/2);
+        polygons2{i,1}(4,2) = tempPoly(1)-((pixlength*(10^-6))/2);
+    end
+    if size(unique(polygons2{i,1}(:,2)),1)==1
+                clear tempPoly
+        tempPoly(1) = min(polygons2{i,1}(:,1));
+        tempPoly(2) = max(polygons2{i,1}(:,1));
+        tempPoly(3) = polygons2{i,1}(1,2);
+        polygons2{i,1}(1,2) = tempPoly(3)+((pixlength*(10^-6))/2);
+        polygons2{i,1}(2,2) = tempPoly(3)+((pixlength*(10^-6))/2);
+        polygons2{i,1}(3,2) = tempPoly(3)-((pixlength*(10^-6))/2);
+        polygons2{i,1}(4,2) = tempPoly(3)-((pixlength*(10^-6))/2);
+        polygons2{i,1}(1,1) = tempPoly(1)-((pixlength*(10^-6))/2);
+        polygons2{i,1}(2,1) = tempPoly(2)+((pixlength*(10^-6))/2);
+        polygons2{i,1}(3,1) = tempPoly(2)+((pixlength*(10^-6))/2);
+        polygons2{i,1}(4,1) = tempPoly(1)-((pixlength*(10^-6))/2);
+    end
+end
+
+
 if (options(7,1) == 0) || (options(7,1) == 1 && mod(options(8,1),10)==1)
 %% View all polylines as Raw Image Overlay
 hFig = figure;

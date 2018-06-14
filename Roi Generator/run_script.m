@@ -26,7 +26,7 @@ finalRes(1,2) = input('What is the final Y resolution in pixels (desired frame s
 tic
 %% Add other options here:
 %Remove small regions?
-options(1,1) = 1; %feature on or off (1/0)
+options(1,1) = 0; %feature on or off (1/0)
 
 %Convert single pixels to triangles
 options(2,1) = 0; %feature on or off (1/0)
@@ -46,7 +46,7 @@ options(4,1) = 1; %feature on or off (1/0)
 %Open images stack and compress images into single file. This can be useful
 %to create many negative spaces with fewer features. Not compatible with 3D
 %regions.
-options(6,1) = 0; %feature on or off (1/0)
+options(6,1) = 1; %feature on or off (1/0)
 if options(6,1) == 1
     options(4,1) = 0;
 end
