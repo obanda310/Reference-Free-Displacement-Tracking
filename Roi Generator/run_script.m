@@ -19,6 +19,7 @@ images = getImages([ListPath,ListName]);
 parts = strsplit(TarPath, '\');
 prefix = parts{end}; %Sets the output name prefix
 
+%%
 % Zen Application frame parameters for scaling images and regions
 pixelsize = input('What is the pixel size in microns?');
 finalRes(1,1) = input('What is the final X resolution in pixels (desired frame size in ZEN)?');
@@ -55,6 +56,9 @@ end
 %large images stacks with more than ~20 images in the stack)
 options(7,1) = 1;
 
+%%Use full pixel trace (no shortcuts on any corners)
+options(9,1) = 1;
+
 %% Iterative .Regions and .ovl outputs
 if options(6,1) == 0
 for i = 1:size(images,3)
@@ -62,7 +66,7 @@ for i = 1:size(images,3)
     a=images(:,:,i);
     b=a>0;
     options(8,1) = i;
-    [poly1,poly2] = Mask2Regions(b,pixelsize,outputName,TarPath,finalRes,options);
+    [poly1,poly2,poly3] = Mask2Regions(b,pixelsize,outputName,TarPath,finalRes,options);
 end
 else
     i=1;
@@ -70,6 +74,12 @@ else
     a=images;
     b=a>0;
     options(8,1) = i;
-    [poly1,poly2] = Mask2Regions(b,pixelsize,outputName,TarPath,finalRes,options);   
+    if options(9,1) == 0
+    [poly1,poly2,poly3] = Mask2Regions(b,pixelsize,outputName,TarPath,finalRes,options);   
+    else
+        [poly1,poly3] = Mask2RegionsAlt(b,pixelsize,outputName,TarPath,finalRes,options);   
+    end
 end
 disp('Done!')
+
+

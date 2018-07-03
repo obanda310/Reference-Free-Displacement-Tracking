@@ -74,11 +74,14 @@ classdef ShearData
         %% ------------------------------------------------------------
         function obj = ShearData(raw,image)
             disp('Copying Raw data Into ShearData Class Variable')
+            progressbar('Indexing displacement data')
+            
             obj.numTraj = max(raw.data(:,raw.dataKey(4,1))); %Number of Trajectories
             %HANDLING XYZ DATA
             skipCount = 0;
             missingNo = 0;
             for i = 1:obj.numTraj
+                progressbar(i/obj.numTraj)
                 % Here we build a book of pages (3D array) with the data for a single
                 % object/trajectory per page. Most of the code is to ensure that each
                 % page is the same size matrix as the next.
@@ -148,7 +151,9 @@ classdef ShearData
             noCellTrajIni = 0;
             SE = strel('disk',80);
             imageAreaDil = imerode(image.Area,SE);
+            
             for i = 1:obj.numTraj
+                
                 %if it is in black region
                 if imageAreaDil(ceil(obj.rawY1(i)),ceil(obj.rawX1(i)))~=0
                     if noCellTrajIni == 0

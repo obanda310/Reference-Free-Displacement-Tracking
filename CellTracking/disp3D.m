@@ -45,13 +45,13 @@ plane = growPlanes(plane,raw3D);
 disp(['done Building Planes at ' num2str(toc) ' seconds'])
 
 %%
-% % View all detected planes
-% figure
-% hold on
-% for i = 1:size(plane.raw,2)
-%     scatter3(raw3D.X(plane.raw(1:nnz(plane.raw(:,i)),i)),raw3D.Y(plane.raw(1:nnz(plane.raw(:,i)),i)),raw3D.Z(plane.raw(1:nnz(plane.raw(:,i)),i)))
-% end
-% hold off
+% View all detected planes
+figure
+hold on
+for i = 1:size(plane.raw,2)
+    scatter3(raw3D.X(plane.raw(1:nnz(plane.raw(:,i)),i)),raw3D.Y(plane.raw(1:nnz(plane.raw(:,i)),i)),raw3D.Z(plane.raw(1:nnz(plane.raw(:,i)),i)))
+end
+hold off
 %%
 % Filter planes with too few members (and update r)
 [plane,r] = cleanPlanes(plane,raw3D);

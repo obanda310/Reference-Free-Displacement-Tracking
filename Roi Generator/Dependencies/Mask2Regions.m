@@ -1,4 +1,4 @@
-function [polygons2,polyFull] = Mask2Regions(raw,pixlength,outputName,TarDir,finalRes,options)
+function [polygons2,polyFull,polygons] = Mask2Regions(raw,pixlength,outputName,TarDir,finalRes,options)
 %Converts a binary image into a .Regions file and a .ovl file to be read by
 %the Zen application.
 
@@ -51,6 +51,7 @@ end
 %Convert into the coordinate system used by the microscope. Coordinate
 %system is in units of meters, with the origin at the center of the field
 %of view.
+
 for i = 1:size(polygons2,1)
     polygons2{i,1}(:,1) = ((polygons2{i,1}(:,1)-(finalRes(1,1)*pixlength/2))*(10^-6));
     polygons2{i,1}(:,2) = ((polygons2{i,1}(:,2)-(finalRes(1,2)*pixlength/2))*(10^-6));
