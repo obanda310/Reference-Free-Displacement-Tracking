@@ -1,3 +1,14 @@
+
+
+%The Experiment class object is intended to store relavent information
+%about the specific data set to be analyzed for material deformation.
+%Specifically, this class object will hold images and metadata and allow
+%the user to process images all at once (e.g. in the event that one image
+%is cropped during runtime, all related images should be cropped the same
+%way)
+
+%Omar Banda
+
 classdef Experiment
     properties
         images

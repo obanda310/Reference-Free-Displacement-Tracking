@@ -4,6 +4,7 @@ RawStack = permute(image.RawStack,[2,1,3]);
 originalTest = image.RawStack(:,:,end);
 oMean = mean(originalTest(:));
 oStd = std(originalTest(:));
+
 intCutoff = oMean+2*oStd;
 
 %% Pull intensity values from the raw image stack

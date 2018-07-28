@@ -1,9 +1,19 @@
 function [planesLoc2,planesLocFiltList] = placePlanes(r,plane,Surface2)
-
-for j = 1:size(plane.final,2)
-    for i = 1:nnz(plane.final(:,j))
-        planesLoc(i,j) = (feval(Surface2,r.X(plane.final(i,j)),r.Y(plane.final(i,j)))) - r.Z(plane.final(i,j));
+if Surface2~=0
+    
+    for j = 1:size(plane.final,2)
+        for i = 1:nnz(plane.final(:,j))
+            planesLoc(i,j) = (feval(Surface2,r.X(plane.final(i,j)),r.Y(plane.final(i,j)))) - r.Z(plane.final(i,j));
+        end
     end
+    
+else
+    for j = 1:size(plane.final,2)
+        for i = 1:nnz(plane.final(:,j))
+            planesLoc(i,j) = max(r.Z) - r.Z(plane.final(i,j));
+        end
+    end
+    
 end
 planesLoc(planesLoc==0)=nan;
 planesLoc2 = mean(planesLoc,'omitnan');
@@ -15,6 +25,7 @@ if size(planesLocFilt,2)>1
     end
 end
 planesLocFiltList(planesLocFiltList==0) = [];
+
 
 
 %Old Approach

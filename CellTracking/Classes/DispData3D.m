@@ -332,7 +332,7 @@ classdef DispData3D
                 for j = 1:size(rowPlanes,3)
                     for i = 1:size(rowPlanes,1)
                         n = nnz(rowPlanes(i,:,j));
-                        scatter3(r.X(rowPlanes(i,1:n,j)),r.Y(rowPlanes(i,1:n,j)),r.Z(rowPlanes(i,1:n,j)))
+                        scatter3(r.X(rowPlanes(i,1:n,j)),r.Y(rowPlanes(i,1:n,j)),r.Z(rowPlanes(i,1:n,j)),'.')
                     end
                 end
                 

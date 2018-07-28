@@ -143,8 +143,11 @@ disp(['done Building Rows at ' num2str(toc) ' seconds'])
 disp('Approximating Surface Coordinates')
 [Surface2,SurfaceAll,Zeros] = findSurface2(shear,image,raw);
 disp(['Done Approximating Surface Coordinates at ' num2str(toc)])
-
-[planesLoc2,planesLocFiltList] = placePlanes(r,plane,Surface2);
+try
+    [planesLoc2,planesLocFiltList] = placePlanes(r,plane,Surface2);
+catch
+    [planesLoc2,planesLocFiltList] = placePlanes(r,plane,0);
+end
 %% Plot Interpolated Surface and Detections
 % figure
 % xlim([0 max(shear.rawX(:))])
