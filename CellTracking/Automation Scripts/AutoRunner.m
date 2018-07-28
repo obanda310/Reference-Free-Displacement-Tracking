@@ -288,7 +288,7 @@ for i = 1:size(colOptions,2)
     set(gca,'Color',bcolor)
     text(1.05,-.8,'\leftarrowAvg. Cell Boundary','fontsize',16,'color',fcolor)
     
-    set(gca,'fontsize',28,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
+    set(gca,'fontsize',28,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on','LineWidth',2)
     xt = 'Location on Trace (AU)';% input('enter the xaxis label','s');
     yt = 'Displacement (\mum)'; %input('enter the yaxis label','s');
     tt = 'Line-Profile Displacements';%input('enter the title','s');
@@ -333,7 +333,7 @@ for i = 1:size(colOptions,2)
     set(gca,'Color',bcolor)
     text(1.05,-.25,'\leftarrowAvg. Cell Boundary','fontsize',16,'color',fcolor)
     
-    set(gca,'fontsize',28,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
+    set(gca,'fontsize',28,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on','LineWidth',2)
     xt = 'Location on Trace (AU)';% input('enter the xaxis label','s');
     yt = 'Displacement (AU)'; %input('enter the yaxis label','s');
     tt = 'Line-Profile Displacements';%input('enter the title','s');
@@ -544,7 +544,15 @@ export_fig(AllProfiles,savefile,'-native');
 cd(ListPath)
 
 %% Plot Averages over individuals
+colOptions{1,1} = 'white';
+colOptions{2,1} = 'black';
+colOptions{1,2} = 'black';
+colOptions{2,2} = 'white';
 
+for cI = 1:2 
+        fcolor = colOptions{1,cI};
+    bcolor = colOptions{2,cI};
+    set(0,'defaultfigurecolor',bcolor)
 %CHANGE FONT SIZES HERE
 AxisFontSize = 40;
 AxisTitleFontSize = 40;
@@ -558,73 +566,71 @@ hold on
 % else
 % rectangle('Position',[0,0,8,7],'FaceColor',[.65 .85 1],'EdgeColor',[.9 0 .9])
 % end
-
-for j = 1:size(Radials,2)
     
-    [cidx, ~] = find(pairs == j, 1, 'first');
-    if strcmp(prefix ,'pill ') == 1
-        for i = 1:size(Radials,3)
-            p1 = plot(Xs,Radials(:,j,i),'Color',colormap(cidx,:),'LineWidth',1.5);
-        end
+    for j = 1:size(Radials,2)
         
-    else
-        for i = 1:size(Radials,3)
-            p1 = plot(Xs,Radials(:,j,i),'Color',[.8 .8 .8],'LineWidth',1.5);
+        [cidx, ~] = find(pairs == j, 1, 'first');
+        if strcmp(prefix ,'pill ') == 1
+            for i = 1:size(Radials,3)
+                p1 = plot(Xs,Radials(:,j,i),'Color',colormap(cidx,:),'LineWidth',1.5);
+            end
+            
+        else
+            for i = 1:size(Radials,3)
+                p1 = plot(Xs,Radials(:,j,i),'Color',[.8 .8 .8],'LineWidth',1.5);
+            end
         end
     end
-end
-
-if strcmp(prefix ,'pill ') == 1
-    for i = 1:size(RadialsM2,2)
-        p2 = plot(Xs,RadialsM2(:,i),'Color',colormap(i,:),'LineWidth',9,'LineStyle','-.');
-        %plot(Xs,RadialsM2(:,i)+RadialsStd(:,i),'Color',colormap(i,:))
-        %plot(Xs,RadialsM2(:,i)-RadialsStd(:,i),'Color',colormap(i,:))
+    
+    if strcmp(prefix ,'pill ') == 1
+        for i = 1:size(RadialsM2,2)
+            p2 = plot(Xs,RadialsM2(:,i),'Color',colormap(i,:),'LineWidth',9,'LineStyle','-.');
+        end
+    else
+        
+        p2 = plot(Xs,mean(RadialsM2,2,'omitnan')','Color',fcolor,'LineWidth',9,'LineStyle','-.');
+              
     end
-else
+    
+    %plot([0 20],[0.5 0.5],'LineWidth',3,'LineStyle','--','Color','black')
     
     
-    p2 = plot(Xs,mean(RadialsM2,2,'omitnan')','Color',[.1 .1 .1],'LineWidth',9,'LineStyle','-.');
-    %plot(Xs,RadialsM2(:,i)+RadialsStd(:,i),'Color',colormap(i,:))
-    %plot(Xs,RadialsM2(:,i)-RadialsStd(:,i),'Color',colormap(i,:))
     
+    if strcmp(prefix ,'pill ') == 1
+        yticks([0:2:7])
+        axis([0 20 0 7])
+    else
+        yticks([0:3])
+        axis([0 20 0 3])
+    end
     
+    rectangle('Position',[0,0,25,.3],'FaceColor',[.7 .7 .7],'EdgeColor',[.7 .7 .7])
+    text(9,0.2,'Noise Range','FontSize',20)
+    xt = {'Distance From Pattern (\mum)'};
+    yt = {'Displacement (\mum)'}; %'Magnitude of' ;
+    set(gca,'Color',bcolor)
+    set(gca,'fontsize',AxisFontSize)
+    set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'LineWidth',2)
+    tt = 'Line-Profile Displacements';%input('enter the title','s');
+    le = 'Single Trace'; %input('enter the legend','s');
+    le2 = 'Average Trace';
+    le3 = 'Border';
+    xl = xlabel(xt);
+    yl = ylabel(yt);
+    %tl = title(tt);
+    
+    set(xl, 'fontweight','bold','fontsize',AxisTitleFontSize,'color',fcolor);
+    set(yl,'fontweight','bold','fontsize',AxisTitleFontSize,'color',fcolor);
+    %leg = legend([p1 p2],le,le2,'location','Best');
+    %leg.FontSize = LegendFontSize;
+    %set(tl,'fontweight','bold','fontsize',title_font_size)
+    title = ['\All ' prefix ' Plots 2 '  fcolor ' on ' bcolor];
+    savefile = [ListPath title];
+    export_fig(AllProfiles2,savefile,'-native');
+    cd(ListPath)
+
 end
 
-%plot([0 20],[0.5 0.5],'LineWidth',3,'LineStyle','--','Color','black')
-
-
-
-if strcmp(prefix ,'pill ') == 1
-    yticks([0:2:7])
-    axis([0 20 0 7])
-else
-    yticks([0:3])
-    axis([0 20 0 3])
-end
-
-rectangle('Position',[0,0,25,.3],'FaceColor',[.7 .7 .7],'EdgeColor',[.7 .7 .7])
-text(9,0.2,'Noise Range','FontSize',20)
-
-xt = {'Distance From Pattern (\mum)'};
-yt = {'Displacement (\mum)'}; %'Magnitude of' ;
-set(gca,'fontsize',AxisFontSize)
-tt = 'Line-Profile Displacements';%input('enter the title','s');
-le = 'Single Trace'; %input('enter the legend','s');
-le2 = 'Average Trace';
-le3 = 'Border';
-xl = xlabel(xt);
-yl = ylabel(yt);
-%tl = title(tt);
-
-set(xl, 'fontweight','bold','fontsize',AxisTitleFontSize);
-set(yl,'fontweight','bold','fontsize',AxisTitleFontSize);
-%leg = legend([p1 p2],le,le2,'location','Best');
-%leg.FontSize = LegendFontSize;
-%set(tl,'fontweight','bold','fontsize',title_font_size)
-title = ['\All ' prefix ' Plots 2'];
-savefile = [ListPath title];
-export_fig(AllProfiles2,savefile,'-native');
-cd(ListPath)
 
 %%
 if strcmp(prefix ,'pill ') == 1
@@ -668,20 +674,19 @@ else
     RadialsC = Radials - .5;
     for i = 1:size(RadialsC,3)
         
-%% Max of each group
-for i = 1:size(
-
-
-
+        
+        
+        
+        
         for j = 1:size(RadialsC,2)
             fun1 = fit(Xs3',RadialsC(:,j,i),'cubicinterp');
             %plot(fun1)
             %xlim([0,10])
             %ylim([-1,10])
             try
-            idx = find(RadialsC(:,j,i)>0,1,'last');
-            zeros(i,j) = fzero(fun1,[idx]);
-
+                idx = find(RadialsC(:,j,i)>0,1,'last');
+                zeros(i,j) = fzero(fun1,[idx]);
+                
             catch
                 zeros(i,j) = NaN;
             end
@@ -689,8 +694,8 @@ for i = 1:size(
             
         end
     end
-               zeros(zeros>20) = 0;
-            zeros(isnan(zeros)) = 0;
+    zeros(zeros>20) = 0;
+    zeros(isnan(zeros)) = 0;
     clear RadialsZS
     RadialsZS(1,1) = mean(zeros(:));
     RadialsZS(2,1) = std(zeros(:));
@@ -698,4 +703,5 @@ for i = 1:size(
     
 end
 
+%% Max of each group
 

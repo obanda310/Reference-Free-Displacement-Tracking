@@ -1,7 +1,7 @@
 clear all
 close all
 
-addtopath('Export_Fig')
+%addtopath('Export_Fig')
 
 %CHANGE FONT SIZES HERE
 AxisFontSize = 28;
@@ -47,7 +47,7 @@ p2=plot(profBook2(1,:,sortIdx(i))*aScale,mean(profBook2(3,:,sortIdx(:)),3,'omitn
 p3=plot([cbf2 cbf2]*aScale,[min(min(min(profBook2))),max(max(max(profBook2)))],'color',[.3 .3 .3],'linestyle','--','linewidth',1);
 
 
-set(gca,'fontsize',AxisFontSize)
+set(gca,'fontsize',AxisFontSize,'LineWidth',2)
 xt = 'Location on Trace(AU)';% input('enter the xaxis label','s');
 yt = 'Displacement (\mum)'; %input('enter the yaxis label','s');
 tt = 'Line-Profile Displacements';%input('enter the title','s');

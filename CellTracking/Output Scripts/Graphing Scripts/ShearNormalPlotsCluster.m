@@ -85,7 +85,7 @@ for i = 1:size(colOptions,2)
     
     
     %Export Image
-    title = ['\ShearVsArea ' fcolor ' on ' bcolor];
+    title = ['\ShearVsArea Cluster ' fcolor ' on ' bcolor];
     savefile = [ListPath title];
     export_fig(sheararea,savefile,'-native');
     %%
@@ -131,7 +131,7 @@ for i = 1:size(colOptions,2)
     
     
     %Export Image
-    title = ['\NormalVsArea ' fcolor ' on ' bcolor];
+    title = ['\NormalVsArea Cluster ' fcolor ' on ' bcolor];
     savefile = [ListPath title];
     export_fig(normalarea,savefile,'-native');
     %%
@@ -177,7 +177,7 @@ for i = 1:size(colOptions,2)
     
     
     %Export Image
-    title = ['\ShearVsNormal ' fcolor ' on ' bcolor];
+    title = ['\ShearVsNormal Cluster ' fcolor ' on ' bcolor];
     savefile = [ListPath title];
     export_fig(shearnormal,savefile,'-native');
     
@@ -217,7 +217,7 @@ for i = 1:size(colOptions,2)
     
     
     %Export Image
-    title = ['\ShearVsNormalTrue ' fcolor ' on ' bcolor];
+    title = ['\ShearVsNormalTrue Cluster ' fcolor ' on ' bcolor];
     savefile = [ListPath title];
     export_fig(shearnormaltrue,savefile,'-native');
     

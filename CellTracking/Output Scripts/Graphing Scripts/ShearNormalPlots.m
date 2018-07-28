@@ -55,12 +55,12 @@ for i = 1:size(colOptions,2)
     catch
     end
     
-    plot([0:ceil(max(aTot)/1000)*1000],lmAS.Coefficients{2,1}*[0:ceil(max(aTot)/1000)*1000]+(lmAS.Coefficients{1,1}/max(singles.vqT(:,1))),'LineStyle','--','Color',fcolor,'HandleVisibility','off')
+    plot([0:ceil(max(aTot)/1000)*1000],lmAS.Coefficients{2,1}*[0:ceil(max(aTot)/1000)*1000]+(lmAS.Coefficients{1,1}/max(singles.vqT(:,1))),'LineStyle','--','Color',fcolor,'HandleVisibility','off','LineWidth',2)
 %     text(30,.967,['R^2: ' sprintf('%.2f',lmAS.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18)
 %     text(30,.867,['p: ' sprintf('%.2e',lmAS.Coefficients{2,4})],'color',fcolor,'fontsize',18)
     
     
-    set(gca,'Color',bcolor)
+    set(gca,'Color',bcolor,'LineWidth',2)
     %Axes, Text, Legends
     ylim([0 1])
     set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
@@ -101,12 +101,12 @@ for i = 1:size(colOptions,2)
     catch
     end
     
-    plot([0:ceil(max(aTot)/1000)*1000],lmAN.Coefficients{2,1}*[0:ceil(max(aTot)/1000)*1000]+(lmAN.Coefficients{1,1}/max(singles.vqT(:,2))),'LineStyle','--','Color',fcolor)
+    plot([0:ceil(max(aTot)/1000)*1000],lmAN.Coefficients{2,1}*[0:ceil(max(aTot)/1000)*1000]+(lmAN.Coefficients{1,1}/max(singles.vqT(:,2))),'LineStyle','--','Color',fcolor,'LineWidth',2)
 %     text(30,.967,['R^2: ' sprintf('%.2f',lmAN.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18,'HorizontalAlignment','left')
 %     text(30,.867,['p: ' sprintf('%.2e',lmAN.Coefficients{2,4})],'color',fcolor,'fontsize',18,'HorizontalAlignment','left')
 %     
     ylim([0 1])
-    set(gca,'Color',bcolor)
+    set(gca,'Color',bcolor,'LineWidth',2)
     %Axes, Text, Legends
     set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
     ytickformat('%.1f')
@@ -146,12 +146,12 @@ for i = 1:size(colOptions,2)
     catch
     end
     
-    plot([0:1],lmNS.Coefficients{2,1}*[0:1]+(lmNS.Coefficients{1,1}/max(singles.vqT(:,2))),'LineStyle','--','Color',fcolor)
+    plot([0:1],lmNS.Coefficients{2,1}*[0:1]+(lmNS.Coefficients{1,1}/max(singles.vqT(:,2))),'LineStyle','--','Color',fcolor,'LineWidth',2)
 %     text(.01,2.9,['R^2: ' sprintf('%.2f',lmNS.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18)
 %     text(.01,2.6,['p: ' sprintf('%.2e',lmNS.Coefficients{2,4})],'color',fcolor,'fontsize',18)
 %     text(.01,2.3,['X-coef.: ' sprintf('%.2f',lmNS.Coefficients{2,1})],'color',fcolor,'fontsize',18)
 %     
-    set(gca,'Color',bcolor)
+    set(gca,'Color',bcolor,'LineWidth',2)
     %Axes, Text, Legends
     set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
     ytickformat('%.1f')
@@ -191,7 +191,7 @@ for i = 1:size(colOptions,2)
     scatter(clusters.vqT(:,2),clusters.vqT(:,1),50,'square',bcolor,'markerfacecolor','y')
     catch
     end
-    set(gca,'Color',bcolor)
+    set(gca,'Color',bcolor,'LineWidth',2)
     %Axes, Text, Legends
     set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
     ytickformat('%.1f')

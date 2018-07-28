@@ -43,7 +43,7 @@ for i = 1:size(colOptions,2)
     
     set(gca,'Color',bcolor)
     %Axes, Text, Legends
-    set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
+    set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on','LineWidth',2)
     ytickformat('%.1f')
     xt = 'Time (min)';% input('enter the xaxis label','s');
     yt = '\Sigma |Shear| (AU)'; %input('enter the yaxis label','s');
@@ -87,7 +87,7 @@ for i = 1:size(colOptions,2)
     
     set(gca,'Color',bcolor)
     %Axes, Text, Legends
-    set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
+    set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on','LineWidth',2)
     ytickformat('%.1f')
     xt = 'Time (min)';% input('enter the xaxis label','s');
     yt = '\Sigma |Normal| (AU)'; %input('enter the yaxis label','s');
@@ -129,7 +129,7 @@ for i = 1:size(colOptions,2)
     
     set(gca,'Color',bcolor)
     %Axes, Text, Legends
-    set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
+    set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on','LineWidth',2)
     ytickformat('%.1f')
     yt = '\Sigma |Shear| (AU)';% input('enter the xaxis label','s');
     xt = '\Sigma |Normal| (AU)'; %input('enter the yaxis label','s');
