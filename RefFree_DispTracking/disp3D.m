@@ -8,8 +8,9 @@ set(0,'defaultfigurecolor',[1 1 1])
 tic
 autoChk = 1; %1 for auto, 0 otherwise
 %% Load Shear Data
-load('Shear Mat Files\DataShear')
 load('Shear Mat Files\DataRaw')
+load('Shear Mat Files\DataShear')
+
 %% Load Images
 image = ImageData(autoChk);
 image = rawStack(image,autoChk);
@@ -29,7 +30,7 @@ disp('Detecting 3D Centroids')
 raw3D=RawData3D(res,raw);
 raw3D=TranscribeR(raw3D);
 disp(['done Detecting 3D Centroids at ' num2str(toc) ' seconds'])
-%viewDetections(raw3D,raw)
+viewDetections(raw3D,raw)
 
 % Build Planes Dot by Dot
 %%

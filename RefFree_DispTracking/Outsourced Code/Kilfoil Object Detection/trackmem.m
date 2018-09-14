@@ -626,7 +626,7 @@ for i=istart+1:z %always starts at 2 (while inipos not implemented)
         %     now get rid of the guys we don't need anymore....
         %     but watch out for when we have no valid particles to track!
         wkeep = find( pos(:,1) > 0 )';, nkeep=length(wkeep);
-        if nkeep == 0, Warning(' We are going to crash now, no particles....'), end
+        %if nkeep == 0, Warning(' We are going to crash now, no particles....'), end
         resx = resx(:,wkeep);
         bigresx = bigresx(:,wkeep);  % this really hurts runtime
         pos = pos(wkeep,:);

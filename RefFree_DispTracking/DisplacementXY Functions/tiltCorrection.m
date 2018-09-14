@@ -32,6 +32,7 @@ sumIndFinal = find(sumIndXY);
 elseif nargin == 4
     sumIndFinal = noCellTraj;
 end
+disp(sumIndFinal)
 shear.rawdX(shear.rawdX==0) = NaN;
 shear.rawdY(shear.rawdY==0) = NaN;
 shear.rawdXY(shear.rawdXY==0) = NaN;

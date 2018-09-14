@@ -38,20 +38,20 @@ end
 %This should help with image stacks that are not completely filled with dot
 %array. Without this, the object detection protocol detects false objects
 %in the noise of an unpatterned region.
-if ismember(5,experiment.ppOptions{1}) ==0 && ismember(6,experiment.ppOptions{1}) ==0
-close all
-se = strel('disk',5);
-se2 = strel('disk',10);
-empty = roiMasks(:,:,1)>0;
-emptyMask = imerode(bwareaopen(imclose(imdilate(empty,se),se2),1000),se);
-emptyRegion = figure;
-imshow(emptyMask,[])
-filePath = cd;
-savefile = [filePath '\Mask of Empty Regions.tif'];
-export_fig(emptyRegion,savefile,'-native');
-else
+% if ismember(5,experiment.ppOptions{1}) ==0 && ismember(6,experiment.ppOptions{1}) ==0
+% close all
+% se = strel('disk',5);
+% se2 = strel('disk',10);
+% empty = roiMasks(:,:,1)>0;
+% emptyMask = imerode(bwareaopen(imclose(imdilate(empty,se),se2),1000),se);
+% emptyRegion = figure;
+% imshow(emptyMask,[])
+% filePath = cd;
+% savefile = [filePath '\Mask of Empty Regions.tif'];
+% export_fig(emptyRegion,savefile,'-native');
+% else
     emptyMask = ones([size(roiMasks(:,:,1),1) size(roiMasks(:,:,1),2)]);
-end
+% end
 
 %% Viewing Pillars as a Frame Weighted Z-Projection
 %Frames are thresholded and projected through-Z. Pixels appearing in later
@@ -104,7 +104,7 @@ filePath = cd;
 savefile = [filePath '\Tracking_Unlinked Detections.tif'];
 export_fig(detections,savefile,'-native');
 %%
-% Linking objects to pillars
+% Linking objects to pillars (i.e. Through the z dim)
 % The plan is to create several metrics for determining whether a local 2D
 % maxima belongs to a 'pillar' group of maxima by comparing the xy distance
 % between the object of interest and the nearest neighbors on frames before
@@ -118,7 +118,7 @@ maxLD = maxLinkDistance/pixelSize;
 disp(['Max Link Distance (Microns): ',num2str(maxLinkDistance)])
 % Set a maximum number of frames to look for a linked object before giving
 % up (maxJumpDistance)
-maxJD = 5;
+maxJD = 15;
 disp(['Max Jump Distance (Frames): ',num2str(maxJD)])
 
 %% Linking using trackmem function (kilfoil code)
@@ -372,20 +372,11 @@ else
     fprintf(paraTxt,' no \n');
 end
 
-p1Format = 'Approximate Feature Diameter: %0.2f \n';
+p1Format = 'Approximate Feature Diameter XY: %0.2f \n';
 fprintf(paraTxt,p1Format,parametersObj{1,1}{1,2});
 
-p1Format = 'Threshold After DoG: %d \n';
+p1Format = 'Approximate Feature Diameter Z: %0.2f \n';
 fprintf(paraTxt,p1Format,parametersObj{1,1}{1,3});
-
-p1Format = 'Subtract 95pct Last Frame?';
-if ismember(1,parametersObj{1,1}{1,1})==1
-    fprintf(paraTxt,p1Format);
-    fprintf(paraTxt,' yes \n');
-else
-    fprintf(paraTxt,p1Format);
-    fprintf(paraTxt,' no \n');
-end
 
 p1Format = 'Max Link Distance: %0.2f \n';
 fprintf(paraTxt,p1Format,parametersObj{2});

@@ -1,7 +1,7 @@
-function dispShear(directory)
-if nargin == 1
-    cd(directory);
-end
+% function dispShear(directory)
+% if nargin == 1
+%     cd(directory);
+% end
 tic
 mkdir('Shear Mat Files')
 filePath = cd;

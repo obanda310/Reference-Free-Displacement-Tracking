@@ -1,4 +1,5 @@
 function [rowV, rowV2, rROI, rROIplane] = rowVselector(r,raw,image)
+try %try to find rowV automatically
 %% Dots in Cropped Region
     clear rNDB neighbors
     %ND is non-deformed
@@ -126,6 +127,19 @@ function [rowV, rowV2, rROI, rROIplane] = rowVselector(r,raw,image)
         rowV = v2;
         rowV2 = v1;
     end
+catch %otherwise, allow user to trace rowV
+    prompt = msgbox('Unable to automatically determine dot orientation! Please draw a line segment in the "horizontal" direction connecting at least two marker centers. When finished, double-click the line segment to save the line.')
+    uiwait(prompt)
+    rowVf = figure;
+    imshow(image.RawStack(:,:,5),[]);  
+    h = imline;
+    wait(h);
+    rowLine = getPosition(h);
+    rowV(1,[2 1]) = rowLine(1,1:2)-rowLine(2,1:2);
+    rowV2 = 0;
+    close
+       
+end
     
 %     %%
 %     clear v1row
