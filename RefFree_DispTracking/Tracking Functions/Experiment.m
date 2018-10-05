@@ -42,8 +42,7 @@ classdef Experiment
                 % input for getImages without asking the user to select a file
                 % manually
             else
-                obj.images = stackFile;
-                obj.metadata = metadata;
+                [obj.images,obj.metadata] = getImages(stackFile);
             end
             % If a cellFile input argument is not supplied, ask the user
             % to select the cell image he/she would like to use as an
@@ -62,7 +61,7 @@ classdef Experiment
                 % input for getImages without asking the user to select a file
                 % manually
             else
-                obj.cellImg = cellFile;
+                obj.cellImg = getImages(cellFile);
             end
             
             %Same as above, but for a fluorescent image
@@ -77,15 +76,15 @@ classdef Experiment
                     obj.fluorImg = NaN;
                 end
             else
-                obj.fluorImg = fluorFile;
+                obj.fluorImg = getImages(fluorFile);
             end
         end
         
         
         %FOR PRE-PREPROCESSING DATA FOR FINDING CENTERS
-        function [ppOptions,roiMasks] = preprocess(obj)
+        function [ppOptions,roiMasks] = preprocess(obj,auto)
             % Process images and get centroid locations
-            [roiMasks,ppOptions] = preprocess(obj.images,obj.metadata);
+            [roiMasks,ppOptions] = preprocess(obj.images,obj.metadata,auto);
         end
         
         %FOR TRUNCATING DATA BEFORE PREPROCESSING
@@ -110,7 +109,7 @@ classdef Experiment
         
         
         %FOR VIEWING PREPROCESSED MASKS AND TRUNCATING DATA
-        function [roiImgs,roiMasks,roiCell,roiBounds,bkImg,redo] = cropImgs2(obj)
+        function [roiImgs,roiMasks,roiCell,roiBounds,bkImg,redo] = cropImgs2(obj,auto)
             % Determine a scale factor for the resolution of outputs to
             % allow for high resolution overlays of displacement vectors
             % using the trajectories.m code. The new pixel size should be
@@ -120,7 +119,16 @@ classdef Experiment
             % Use EditStack.m GUI function to select a region of interest
             % and return the bounds of the ROI, as well as the stack of
             % images and masks limited to the selected ROI
+            if auto == 0
             [roiMasks,roiImgs,roiBounds,redoCheck] = EditStack(obj.masks,obj.images,1);
+            else
+                roiBounds = [1,1,size(obj.masks,2),size(obj.masks,1)];
+                roiMasks = obj.masks;
+                roiImgs = obj.images;
+                redoCheck = 0;
+            end
+            
+            disp('Saving Processed Images')
             if redoCheck == 1
                 redo = 1;
                 roiCell = 1;
@@ -208,6 +216,7 @@ classdef Experiment
                 blackFile = [obj.metadata.filepath,obj.metadata.filename,'black.tif'];
                 imwrite(bkImg,blackFile,'tif');
             end
+            disp('Done Saving Processed Images')
         end
     end
 end
