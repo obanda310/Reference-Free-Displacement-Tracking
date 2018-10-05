@@ -110,7 +110,7 @@ end
     fcolor = colOptions{2,1};
     bcolor = colOptions{2,2};
 set(0,'defaultfigurecolor',bcolor)
-figure
+RadialProfilesPerZ=figure;
 hold on
 
 [~,order] = sort(pgLocs,1);
@@ -142,9 +142,9 @@ end
     
     
     %Export Image
-%     title = ['\ShearVsArea ' fcolor ' on ' bcolor];
-%     savefile = [ListPath title];
-%     export_fig(sheararea,savefile,'-native');
+    title = ['\RadialProfilesPerZ ' fcolor ' on ' bcolor];
+    savefile = [filePath title];
+    export_fig(RadialProfilesPerZ,savefile,'-native');
 
 %%
 clear radprofile2 radprofile3 radprofileXs radprofileZs
