@@ -4,24 +4,25 @@ borders(1:10,:) = 1;
 borders(:,1:10) = 1;
 borders(end-9:end,:) = 1;
 borders(:,end-9:end) = 1;
-
+pillarCO =(max(lub(:,6)/2));
 
 for i = 1:numPillars
     pillarStart = find(lub(:,7)==i,1,'first');
     pillarEnd = find(lub(:,7)==i,1,'last');
-    pillarSize = ((pillarEnd+1)-pillarStart);
-    lub(pillarStart:pillarEnd,21) = pillarSize;
+    pillarSize = ((pillarEnd+1)-pillarStart);% # of objects in Pillar
+    pillarSize2 = lub(pillarEnd,6)-lub(pillarStart,6);% Height of Pillar
+    lub(pillarStart:pillarEnd,27) = pillarSize;
+    lub(pillarStart:pillarEnd,21) = pillarSize2; % Height of Pillar
     lub(pillarStart:pillarEnd,9) = 1:1:pillarSize; %position within pillar (not necessarily same as frame number)
     lub(pillarStart:pillarEnd,10) = lub(pillarStart,1); %pillar x start
     lub(pillarStart:pillarEnd,11) = lub(pillarStart,2); %pillar y start
-    lub(pillarStart,24) = lub(pillarStart,10);
-    lub(pillarStart,25) = lub(pillarStart,11);
+    lub(pillarStart:pillarEnd,24) = lub(pillarStart,10);
+    lub(pillarStart:pillarEnd,25) = lub(pillarStart,11);
     for j = 2:pillarSize
-        lub(pillarStart+j-1,24) = mean(lub(pillarStart:pillarStart+j-2,1));
-        lub(pillarStart+j-1,25) = mean(lub(pillarStart:pillarStart+j-2,2));
+        lub(pillarStart+j-1,24) = mean(lub(pillarStart:pillarStart+j-1,1));
+        lub(pillarStart+j-1,25) = mean(lub(pillarStart:pillarStart+j-1,2));
     end
 end
-
 pillarSizeLimit = round(max(lub(:,21))/2); %minimum pillar size deemed acceptable
 lub(:,12) = sqrt((lub(:,1)-lub(:,10)).^2 +(lub(:,2)-lub(:,11)).^2); %Distance from start
 
@@ -31,7 +32,7 @@ for i = 3:size(lub,1)
     
     %This code should determine if trajectory from the start to the current
     %is reasonable.
-    if (lub(i,12) > 5) && (lub(i,9) > 1)
+    if (lub(i,12) > 5) && (lub(i,9) > 1) && ((lub(i,13) > 2) || lub(i,6)>pillarCO)
         lub(i,14) = atan2d(norm(cross([lub(i,1:2),0]-[lub(i,10:11),0],[lub(i,24:25),0]-[lub(i,10:11),0])),dot([lub(i,1:2),0]-[lub(i,10:11),0],[lub(i,24:25),0]-[lub(i,10:11),0])); %Total Angle to [lub(i,1:2),0]
         if lub(i,14)> maxAi
             lub(i,15) = 1; %If total angle is too large, +1 to score
@@ -42,7 +43,7 @@ for i = 3:size(lub,1)
     end
     
     %This code should determine if the most recent trajectory is reasonable
-    if (lub(i,13) >2) && (lub(i,6) ~=1) && (lub(i,9) > 2)
+    if ((lub(i,13) >3) || (lub(i,6)>pillarCO && lub(i,13) >3)) && (lub(i,6) ~=1) && (lub(i,9) > 2)
         lub(i,16) = dot([lub(i,24:25),0]-[lub(i,10:11),0],[lub(i,1:2),0]-[lub(i-1,1:2),0]); %Relationship of current traj to traj history (if negative, object is moving in wrong direction!)
         lub(i,18) = atan2d(norm(cross([lub(i,1:2),0]-[lub(i-2,1:2),0],[lub(i-1,1:2),0]-[lub(i-2,1:2),0])),dot([lub(i,1:2),0]-[lub(i-2,1:2),0],[lub(i-1,1:2),0]-[lub(i-2,10:11),0])); %pillar end angle
         if lub(i,16)<0
@@ -59,7 +60,7 @@ for i = 3:size(lub,1)
     
     
     %If a pillar is too small, flag it
-    if lub(i,21) < pillarSizeLimit
+    if lub(i,21) < pillarSizeLimit || lub(i,27)<3
         lub(i,22) = 1;
     else
         lub(i,22) = 0;
@@ -73,15 +74,22 @@ for i = 3:size(lub,1)
     end
     
     %Calculate a problem score
-    lub(i,20) = (lub(i,15)+lub(i,17)+lub(i,19)+lub(i,22))*lub(i,26); %total Score
+    lub(i,20) = (lub(i,22))*lub(i,26); %total Score  lub(i,15)+ lub(i,17)+lub(i,19)+
 end
 
-%Designate stable pillars (can't be editted)
+
+
+maxPillarCO = max(lub(:,21))-2;
 for i = 1:numPillars
-    pillarStart = find(lub(:,7)==i,1,'first');
-    pillarEnd = find(lub(:,7)==i,1,'last');
-    if sum(lub(pillarStart:pillarEnd,20) <= 0) && max(lub(pillarStart:pillarEnd,12))<5 && lub(pillarStart,21)>(max(lub(:,21))-2) %4 is arbitrary
-        lub(pillarStart:pillarEnd,30) = 1;
+    clear tempPillar
+    tempPillar = lub(lub(:,7)==i,:);
+    try
+        if sum(tempPillar(:,20)) <= 0 && max(tempPillar(:,12))<5 && max(tempPillar(:,21))>maxPillarCO
+            lub(lub(:,7)==i,30) = 1;
+        end
+    catch
     end
+    
 end
+
 end
