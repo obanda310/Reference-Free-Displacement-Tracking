@@ -24,7 +24,7 @@ dirList(end,:) = []
 
 
 %% Run This Section to remove a specific entry
-remove = [1 2 4 5 15 16]; %choose which one to remove here
+remove = [2]; %choose which one to remove here
 dirList(remove,:) = []
 %%
 [ListName,ListPath] = uiputfile('*.*','Open a list of Directories','List of Directories.mat');

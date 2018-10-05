@@ -1,7 +1,7 @@
-% function SphericalIndent(directory)
-% if nargin ==1
-%     cd(directory);
-% end
+function SphericalIndent(directory)
+if nargin ==1
+    cd(directory);
+end
 clear all
 close all
 %%

@@ -37,7 +37,16 @@ for j = 1:2
         disp(num2str(i))
     end
 end
-
+%% For Running Tracking Script
+for i = 1:size(dirList,1)
+    try
+        tracking(dirList{i,1})
+        disp(num2str(i))
+    catch
+        disp('Tracking Failed')
+        i
+    end
+end
 %% For Running XY Script
 for i = 1:size(dirList,1)
     try
@@ -45,6 +54,27 @@ for i = 1:size(dirList,1)
         disp(num2str(i))
     catch
         disp('Shear Failed')
+        i
+    end
+end
+
+%% For Running 3D Script
+for i = 1:size(dirList,1)
+    try
+        disp3D(dirList{i,1})
+        disp(num2str(i))
+    catch
+        disp('3D Failed')
+        i
+    end
+end
+%% For Running Spherical Indentation Script
+for i = 1:size(dirList,1)
+    try
+        SphericalIndent(dirList{i,1})
+        disp(num2str(i))
+    catch
+        disp('Indentation Failed')
         i
     end
 end
