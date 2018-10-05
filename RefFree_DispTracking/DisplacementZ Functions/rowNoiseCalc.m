@@ -1,14 +1,25 @@
-function [noiseMean1,noiseStd1,noiseCutoff1,rDisp1Filt,rDisp1PF] = rowNoiseCalc(r,rDisp1,planesLocFiltList,rNDC)
+function [noiseMean1,noiseStd1,noiseCutoff1,rDisp1Filt,rDisp1PF] = rowNoiseCalc(r,image,shear,m,planesLocFiltList,rNDC,scale)
 %% Filter out noise in Displacements Method 2
-noiseMean1 = mean(abs(rDisp1(intersect(planesLocFiltList(:,1),rNDC),3)));
-noiseStd1 = std((rDisp1(intersect(planesLocFiltList(:,1),rNDC),3)));
+noiseMean1 = mean(abs(m.disp(intersect(planesLocFiltList(:,1),rNDC),3)));
+noiseStd1 = std((m.disp(intersect(planesLocFiltList(:,1),rNDC),3)));
 noiseCutoff1 = 2*noiseStd1;
 
+image.imgNBds = imageNoiseBounds(r,m,image,shear,scale,noiseCutoff1);
 
 % Use noiseCutoff to filter data
-rDisp1Filt = rDisp1;
-rDisp1Filt(abs(rDisp1Filt(:,3))<noiseCutoff1,3) = 0;
-rDisp1PF = find(abs(rDisp1(:,3))<noiseCutoff1+noiseStd1 & abs(rDisp1(:,3))>noiseCutoff1);
+rDisp1Filt = m.disp;
+for i = 1:size(r,1)
+%     try
+        if abs(rDisp1Filt(i,3))<noiseCutoff1 && image.imgNBds(round(r(i,2)/scale),round(r(i,1)/scale)) > 0
+            rDisp1Filt(i,3) = NaN;
+        elseif abs(rDisp1Filt(i,3))<noiseCutoff1
+            rDisp1Filt(i,3) = 0;
+        end
+%     catch
+%         rDisp1Filt(i,3) = 0; %may need to correct this later, it will make some image border values zero
+%     end
+end
+rDisp1PF = find(abs(m.disp(:,3))<noiseCutoff1+noiseStd1 & abs(m.disp(:,3))>noiseCutoff1);
 clear rNbor
 radXY = 2.5;
 radZ = .75;
@@ -24,7 +35,7 @@ end
 
 for i = 1:size(rDisp1PF,1)
     A = rDisp1PF(i,1);
-    rDisp1PF(i,2)= rDisp1(rDisp1PF(i,1),3);
+    rDisp1PF(i,2)= m.disp(rDisp1PF(i,1),3);
     rDisp1PF(i,3) = mean(rDisp1Filt(rNbor(A,rNbor(A,:)~=0&(rNbor(A,:)~=A)),3));
     rDisp1PF(i,4) = std(rDisp1Filt(rNbor(A,rNbor(A,:)~=0&(rNbor(A,:)~=A)),3));
     %filt 2 std from mean
@@ -33,9 +44,9 @@ for i = 1:size(rDisp1PF,1)
     else
         rDisp1PF(i,5) = 1;
     end
-
-%     if rDisp1PF(i,5) == 0
-%         rDisp1Filt(rDisp1PF(i,1),3) = 0;
-%     end
+    
+    %     if rDisp1PF(i,5) == 0
+    %         rDisp1Filt(rDisp1PF(i,1),3) = 0;
+    %     end
 end
 end
