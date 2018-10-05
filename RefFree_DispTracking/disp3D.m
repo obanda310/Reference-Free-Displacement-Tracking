@@ -194,7 +194,7 @@ m1.disp = r.r(:,1:3)-m1.refSC(:,1:3);
 % Calculate Average Displacement per Row per Plane Method 1
 m1 = dispStats(m1,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
 % Filter out noise in Displacements Method 1
-m1 = dispNoise(m1,r,planesLocFiltList);
+m1 = dispNoise(m1,r,planesLocFiltList,image,shear,raw.dataKey(9,1));
 disp(['done Fitting Rows with Independent Slopes - Method 1 at ' num2str(toc) ' seconds'])
 % Scatter3/Plot3 of Dots/Fits Method 2
 %ViewRowFits(m1,r,rowPlanes,'m1')
@@ -219,7 +219,7 @@ m2.disp = r.r(:,1:3)-m2.refSC(:,1:3);
 % Calculate Average Displacement per Row per Plane Method 2
 m2 = dispStats(m2,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
 % Filter out noise in Displacements Method 1
-m2 = dispNoise(m2,r,planesLocFiltList);
+m2 = dispNoise(m2,r,planesLocFiltList,image,shear,raw.dataKey(9,1));
 disp(['done Fitting Rows with Row Slope - Method 2 at ' num2str(toc) ' seconds'])
 % Scatter3/Plot3 of Dots/Fits Method 2
 %ViewRowFits(m2,r,rowPlanes,'m2')
@@ -243,7 +243,9 @@ m3.disp = r.r(:,1:3)-m3.refSC(:,1:3);
 % Calculate Average Displacement per Row per Plane Method 3
 m3 = dispStats(m3,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
 % Filter out noise in Displacements Method 1
-m3 = dispNoise(m3,r,planesLocFiltList);
+
+m3 = dispNoise(m3,r,planesLocFiltList,image,shear,raw.dataKey(9,1));
+image.imgNBds = imageNoiseBounds(r.r,m3,image,shear,raw.dataKey(9,1),m3.noiseCutoff);
 disp(['done Picking Best Case Row Fit - Method 3 at ' num2str(toc) ' seconds'])
 %%
 %ViewMethodRef(m3,r,'m3')
@@ -316,7 +318,7 @@ savefile = [filePath '\HeatMaps\3D\ColorBar\ColorBarShear.tif'];
 export_fig(colorBarSave,savefile,'-native');
 
 SE = strel('disk',round(10/.1625));
-imageBinaryCombined = imdilate(image.ADil==0,SE);%+(imageBinary2==0))==0;
+imageBinaryCombined = image.imgNBds; %imdilate(image.ADil==0,SE);%+(imageBinary2==0))==0;
 %
 %Determine which 'planes' in plane.final should be the same plane
 clear planesGroups
@@ -329,7 +331,8 @@ planesGroups = unique(planesGroups,'rows');
 [HeatMapN,vqN] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),0,colorMapZ,colorMapXY,0);
 %[HeatMap,vq1] = heatmapZ(r.r,m1.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m1.noiseCutoff,colorMapZ,colorMapXY,1);
 %[HeatMap2,vq2] = heatmapZ(r.r,m2.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m2.noiseCutoff,colorMapZ,colorMapXY,2);
-[HeatMap3,vq3] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,3);
+[HeatMap3,vq3] = heatmapZ(r.r,m3.dispFilt,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,3);
+[HeatMap3,vq4] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,32);
 
 
 % Print Data to txt file
@@ -363,6 +366,7 @@ cd(filePath)
 
 
 %%
+disp('Saving Data')
 save 3Ddata
 %%
 

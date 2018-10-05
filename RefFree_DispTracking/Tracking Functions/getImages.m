@@ -3,6 +3,8 @@ function [images,meta] = getImages(file)
     %% Import image stack
     if nargin == 1
         filename = file;
+        name = file;
+        path = file;
     elseif nargin == 0
         % Choose image stack
         [name,path] = uigetfile({'*.tif';'*.czi';'*.lsm'});

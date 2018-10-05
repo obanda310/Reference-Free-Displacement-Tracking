@@ -63,7 +63,6 @@ yq2 = linspace(0,size(image.Black,1)*raw.dataKey(9,1),size(vq,1));
 
 
 MaximumHeatMap = imagesc(xq2,yq2,vq);
-vqFinal(:,:,i) = single(vq);
 imageHeat = MaximumHeatMap.CData;%.*(image.Black==0);
 imageHeat(imageHeat>0) = 32768+(abs(imageHeat(imageHeat>0))*scaleD);
 imageHeat(imageHeat<0) = 32768 - (abs(imageHeat(imageHeat<0))*scaleD);
@@ -71,7 +70,6 @@ imageHeat(imageHeat==0) = 32768;
 imageHeat(isnan(imageHeat)) = 32768;
 imageHeat = uint16(imageHeat);
 imageHeatColor = single(ind2rgb(imageHeat,colorMapZ));
-imageHeatColorFinal(:,:,:,i) = imageHeatColor;
 close all
 maxHeatMap = figure;
 hold on

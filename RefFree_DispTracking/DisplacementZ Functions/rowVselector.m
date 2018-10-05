@@ -128,6 +128,10 @@ try %try to find rowV automatically
         rowV2 = v1;
     end
 catch %otherwise, allow user to trace rowV
+
+       
+end
+
     prompt = msgbox('Unable to automatically determine dot orientation! Please draw a line segment in the "horizontal" direction connecting at least two marker centers. When finished, double-click the line segment to save the line.')
     uiwait(prompt)
     rowVf = figure;
@@ -138,8 +142,6 @@ catch %otherwise, allow user to trace rowV
     rowV(1,[2 1]) = rowLine(1,1:2)-rowLine(2,1:2);
     rowV2 = 0;
     close
-       
-end
     
 %     %%
 %     clear v1row

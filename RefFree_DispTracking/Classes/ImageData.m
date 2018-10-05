@@ -11,6 +11,7 @@ classdef ImageData
         ADil
         squares
         SquareBounds
+        imgNBds
     end
     methods
         function obj = ImageData(autoChk)

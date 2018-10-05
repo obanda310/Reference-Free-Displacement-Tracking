@@ -10,10 +10,10 @@ for i = 1:r.l
     tl = floor(tempZ(i)/raw.dataKey(10,1))-1;
     tu = ceil(tempZ(i)/raw.dataKey(10,1))+1;
     if tu > size(shear.rawX,1)
-        tu = size(shear.rawX,1)
+        tu = size(shear.rawX,1);
     end
     if tl > size(shear.rawX,1)
-        tl = size(shear.rawX,1)
+        tl = size(shear.rawX,1);
     end
     
     differences = min(squeeze(sqrt((shear.rawX(tl:tu,:)-r.X(i)).^2+(shear.rawY(tl:tu,:)-r.Y(i)).^2+(shear.rawZ(tl:tu,:)-r.Z(i)).^2)));

@@ -246,8 +246,8 @@ classdef DispData3D
             [obj.dispMean,obj.MeanPlanes,obj.StdPlanes,obj.MeanTotal,obj.StdTotal] = quickRowStats(obj.disp,plane.final,rowPlanesIdx,r.ND,rowsNDCU,planesLocFiltList);
         end
         
-        function obj = dispNoise(obj,r,planesLocFiltList)
-            [obj.noiseMean,obj.noiseStd,obj.noiseCutoff,obj.dispFilt,obj.dispPF] = rowNoiseCalc(r.r,obj.disp,planesLocFiltList,r.ND);
+        function obj = dispNoise(obj,r,planesLocFiltList,image,shear,scale)
+            [obj.noiseMean,obj.noiseStd,obj.noiseCutoff,obj.dispFilt,obj.dispPF] = rowNoiseCalc(r.r,image,shear,obj,planesLocFiltList,r.ND,scale);
         end
         
         function printStats(obj,planesGroups,planesLocTxt,planesLoc2,method)

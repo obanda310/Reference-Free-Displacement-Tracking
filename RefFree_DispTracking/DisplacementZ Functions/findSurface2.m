@@ -92,9 +92,9 @@ for i = 1:size(Int2,2)
         try
     Zeros(i,3) = fzero(fun1,[fitStart fitEnd]);
         catch
-            [fitStart fitEnd]
-            feval(fun1, fitStart)
-            feval(fun1, fitEnd)
+%             [fitStart fitEnd]
+%             feval(fun1, fitStart)
+%             feval(fun1, fitEnd)
         end
     end
     

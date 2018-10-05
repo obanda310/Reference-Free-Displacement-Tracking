@@ -155,7 +155,7 @@ classdef ShearData
             for i = 1:obj.numTraj
                 
                 %if it is in black region
-                if imageAreaDil(ceil(obj.rawY1(i)),ceil(obj.rawX1(i)))~=0
+                if imageAreaDil(ceil(obj.rawY1(i)/raw.dataKey(9,1)),ceil(obj.rawX1(i)/raw.dataKey(9,1)))~=0
                     if noCellTrajIni == 0
                         noCellTrajIni = i;
                     else

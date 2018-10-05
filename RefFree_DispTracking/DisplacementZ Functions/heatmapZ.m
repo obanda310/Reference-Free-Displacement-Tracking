@@ -37,7 +37,6 @@ for i = 1:size(planesGroups,1)
     rVq = double(rVq);
     
     %% Remove incomplete datapoints
-    rVq(rVq(:,3)==0,:) = []; %eliminates all features where z information is not usable
     rVq(rVq(:,4)==0,:) = []; %eliminates all features where xy information is not usable
     rVq(isnan(rVq(:,3)),:) = [];
     rVq(isnan(rVq(:,4)),:) = [];
