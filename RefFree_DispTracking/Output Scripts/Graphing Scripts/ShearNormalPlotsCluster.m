@@ -15,8 +15,8 @@ colOptions{2,2} = 'white';
 
 green = [.2 .7 .2];
 
-singles =load('ShearNormalStatsCluster.mat','vqT');
-singles2 = load('ShearNormalStatsSingles.mat','vqT');
+singles =load('Cluster ShearNormalStats.mat','vqT');
+singles2 = load('5%wt Gels ShearNormalStats.mat','vqT');
 
 %% Correlation Coefficient
 sTot = singles.vqT(:,1);
@@ -27,9 +27,13 @@ aTot = singles.vqT(:,5);
 [rhoNormal,pN] = corr(aTot,nTot/max(singles2.vqT(:,2)));
 [rhoSN,pSN] = corr(nTot,sTot);
 
-lmAS = fitlm(aTot,sTot/max(singles2.vqT(:,1)),'linear')
-lmAN = fitlm(aTot,nTot/max(singles2.vqT(:,2)),'linear')
-lmNS = fitlm(nTot,sTot,'linear')
+rhoShear2 = rhoShear^2;
+rhoNormal2 = rhoNormal^2;
+rhoSN2 = rhoSN^2;
+
+lmAS = fitlm(aTot,sTot/max(singles2.vqT(:,1)),'Intercept',false)
+lmAN = fitlm(aTot,nTot/max(singles2.vqT(:,2)),'Intercept',false)
+lmNS = fitlm(nTot,sTot,'Intercept',false)
 anova(lmNS,'summary')
 
 
@@ -49,14 +53,8 @@ for i = 1:size(colOptions,2)
     %Plot Data
     scatter(singles.vqT(:,5),singles.vqT(:,1)/max(singles2.vqT(:,1)),50,'square',bcolor,'markerfacecolor',fcolor)
     hold on
-    try
-        scatter(spread.vqT(:,5),spread.vqT(:,1)/max(singles2.vqT(:,1)),50,'square',bcolor,'markerfacecolor','red')
-        scatter(bleb.vqT(:,5),bleb.vqT(:,1)/max(singles2.vqT(:,1)),50,'square',bcolor,'markerfacecolor',green)
-        scatter(clusters.vqT(:,5),clusters.vqT(:,1)/max(clusters.vqT(:,1)),50,'square',bcolor,'markerfacecolor','y')
-    catch
-    end
     
-    plot([0:ceil(max(aTot)/1000)*1000],lmAS.Coefficients{2,1}*[0:ceil(max(aTot)/1000)*1000]+(lmAS.Coefficients{1,1}/max(singles.vqT(:,1))),'LineStyle','--','Color',fcolor,'HandleVisibility','off')
+    plot([0:ceil(max(aTot)/1000)*1000],lmAS.Coefficients{1,1}*[0:ceil(max(aTot)/1000)*1000],'LineStyle','--','Color',fcolor,'HandleVisibility','off')
 %     text(30,1.95,['R^2: ' sprintf('%.2f',lmAS.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18)
 %     text(30,1.75,['p: ' sprintf('%.3f',lmAS.Coefficients{2,4})],'color',fcolor,'fontsize',18)
 %     
@@ -89,23 +87,15 @@ for i = 1:size(colOptions,2)
     savefile = [ListPath title];
     export_fig(sheararea,savefile,'-native');
     %%
-    normalarea = figure;
-    
-    
+    normalarea = figure;        
     %Plot Data
     scatter(singles.vqT(:,5),singles.vqT(:,2)/max(singles2.vqT(:,2)),50,'square',bcolor,'markerfacecolor',fcolor)
     hold on
-    try
-        scatter(spread.vqT(:,5),spread.vqT(:,2)/max(singles2.vqT(:,2)),50,'square',bcolor,'markerfacecolor','red')
-        scatter(bleb.vqT(:,5),bleb.vqT(:,2)/max(singles2.vqT(:,2)),50,'square',bcolor,'markerfacecolor',green)
-        scatter(clusters.vqT(:,5),clusters.vqT(:,2)/max(clusters.vqT(:,2)),50,'square',bcolor,'markerfacecolor','y')
-    catch
-    end
-    
-    plot([0:ceil(max(aTot)/1000)*1000],lmAN.Coefficients{2,1}*[0:ceil(max(aTot)/1000)*1000]+(lmAN.Coefficients{1,1}/max(singles.vqT(:,2))),'LineStyle','--','Color',fcolor)
+    plot([0:ceil(max(aTot)/1000)*1000],lmAN.Coefficients{1,1}*[0:ceil(max(aTot)/1000)*1000],'LineStyle','--','Color',fcolor,'HandleVisibility','off','LineWidth',2)
 %     text(30,1.95,['R^2: ' sprintf('%.2f',lmAN.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18,'HorizontalAlignment','left')
 %     text(30,1.75,['p: ' sprintf('%.3f',lmAN.Coefficients{2,4})],'color',fcolor,'fontsize',18,'HorizontalAlignment','left')
-%     
+
+
     xlim([0 5000])
     ylim([0 2])
     set(gca,'Color',bcolor)
@@ -141,15 +131,9 @@ for i = 1:size(colOptions,2)
     %Plot Data
     scatter(singles.vqT(:,2)/max(singles2.vqT(:,2)),singles.vqT(:,1)/max(singles2.vqT(:,2)),50,'square',bcolor,'markerfacecolor',fcolor)
     hold on
-    try
-        scatter(spread.vqT(:,2)/max(singles2.vqT(:,2)),spread.vqT(:,1)/max(singles2.vqT(:,2)),50,'square',bcolor,'markerfacecolor','red')
-        scatter(bleb.vqT(:,2)/max(singles2.vqT(:,2)),bleb.vqT(:,1)/max(singles2.vqT(:,2)),50,'square',bcolor,'markerfacecolor',green)
-        scatter(clusters.vqT(:,2)/max(singles2.vqT(:,2)),clusters.vqT(:,1)/max(singles2.vqT(:,2)),50,'square',bcolor,'markerfacecolor','y')
-    catch
-    end
+
     
-    
-    plot([0:2],lmNS.Coefficients{2,1}*[0:2]+(lmNS.Coefficients{1,1}/max(singles.vqT(:,2))),'LineStyle','--','Color',fcolor)
+    plot([0:2],lmNS.Coefficients{1,1}*[0:2],'LineStyle','--','Color',fcolor)
 %     text(.01,3.9,['R^2: ' sprintf('%.2f',lmNS.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18)
 %     text(.01,3.5,['p: ' sprintf('%.2e',lmNS.Coefficients{2,4})],'color',fcolor,'fontsize',18)
 %     text(.01,3.1,['X-coef.: ' sprintf('%.2f',lmNS.Coefficients{2,1})],'color',fcolor,'fontsize',18)
@@ -222,8 +206,3 @@ for i = 1:size(colOptions,2)
     export_fig(shearnormaltrue,savefile,'-native');
     
 end
-
-%% Correlation Coefficient
-[rhoShear,pS] = corr(singles.vqT(:,5),singles.vqT(:,1))
-[rhoNormal,pN] = corr(singles.vqT(:,5),singles.vqT(:,2))
-[rhoSN,pSN] = corr(singles.vqT(:,2),singles.vqT(:,1))

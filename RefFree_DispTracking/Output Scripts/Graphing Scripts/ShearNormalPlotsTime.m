@@ -14,11 +14,11 @@ colOptions{1,2} = 'black';
 colOptions{2,2} = 'white';
 
 green = [.2 .7 .2];
-singles =load('5%wt Gels ShearNormalStats.mat','vqT');
+singles =load('4hr Single Cell ShearNormalStats.mat','vqT');
 %singles =load('ShearNormalStatsCluster.mat','vqT');
-singles.vqT([42],:) = [];
-bleb =load('Bleb ShearNormalStats.mat','vqT');
-spread =load('Spread ShearNormalStats.mat','vqT');
+ 
+bleb =load('8hr Single Cells ShearNormalStats.mat','vqT');
+spread =load('24hr Single Cells ShearNormalStats.mat','vqT');
 
 %% Correlation Coefficient
 sTot = cat(1,singles.vqT(:,1),bleb.vqT(:,1),spread.vqT(:,1));
@@ -29,13 +29,9 @@ aTot = cat(1,singles.vqT(:,5),bleb.vqT(:,5),spread.vqT(:,5));
 [rhoNormal,pN] = corr(aTot,nTot/max(singles.vqT(:,2)));
 [rhoSN,pSN] = corr(nTot,sTot);
 
-rhoShear2 = rhoShear^2;
-rhoNormal2 = rhoNormal^2;
-rhoSN2 = rhoSN^2;
-
-lmAS = fitlm(aTot,sTot/max(singles.vqT(:,1)),'Intercept',false)
-lmAN = fitlm(aTot,nTot/max(singles.vqT(:,2)),'Intercept',false)
-lmNS = fitlm(nTot,sTot,'Intercept',false)
+lmAS = fitlm(aTot,sTot/max(singles.vqT(:,1)),'linear')
+lmAN = fitlm(aTot,nTot/max(singles.vqT(:,2)),'linear')
+lmNS = fitlm(nTot,sTot,'linear')
 anova(lmNS,'summary')
 
 
@@ -224,7 +220,72 @@ for i = 1:size(colOptions,2)
     
 end
 
+t4m = mean(singles.vqT(:,1));
+t4sd = std(singles.vqT(:,1));
+
+
+t8m = mean(bleb.vqT(:,1));
+t8sd = std(bleb.vqT(:,1));
+
+
+t24m = mean(spread.vqT(:,1));
+t24sd = std(spread.vqT(:,1));
+%%
+bxPlotData(:,1) = (singles.vqT(:,1));
+bxPlotData(1:size(bleb.vqT,1),2) = (bleb.vqT(:,1));
+bxPlotData(1:size(spread.vqT,1),3) = (spread.vqT(:,1));
+
+bxPlotData(bxPlotData==0) = NaN;
 
 
 
+ShearVsTime = figure
+boxplot(bxPlotData)
+set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
+    ytickformat('%.1f')
+    xt = '\Sigma |Normal| (AU)';% input('enter the xaxis label','s');
+    yt = '\Sigma |Shear| (AU)'; %input('enter the yaxis label','s');
+    tt = 'Line-Profile Displacements';%input('enter the title','s');
+    le = 'Single'; %input('enter the legend','s');
+    le2 = 'Time-Lapse 1';
+    le3 = 'Time-Lapse 2';
+    %xl = xlabel(xt);
+    yl = ylabel(yt);
+    %tl = title(tt);
+    xticklabels({'4hrs','8hrs','24hrs'})
+    %set(xl, 'fontweight','bold','fontsize',28,'color',fcolor);
+    set(yl,'fontweight','bold','fontsize',28,'color',fcolor);
+    
+        %Export Image
+    title = ['\ShearVsTime ' fcolor ' on ' bcolor];
+    savefile = [ListPath title];
+    export_fig(ShearVsTime,savefile,'-native');
+%%
+bxPlotData2(:,1) = (singles.vqT(:,5));
+bxPlotData2(1:size(bleb.vqT,1),2) = (bleb.vqT(:,5));
+bxPlotData2(1:size(spread.vqT,1),3) = (spread.vqT(:,5));
+
+bxPlotData2(bxPlotData2==0) = NaN;
+
+AreaVsTime=figure
+boxplot(bxPlotData2)
+set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
+    ytickformat('%.1f')
+    xt = '\Sigma |Normal| (AU)';% input('enter the xaxis label','s');
+    yt = 'Cell Area (\mum^{2})'; %input('enter the yaxis label','s');
+    tt = 'Line-Profile Displacements';%input('enter the title','s');
+    le = 'Single'; %input('enter the legend','s');
+    le2 = 'Time-Lapse 1';
+    le3 = 'Time-Lapse 2';
+    %xl = xlabel(xt);
+    yl = ylabel(yt);
+    %tl = title(tt);
+    xticklabels({'4hrs','8hrs','24hrs'})
+   % set(xl, 'fontweight','bold','fontsize',28,'color',fcolor);
+    set(yl,'fontweight','bold','fontsize',28,'color',fcolor);
+    
+        %Export Image
+    title = ['\AreaVsTime ' fcolor ' on ' bcolor];
+    savefile = [ListPath title];
+    export_fig(AreaVsTime,savefile,'-native');
 

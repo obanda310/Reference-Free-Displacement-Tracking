@@ -1,7 +1,7 @@
-load('ShearNormalStatsBleb.mat');
+load('Bleb ShearNormalStats.mat');
 vqB = vqT;
 
-load('ShearNormalStatsSpread.mat');
+load('Spread ShearNormalStats.mat');
 vqS = vqT;
 
 % clear all

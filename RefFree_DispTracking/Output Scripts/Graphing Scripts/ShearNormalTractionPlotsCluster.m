@@ -14,35 +14,38 @@ colOptions{1,2} = 'black';
 colOptions{2,2} = 'white';
 
 green = [.2 .7 .2];
-singles =load('5%wt Gels ShearNormalStats.mat','vqT');
-%singles =load('ShearNormalStatsCluster.mat','vqT');
-singles.vqT([42],:) = [];
-bleb =load('Bleb ShearNormalStats.mat','vqT');
-spread =load('Spread ShearNormalStats.mat','vqT');
+
+singles =load('Cluster ShearNormalStats.mat','vqT');
+singles2 = load('5%wt Gels ShearNormalStats.mat','vqT');
+
+singlesT =load('Cluster TractionStats.mat','TractionStats');
+singlesT2 = load('5%wt Gels TractionStats.mat','TractionStats');
 
 %% Correlation Coefficient
-sTot = cat(1,singles.vqT(:,1),bleb.vqT(:,1),spread.vqT(:,1));
-nTot = cat(1,singles.vqT(:,2),bleb.vqT(:,2),spread.vqT(:,2));
-aTot = cat(1,singles.vqT(:,5),bleb.vqT(:,5),spread.vqT(:,5));
+sTot = singlesT.TractionStats(:,10);
+nTot = singlesT.TractionStats(:,9);
+aTot = singles.vqT(:,5);
 
-[rhoShear,pS] = corr(aTot,sTot/max(singles.vqT(:,1)));
-[rhoNormal,pN] = corr(aTot,nTot/max(singles.vqT(:,2)));
+[rhoShear,pS] = corr(aTot,sTot);
+[rhoNormal,pN] = corr(aTot,nTot);
 [rhoSN,pSN] = corr(nTot,sTot);
 
 rhoShear2 = rhoShear^2;
 rhoNormal2 = rhoNormal^2;
 rhoSN2 = rhoSN^2;
 
-lmAS = fitlm(aTot,sTot/max(singles.vqT(:,1)),'Intercept',false)
-lmAN = fitlm(aTot,nTot/max(singles.vqT(:,2)),'Intercept',false)
+lmAS = fitlm(aTot,sTot,'Intercept',false)
+lmAN = fitlm(aTot,nTot,'Intercept',false)
 lmNS = fitlm(nTot,sTot,'Intercept',false)
-anova(lmNS,'summary')
+
+
 
 
 %%
 for i = 1:size(colOptions,2)
     
-    %%
+   
+    %%SHEAR
     fcolor = colOptions{1,i};
     bcolor = colOptions{2,i};
     set(0,'defaultfigurecolor',bcolor)
@@ -50,72 +53,22 @@ for i = 1:size(colOptions,2)
     sheararea = figure;
     
     %Plot Data
-    scatter(singles.vqT(:,5),singles.vqT(:,1)/max(singles.vqT(:,1)),50,'square',bcolor,'markerfacecolor',fcolor)
+    scatter(singles.vqT(:,5),singlesT.TractionStats(:,10),50,'square',bcolor,'markerfacecolor',fcolor)
     hold on
-    try
-    scatter(spread.vqT(:,5),spread.vqT(:,1)/max(singles.vqT(:,1)),50,'square',bcolor,'markerfacecolor','red')
-    scatter(bleb.vqT(:,5),bleb.vqT(:,1)/max(singles.vqT(:,1)),50,'square',bcolor,'markerfacecolor',green)
-    scatter(clusters.vqT(:,5),clusters.vqT(:,1)/max(clusters.vqT(:,1)),50,'square',bcolor,'markerfacecolor','y')
-    catch
-    end
     
-    plot([0:ceil(max(aTot)/1000)*1000],lmAS.Coefficients{2,1}*[0:ceil(max(aTot)/1000)*1000]+(lmAS.Coefficients{1,1}/max(singles.vqT(:,1))),'LineStyle','--','Color',fcolor,'HandleVisibility','off','LineWidth',2)
+    plot([0:ceil(max(aTot)/1000)*1000],(lmAS.Coefficients{1,1})*[0:ceil(max(aTot)/1000)*1000],'LineStyle','--','Color',fcolor,'HandleVisibility','off','LineWidth',2)
 %     text(30,.967,['R^2: ' sprintf('%.2f',lmAS.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18)
 %     text(30,.867,['p: ' sprintf('%.2e',lmAS.Coefficients{2,4})],'color',fcolor,'fontsize',18)
     
     
     set(gca,'Color',bcolor,'LineWidth',2)
     %Axes, Text, Legends
-    ylim([0 1])
+    xlim([0 ceil(max(aTot)/1000)*1000])
+    ylim([0 ceil(max(sTot)/750)*750])
     set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
     ytickformat('%.1f')
     xt = 'Cell Area (\mum^{2})';% input('enter the xaxis label','s');
-    yt = '\Sigma |Shear| (AU)'; %input('enter the yaxis label','s');
-    tt = 'Line-Profile Displacements';%input('enter the title','s');
-    le = 'Single'; %input('enter the legend','s');
-    le2 = 'Time-Lapse 1';
-    le3 = 'Time-Lapse 2';
-    xl = xlabel(xt);
-    yl = ylabel(yt);
-    %tl = title(tt);
-    
-    set(xl, 'fontweight','bold','fontsize',28,'color',fcolor);
-    set(yl,'fontweight','bold','fontsize',28,'color',fcolor);
-    leg = legend(['\color{' fcolor '}' le],['\color{' fcolor '}' le2],['\color{' fcolor '}' le3],'location','southeast','fontcolor',fcolor);
-    legend boxoff
-    leg.FontSize = LegendFontSize;
-    %set(tl,'fontweight','bold','fontsize',title_font_size)
-    
-    
-    %Export Image
-    title = ['\ShearVsArea ' fcolor ' on ' bcolor];
-    savefile = [ListPath title];
-    export_fig(sheararea,savefile,'-native');
-    %%
-    normalarea = figure;
-    
-    
-    %Plot Data
-    scatter(singles.vqT(:,5),singles.vqT(:,2)/max(singles.vqT(:,2)),50,'square',bcolor,'markerfacecolor',fcolor)
-    hold on
-    try
-    scatter(spread.vqT(:,5),spread.vqT(:,2)/max(singles.vqT(:,2)),50,'square',bcolor,'markerfacecolor','red')
-    scatter(bleb.vqT(:,5),bleb.vqT(:,2)/max(singles.vqT(:,2)),50,'square',bcolor,'markerfacecolor',green)
-    scatter(clusters.vqT(:,5),clusters.vqT(:,2)/max(clusters.vqT(:,2)),50,'square',bcolor,'markerfacecolor','y')
-    catch
-    end
-    
-    plot([0:ceil(max(aTot)/1000)*1000],lmAN.Coefficients{2,1}*[0:ceil(max(aTot)/1000)*1000]+(lmAN.Coefficients{1,1}/max(singles.vqT(:,2))),'LineStyle','--','Color',fcolor,'LineWidth',2)
-%     text(30,.967,['R^2: ' sprintf('%.2f',lmAN.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18,'HorizontalAlignment','left')
-%     text(30,.867,['p: ' sprintf('%.2e',lmAN.Coefficients{2,4})],'color',fcolor,'fontsize',18,'HorizontalAlignment','left')
-%     
-    ylim([0 1])
-    set(gca,'Color',bcolor,'LineWidth',2)
-    %Axes, Text, Legends
-    set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
-    ytickformat('%.1f')
-    xt = 'Cell Area (\mum^{2})';% input('enter the xaxis label','s');
-    yt = '\Sigma |Normal| (AU)'; %input('enter the yaxis label','s');
+    yt = '\Sigma |Shear| (pN)'; %input('enter the yaxis label','s');
     tt = 'Line-Profile Displacements';%input('enter the title','s');
     le = 'Single'; %input('enter the legend','s');
     le2 = 'Time-Lapse 1';
@@ -133,24 +86,57 @@ for i = 1:size(colOptions,2)
     
     
     %Export Image
-    title = ['\NormalVsArea ' fcolor ' on ' bcolor];
+    title = ['\ShearTractionVsArea Cluster ' fcolor ' on ' bcolor];
+    savefile = [ListPath title];
+    export_fig(sheararea,savefile,'-native');
+    %%
+    normalarea = figure;
+    
+     %Plot Data
+    scatter(singles.vqT(:,5),singlesT.TractionStats(:,9),50,'square',bcolor,'markerfacecolor',fcolor)
+    hold on
+    
+    plot([0:ceil(max(aTot)/1000)*1000],lmAN.Coefficients{1,1}*[0:ceil(max(aTot)/1000)*1000],'LineStyle','--','Color',fcolor,'LineWidth',2)
+%     text(30,.967,['R^2: ' sprintf('%.2f',lmAN.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18,'HorizontalAlignment','left')
+%     text(30,.867,['p: ' sprintf('%.2e',lmAN.Coefficients{2,4})],'color',fcolor,'fontsize',18,'HorizontalAlignment','left')
+%     
+    xlim([0 ceil(max(aTot)/500)*500])
+    ylim([0 ceil(max(nTot)/750)*750])
+    set(gca,'Color',bcolor,'LineWidth',2)
+    %Axes, Text, Legends
+    set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
+    ytickformat('%.1f')
+    xt = 'Cell Area (\mum^{2})';% input('enter the xaxis label','s');
+    yt = '\Sigma |Normal| (pN)'; %input('enter the yaxis label','s');
+    tt = 'Line-Profile Displacements';%input('enter the title','s');
+    le = 'Single'; %input('enter the legend','s');
+    le2 = 'Time-Lapse 1';
+    le3 = 'Time-Lapse 2';
+    xl = xlabel(xt);
+    yl = ylabel(yt);
+    %tl = title(tt);
+    
+    set(xl, 'fontweight','bold','fontsize',28,'color',fcolor);
+    set(yl,'fontweight','bold','fontsize',28,'color',fcolor);
+%     leg = legend(['\color{' fcolor '}' le],['\color{' fcolor '}' le2],['\color{' fcolor '}' le3],'location','southeast','fontcolor',fcolor);
+%     legend boxoff
+%     leg.FontSize = LegendFontSize;
+    %set(tl,'fontweight','bold','fontsize',title_font_size)
+    
+    
+    %Export Image
+    title = ['\NormalTractionVsArea Cluster ' fcolor ' on ' bcolor];
     savefile = [ListPath title];
     export_fig(normalarea,savefile,'-native');
     %%
     shearnormal = figure;
     
-    
+     
     %Plot Data
-    scatter(singles.vqT(:,2)/max(singles.vqT(:,2)),singles.vqT(:,1)/max(singles.vqT(:,2)),50,'square',bcolor,'markerfacecolor',fcolor)
+    scatter(singlesT.TractionStats(:,9)/max(singlesT.TractionStats(:,9)),singlesT.TractionStats(:,10)/max(singlesT.TractionStats(:,9)),50,'square',bcolor,'markerfacecolor',fcolor)
     hold on
-    try
-    scatter(spread.vqT(:,2)/max(singles.vqT(:,2)),spread.vqT(:,1)/max(singles.vqT(:,2)),50,'square',bcolor,'markerfacecolor','red')
-    scatter(bleb.vqT(:,2)/max(singles.vqT(:,2)),bleb.vqT(:,1)/max(singles.vqT(:,2)),50,'square',bcolor,'markerfacecolor',green)
-    scatter(clusters.vqT(:,2)/max(singles.vqT(:,2)),clusters.vqT(:,1)/max(singles.vqT(:,2)),50,'square',bcolor,'markerfacecolor','y')
-    catch
-    end
     
-    plot([0:1],lmNS.Coefficients{2,1}*[0:1]+(lmNS.Coefficients{1,1}/max(singles.vqT(:,2))),'LineStyle','--','Color',fcolor,'LineWidth',2)
+    plot([0:1],lmNS.Coefficients{1,1}*[0:1]+(lmNS.Coefficients{1,1}/max(singlesT.TractionStats(:,9))),'LineStyle','--','Color',fcolor,'LineWidth',2)
 %     text(.01,2.9,['R^2: ' sprintf('%.2f',lmNS.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18)
 %     text(.01,2.6,['p: ' sprintf('%.2e',lmNS.Coefficients{2,4})],'color',fcolor,'fontsize',18)
 %     text(.01,2.3,['X-coef.: ' sprintf('%.2f',lmNS.Coefficients{2,1})],'color',fcolor,'fontsize',18)
@@ -176,31 +162,30 @@ for i = 1:size(colOptions,2)
 %     leg.FontSize = LegendFontSize;
     %set(tl,'fontweight','bold','fontsize',title_font_size)
     
-    
     %Export Image
-    title = ['\ShearVsNormal ' fcolor ' on ' bcolor];
+    title = ['\ShearVsNormalTractions Cluster ' fcolor ' on ' bcolor];
     savefile = [ListPath title];
     export_fig(shearnormal,savefile,'-native');
     
     %%
-        shearnormaltrue = figure;
+    shearnormaltrue = figure;
     
-    
+     
     %Plot Data
-    scatter(singles.vqT(:,2),singles.vqT(:,1),50,'square',bcolor,'markerfacecolor',fcolor)
+    scatter(singlesT.TractionStats(:,9),singlesT.TractionStats(:,10),50,'square',bcolor,'markerfacecolor',fcolor)
     hold on
-    try
-    scatter(spread.vqT(:,2),spread.vqT(:,1),50,'square',bcolor,'markerfacecolor','red')
-    scatter(bleb.vqT(:,2),bleb.vqT(:,1),50,'square',bcolor,'markerfacecolor',green)
-    scatter(clusters.vqT(:,2),clusters.vqT(:,1),50,'square',bcolor,'markerfacecolor','y')
-    catch
-    end
+
+    plot([0:5000],lmNS.Coefficients{1,1}*[0:5000],'LineStyle','--','Color',fcolor,'LineWidth',2)
+    
+    xlim([0 ceil(max(nTot)/500)*500])
+    ylim([0 ceil(max(sTot)/500)*500])
+    
     set(gca,'Color',bcolor,'LineWidth',2)
     %Axes, Text, Legends
     set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
     ytickformat('%.1f')
-    xt = '\Sigma |Normal| (AU)';% input('enter the xaxis label','s');
-    yt = '\Sigma |Shear| (AU)'; %input('enter the yaxis label','s');
+    xt = '\Sigma |Normal| (pN)';% input('enter the xaxis label','s');
+    yt = '\Sigma |Shear| (pN)'; %input('enter the yaxis label','s');
     tt = 'Line-Profile Displacements';%input('enter the title','s');
     le = 'Single'; %input('enter the legend','s');
     le2 = 'Time-Lapse 1';
@@ -218,13 +203,9 @@ for i = 1:size(colOptions,2)
     
     
     %Export Image
-    title = ['\ShearVsNormalTrue ' fcolor ' on ' bcolor];
+    title = ['\ShearVsNormalTrueTractions Cluster ' fcolor ' on ' bcolor];
     savefile = [ListPath title];
     export_fig(shearnormaltrue,savefile,'-native');
     
 end
-
-
-
-
 
