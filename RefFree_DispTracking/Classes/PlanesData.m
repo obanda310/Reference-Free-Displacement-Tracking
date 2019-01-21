@@ -193,22 +193,59 @@ classdef PlanesData
         
         
         function [obj,r] = cleanPlanes(obj,raw3D)
-            clear planesFinal
             r = raw3D.r;
-            j =1;
+            count =1;
             obj.final = 0;
+            
             for i = 1:size(obj.raw,2)
-                if nnz(obj.raw(:,i))>50
-                    obj.final(1:nnz(obj.raw(:,i)),j) = obj.raw(1:nnz(obj.raw(:,i)),i);
-                    j=j+1;
+            planeSizes(i) = nnz(obj.raw(:,i));
+            end
+            
+            %Determine average plane location
+            for i = 1:size(obj.raw,2)
+                planesLoc(i) = mean(mean(r(obj.raw(1:nnz(obj.raw(:,i)),i),3)));
+            end
+            
+            clear planesGroups
+            for i = 1:size(planesLoc,2)
+                clear differences
+                differences = planesLoc - planesLoc(1,i);
+                planesGroups(i,1:size(find(abs(differences)<2),2)) = find(abs(differences)<2)';
+            end
+            planesGroups = unique(planesGroups,'rows');
+            
+            for i = 1:size(planesGroups,1)
+            planesLoc2(i) = mean(planesLoc(planesGroups(i,1:nnz(planesGroups(i,:)))));
+            end                   
+            
+            for i = 1:size(planesGroups,1)
+                planeIdx = planesGroups(i,1:nnz(planesGroups(i,:)));
+                if  nnz(obj.raw(:,planeIdx))<(max(planeSizes))/2 && (planesLoc2(i) == max(planesLoc2) || planesLoc2(i) == min(planesLoc2))
+                    for j = 1:nnz(planeIdx)
+                        for k = 1:nnz(obj.raw(:,planeIdx(j)))
+                            r(obj.raw(k,planeIdx(j)),:) =[];
+                            obj.raw((obj.raw>obj.raw(k,planeIdx(j)))) = obj.raw((obj.raw>obj.raw(k,planeIdx(j))))-1;
+                            obj.final((obj.final>obj.raw(k,planeIdx(j)))) = obj.final((obj.final>obj.raw(k,planeIdx(j))))-1;
+                        end
+                    end
+                    
                 else
-                    for k = 1:nnz(obj.raw(:,i))
-                        r(obj.raw(k,i),:) =[];
-                        obj.raw((obj.raw>obj.raw(k,i))) = obj.raw((obj.raw>obj.raw(k,i)))-1;
-                        obj.final((obj.final>obj.raw(k,i))) = obj.final((obj.final>obj.raw(k,i)))-1;
+                    for j = 1:nnz(planeIdx)
+                        if planeSizes(planeIdx(j)) < 50
+                            for k = 1:nnz(obj.raw(:,planeIdx(j)))
+                                r(obj.raw(k,planeIdx(j)),:) =[];
+                                obj.raw((obj.raw>obj.raw(k,planeIdx(j)))) = obj.raw((obj.raw>obj.raw(k,planeIdx(j))))-1;
+                                obj.final((obj.final>obj.raw(k,planeIdx(j)))) = obj.final((obj.final>obj.raw(k,planeIdx(j))))-1;
+                            end
+                        else
+                            obj.final(1:nnz(obj.raw(:,planeIdx(j))),count) = obj.raw(1:nnz(obj.raw(:,planeIdx(j))),planeIdx(j));
+                            count=count+1;
+                        end
                     end
                 end
             end
+            
+            obj.final = unique(obj.final','rows')';
         end
     end
 end
