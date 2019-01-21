@@ -46,6 +46,28 @@ figure
 
 
 imshow(sum(vqN,3,'omitnan'),[])
+
+
+% for i =1:30
+% vqtestproj = sum(vq3,3,'omitnan')*-1;
+% vqCO = prctile(vqtestproj(:),i+69);
+% vqtestproj(vqtestproj<vqCO) = 0;
+% 
+% cmap = brewermap(25,'reds');
+% 
+% %inputs:
+% %originalmatrix: the original matrix
+% %binarisedmatrix = originalmatrix > threshold; %the thresholded matrix, a logical array
+% [rows, cols] = ndgrid(1:size(vqtestproj, 1), 1:size(vqtestproj, 2));
+% rc(i) = sum(rows(vqtestproj>0) .* vqtestproj(vqtestproj>0)) / sum(vqtestproj(vqtestproj>0));
+% cc(i) = sum(cols(vqtestproj>0) .* vqtestproj(vqtestproj>0)) / sum(vqtestproj(vqtestproj>0));
+% 
+% 
+% hold on
+% scatter(cc(i),rc(i),50,'MarkerEdgeColor','r','linewidth',2)
+% end
+
+
 for i =1:5
 vqtestproj = sum(vq3,3,'omitnan')*-1;
 vqCO = prctile(vqtestproj(:),i+91);
@@ -64,6 +86,9 @@ cc(i) = sum(cols(vqtestproj>0) .* vqtestproj(vqtestproj>0)) / sum(vqtestproj(vqt
 hold on
 scatter(cc(i),rc(i),50,'MarkerEdgeColor',cmap(i,:),'linewidth',2)
 end
+
+
+
 
 rcf = round(mean(rc));
 ccf = round(mean(cc));
@@ -91,7 +116,11 @@ distvq=round(bwdist(distvq));
 figure
 imshow(distvq,[])
 hold on
-scatter(cc,rc,50,'MarkerEdgeColor','r','linewidth',2)
+scatter(ccf,rcf,50,'MarkerEdgeColor','r','linewidth',2)
+
+%% Create Z-Stack infographic for radial Averaging
+figure
+imshow(distvq == 500,[])
 
 %%
 td = max(distvq(:));
