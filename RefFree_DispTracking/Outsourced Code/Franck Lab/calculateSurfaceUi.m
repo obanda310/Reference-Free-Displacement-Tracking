@@ -81,12 +81,13 @@ for i = 1:maxTime
     n{i+1} = calculateNormals(s{i+1});
     
 end
+save('whatisui.mat','ui')
 end
 
 function s = mapSurface(s,ui,s0)
 
 for i = 1:3, s{i} = s{i} - ui{i}; end 
-F = TriScatteredInterp(s{1}(:),s{2}(:),s{3}(:));
+F = scatteredInterpolant(s{1}(:),s{2}(:),s{3}(:));
 
 s{3} = F(s0{1},s0{2});
 s{1} = s0{1}; s{2} = s0{2};
@@ -197,7 +198,7 @@ end
 function varargout = parseInputs(varargin)
 u = varargin{1};
 mSpacing = varargin{2};
-
+disp(mSpacing)
 if iscell(u{1}) == 0
     mSize = size(u{1});
 else
@@ -208,9 +209,9 @@ um2vxl = varargin{4};
 OS = varargin{5};
 
 
-idx{1} = (1:mSpacing:mSize(2)*mSpacing);
-idx{2} = (1:mSpacing:mSize(1)*mSpacing);
-idx{3} = (1:mSpacing:mSize(3)*mSpacing);
+idx{1} = (mSpacing:mSpacing:mSize(2)*mSpacing);
+idx{2} = (mSpacing:mSpacing:mSize(1)*mSpacing);
+idx{3} = (mSpacing:mSpacing:mSize(3)*mSpacing);
 [m{1}, m{2}, m{3}] = meshgrid(idx{:});
 
 

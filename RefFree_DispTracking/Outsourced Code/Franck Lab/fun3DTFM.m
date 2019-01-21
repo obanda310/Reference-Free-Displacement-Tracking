@@ -486,7 +486,7 @@ tiPN = cell(maxTime,1);
 for k = 1:maxTime  
     tiNormal{k} = abs(ti{k}{1}.*n{k+1,1}{1}+ti{k}{2}.*n{k+1,1}{2}+ti{k}{3}.*n{k+1,1}{3});
     for m = 1:3
-        tiParallel_{k}{m} = ti{k}{m}-tiNormal{k}.*n{k+1,1}{m};
+        tiParallel_{k}{m} = abs(ti{k}{m})-tiNormal{k}.*n{k+1,1}{m};
     end
     tiParallel{k,1} = sqrt(tiParallel_{k}{1}.^2+tiParallel_{k}{2}.^2+tiParallel_{k}{3}.^2);
     tiPN{k}{1} = tiParallel{k};
@@ -536,11 +536,13 @@ n = varargin{3};
 OS = varargin{4};
 
 mSize = size(Sij{1}{1});
+
 dm = s{1}{2}(2) - s{1}{2}(1);
+disp(dm)
 idx = cell(1,3);
-idx{1} = (1:dm:mSize(2)*dm);
-idx{2} = (1:dm:mSize(1)*dm);
-idx{3} = (1:dm:mSize(3)*dm);
+idx{1} = (dm:dm:mSize(2)*dm);
+idx{2} = (dm:dm:mSize(1)*dm);
+idx{3} = (dm:dm:mSize(3)*dm);
 [m{1}, m{2}, m{3}] = meshgrid(idx{:});
 
 varargout{      1} = Sij;
