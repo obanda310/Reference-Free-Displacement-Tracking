@@ -35,21 +35,32 @@ for i = 1:size(shear.Int,2)
     end
 end
 %%
-figure
+profiles = figure;
 hold on
 for i = 1:size(Int2,2)
-    plot(Int2(:,i))
+    plot3(1:1:size(RawStack,3),Int2(:,i),i*ones(1,size(RawStack,3)))
 end
-plot([0 size(RawStack,3)], [0 0])
+patch([0 size(RawStack,3) size(RawStack,3) 0], [0 0 0 0],[0 0 size(Int2,2) size(Int2,2)])
     
+    savefile = 'PillarIntProfiles.tif';
+    export_fig(profiles,savefile,'-native');
 
 %% Fit intensity profiles and find where they become noise
 %(i.e. intersect the surface)
+clear failcount
+failcount = 0;
 Int2 = double(Int2);
 progressbar('Approximating Substrate Surface')
+meanZ = floor(mean(shear.lastFrame));
+stdZ = 3*ceil(std(shear.lastFrame));
+fitStart = meanZ - stdZ;
+fitEnd = meanZ - stdZ;
 for i = 1:size(Int2,2)
     progressbar(i/size(Int2,2))
-    fitStart = shear.lastFrame(i)-5;
+    
+    
+    
+    %fitStart = shear.lastFrame(i)-10;
     try
     fitEnd1 = shear.lastFrame(i) + find(Int2(shear.lastFrame(i):end,i)<0,1,'first')+2;
     tempInt = Int2(fitStart:fitEnd1,i);
@@ -92,6 +103,7 @@ for i = 1:size(Int2,2)
         try
     Zeros(i,3) = fzero(fun1,[fitStart fitEnd]);
         catch
+            failcount = failcount+1;
 %             [fitStart fitEnd]
 %             feval(fun1, fitStart)
 %             feval(fun1, fitEnd)
@@ -108,7 +120,9 @@ for i = 1:size(Int2,2)
     %fun1 = fit(Xs,tempInt,'cubicinterp');
     
 end
+scatter(Zeros(:,3),zeros(size(Zeros(:,3))));
 Zeros(:,3) = Zeros(:,3)*raw.dataKey(10,1);
+
 %% Show surface features and normal features
 % figure
 % scatter3(zeros(:,1),zeros(:,2),zeros(:,3))

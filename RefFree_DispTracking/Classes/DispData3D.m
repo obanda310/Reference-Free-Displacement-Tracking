@@ -344,6 +344,7 @@ classdef DispData3D
                 end
                 
                 axis([0 r.s(1,2) 0 r.s(2,2)])
+                zlim([min(r.Z)-1 max(r.Z)+1])
                 
                 xt = 'X-axis (\mum)';% input('enter the xaxis label','s');
                 yt = 'Y-axis (\mum)'; %input('enter the yaxis label','s');

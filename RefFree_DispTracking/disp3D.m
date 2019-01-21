@@ -6,11 +6,11 @@ clear all
 close all
 set(0,'defaultfigurecolor',[1 1 1])
 tic
-autoChk = 1; %1 for auto, 0 otherwise
+
 %% Load Shear Data
 load('Shear Mat Files\DataRaw')
 load('Shear Mat Files\DataShear')
-
+autoChk = 1; %1 for auto, 0 otherwise
 %% Load Images
 image = ImageData(autoChk);
 image = rawStack(image,autoChk);
@@ -127,6 +127,35 @@ disp(['done Building Rows at ' num2str(toc) ' seconds'])
 %     scatter3(r.X(rows(i,1:nnz(rows(i,:)))),r.Y(rows(i,1:nnz(rows(i,:)))),r.Z(rows(i,1:nnz(rows(i,:)))))
 % end
 
+%% Final Cleaning Step - Removing all single-member row objects 
+% This will help with processing time on row fits and should clean up some
+% noise in poor quality datasets.
+for i = 1:size(rows,1)
+rowsNum(i) = nnz(rows(i,:));
+end
+rowspurge = rows((rowsNum==1)',1);
+
+rTemp = r.r;
+rTemp(rowspurge,:) = [];
+%%
+% Refresh raw data variable and planes data
+r = RawData3D(res,raw,rTemp);
+r = TranscribeR(r);
+
+clear plane
+plane = PlanesData(r);
+plane = nborsPlanesF(plane,r,radXY,radZ);
+%Grow from starting point until no more plane members are found
+plane = growPlanes(plane,r);
+[plane,r] = cleanPlanes(plane,r);
+r = RawData3D(res,raw,r);
+r = TranscribeR(r);
+r = regionCheck(r,image.ADil,raw);
+
+disp('Rebuilding Rows')
+[r,rows] = buildRows2(r,rowV,plane.final);
+disp(['done rebuilding Rows at ' num2str(toc) ' seconds'])
+
 %% Format rows to include plane information
 [rows,rowPlanes,rowPlanesIdx,rowsNDCU,r] = formatRows(rows,plane,r);
 % figure
@@ -137,13 +166,18 @@ disp(['done Building Rows at ' num2str(toc) ' seconds'])
 %         scatter3(r.X(rowPlanes(i,1:n,j)),r.Y(rowPlanes(i,1:n,j)),r.Z(rowPlanes(i,1:n,j)))
 %     end
 % end
+
+
+
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Calculate plane distance from surface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('Approximating Surface Coordinates')
 [Surface2,SurfaceAll,Zeros] = findSurface2(shear,image,raw);
+save('Surface.mat','Surface2')
 disp(['Done Approximating Surface Coordinates at ' num2str(toc)])
+%%
 try
     [planesLoc2,planesLocFiltList] = placePlanes(r,plane,Surface2);
 catch
@@ -175,6 +209,10 @@ end
 % scatter3(shear.rawX(:,i),shear.rawY(:,i),shear.rawZ(:,i),'.')
 % end
 %
+
+
+
+
 %%
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -197,7 +235,7 @@ m1 = dispStats(m1,plane,rowPlanesIdx,r,rowsNDCU,planesLocFiltList);
 m1 = dispNoise(m1,r,planesLocFiltList,image,shear,raw.dataKey(9,1));
 disp(['done Fitting Rows with Independent Slopes - Method 1 at ' num2str(toc) ' seconds'])
 % Scatter3/Plot3 of Dots/Fits Method 2
-%ViewRowFits(m1,r,rowPlanes,'m1')
+%ViewRowFits(m3,r,rowPlanes,rowPlanesIdx,'m1')
 % Quiver Plot of Displacements Method 2
 %ViewQuiverPlot(m1,r,'m1')
 NoiseHists(m1,planesLocFiltList,r,'1')
@@ -273,6 +311,11 @@ NoiseHists(m3,planesLocFiltList,r,'3')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CREATE COLOR MAPS OF DISPLACEMENTS IN Z
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+try
+rmdir HeatMaps\3D s
+catch
+end
+
 mkdir('HeatMaps\3D')
 mkdir('HeatMaps\3D\ColorBar')
 colorMapZ = single(brewermap(65536,'*PuBu'));
@@ -331,8 +374,8 @@ planesGroups = unique(planesGroups,'rows');
 [HeatMapN,vqN] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),0,colorMapZ,colorMapXY,0);
 %[HeatMap,vq1] = heatmapZ(r.r,m1.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m1.noiseCutoff,colorMapZ,colorMapXY,1);
 %[HeatMap2,vq2] = heatmapZ(r.r,m2.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m2.noiseCutoff,colorMapZ,colorMapXY,2);
-[HeatMap3,vq3] = heatmapZ(r.r,m3.dispFilt,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,3);
-[HeatMap3,vq4] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,32);
+%[HeatMap3,vq3] = heatmapZ(r.r,m3.dispFilt,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,3);
+[HeatMap3,vq3] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,3);
 
 
 % Print Data to txt file

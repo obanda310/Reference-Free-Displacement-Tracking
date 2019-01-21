@@ -1,4 +1,5 @@
 function [r,rows] = buildRows2(r,rowV,planesFinal)
+r.row = [];
 
 %Note: Currently if there are seemingly duplicate features (two detections per ellipsoid),
 %the code will break a row at that location. Stricter feature detection can

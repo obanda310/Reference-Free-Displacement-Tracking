@@ -132,17 +132,18 @@ classdef ImageData
                 if size(loc,1)==1 && autoChk ==1
                     disp(tifFiles(loc(1)).name)
                     obj.RawStack = getImages(tifFiles(loc(1)).name);
-              
-                elseif size(find(check),2) >0 %&& autoChk ==1
+                end
+            catch  
+                if size(find(check),2) >0 %&& autoChk ==1
                     load('StackName.mat','StackName')
                     obj.RawStack = single(getImages(StackName));
                 else
                     obj.RawStack = single(getImages());
                 end
-            catch
-                %disp(loc)
-                obj.RawStack = single(getImages());
             end
+                %disp(loc)
+             %   obj.RawStack = single(getImages());
+            %end
             if size(obj.RawStack,1) ~= size(obj.Black,1)
                 for i = 1:size(obj.RawStack,3)
                     RawStack2(:,:,i) = imresize(obj.RawStack(:,:,i),size(obj.Black));

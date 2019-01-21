@@ -21,7 +21,7 @@ end
 %     Zeros(thenans(i),5) = shear.rawY(shear.lastFrame(thenans(i))) - shear.ltLastdY(thenans(i));
 %     Zeros(thenans(i),6) = feval(Surface2,Zeros(thenans(i),4),Zeros(thenans(i),5));
 % end
-
+Zeros(Zeros(:,3) == 0,3) = NaN;
 %%
 figure
 scatter3(Zeros(:,4),Zeros(:,5),Zeros(:,6))
@@ -29,6 +29,8 @@ xlim([0 max(Zeros(:,4))+5])
 ylim([0 max(Zeros(:,5))+5])
 zlim([0 max(Zeros(:,6))+5])
 hold on
+plot(Surface2)
+scatter3(Zeros(:,1),Zeros(:,2),Zeros(:,3))
 %%
 topSurface = [0,0,0,0];
 surfaceFilt = image.ADil;
@@ -56,30 +58,63 @@ dZerosZ((abs(dZerosZ(:,6))<SurfCutoff),6) = NaN;
 dZerosZ(isnan(dZerosZ(:,6)),:) = [];
 dZerosZ(dZerosZ(:,6)==100000,6) = 0;
 
-[xq,yq] = meshgrid(raw.dataKey(9,1):raw.dataKey(9,1):size(image.Black,2)*raw.dataKey(9,1), raw.dataKey(9,1):raw.dataKey(9,1):size(image.Black,1)*raw.dataKey(9,1));
-vq = griddata(dZerosZ(:,1),dZerosZ(:,2),dZerosZ(:,6),xq,yq,'cubic');
-xq2 = linspace(0,size(image.Black,2)*raw.dataKey(9,1),size(vq,2));
-yq2 = linspace(0,size(image.Black,1)*raw.dataKey(9,1),size(vq,1));
+res = 2.12/0.1625;
+[xq,yq] = meshgrid(raw.dataKey(9,1):raw.dataKey(9,1)*res:size(image.Black,2)*raw.dataKey(9,1), raw.dataKey(9,1):raw.dataKey(9,1)*res:size(image.Black,1)*raw.dataKey(9,1));
+vqXt = griddata(dZerosZ(:,1),dZerosZ(:,2),dZerosZ(:,4),xq,yq,'v4');
+vqYt = griddata(dZerosZ(:,1),dZerosZ(:,2),dZerosZ(:,5),xq,yq,'v4');
+vqZt = griddata(dZerosZ(:,1),dZerosZ(:,2),dZerosZ(:,6),xq,yq,'v4');
+xq2 = linspace(0,size(image.Black,2)*raw.dataKey(9,1),size(vqXt,2));
+yq2 = linspace(0,size(image.Black,1)*raw.dataKey(9,1),size(vqXt,1));
 
+% figure
+% MaximumHeatMap = imagesc(xq2,yq2,vqXt);
+% imageHeat = MaximumHeatMap.CData;%.*(image.Black==0);
+% imageHeat = imresize(imageHeat,size(image.Black),'nearest');
+% imageHeat(imageHeat>0) = 32768+(abs(imageHeat(imageHeat>0))*scaleD);
+% imageHeat(imageHeat<0) = 32768 - (abs(imageHeat(imageHeat<0))*scaleD);
+% imageHeat(imageHeat==0) = 32768;
+% imageHeat(isnan(imageHeat)) = 32768;
+% imageHeat = uint16(imageHeat);
+% imageHeatColor = single(ind2rgb(imageHeat,colorMapZ));
+% 
+% figure
+% MaximumHeatMap = imagesc(xq2,yq2,vqYt);
+% imageHeat = MaximumHeatMap.CData;%.*(image.Black==0);
+% imageHeat = imresize(imageHeat,size(image.Black),'nearest');
+% imageHeat(imageHeat>0) = 32768+(abs(imageHeat(imageHeat>0))*scaleD);
+% imageHeat(imageHeat<0) = 32768 - (abs(imageHeat(imageHeat<0))*scaleD);
+% imageHeat(imageHeat==0) = 32768;
+% imageHeat(isnan(imageHeat)) = 32768;
+% imageHeat = uint16(imageHeat);
+% imageHeatColor = single(ind2rgb(imageHeat,colorMapZ));
 
-MaximumHeatMap = imagesc(xq2,yq2,vq);
+figure
+MaximumHeatMap = imagesc(xq2,yq2,vqZt);
 imageHeat = MaximumHeatMap.CData;%.*(image.Black==0);
+imageHeat = imresize(imageHeat,size(image.Black),'nearest');
 imageHeat(imageHeat>0) = 32768+(abs(imageHeat(imageHeat>0))*scaleD);
 imageHeat(imageHeat<0) = 32768 - (abs(imageHeat(imageHeat<0))*scaleD);
 imageHeat(imageHeat==0) = 32768;
 imageHeat(isnan(imageHeat)) = 32768;
 imageHeat = uint16(imageHeat);
 imageHeatColor = single(ind2rgb(imageHeat,colorMapZ));
-close all
+
 maxHeatMap = figure;
 hold on
 imshow(imageHeatColor);
 
+    savefile = [filePath strcat('\HeatMaps\3D\PlanesHeatMapZ_Method_Surface_Plane_0_NoiseCutoff_',num2str(SurfCutoff),'.tif')];
+    export_fig(maxHeatMap,savefile,'-native');
+
+figure
+imshow(vqZt,[])
 %%
 dZerosXY(:,1:3) = Zeros(:,4:6);
 dZerosXY(:,4) = shear.ltLastdX;
 dZerosXY(:,5) = shear.ltLastdY;
 dZerosXY(:,6) = Zeros(:,3);
 
-save('SurfaceData.mat','dZerosXY','dZerosZ')
-
+surfaceData(:,1:3) = dZerosZ(:,1:3);
+surfaceData(:,4:6) = dZerosZ(:,1:3)+dZerosZ(:,4:6);
+save('SurfaceData.mat','dZerosXY','dZerosZ','surfaceData','vqXt','vqYt','vqZt')
+disp('Surface Displacement Script Completed Successfully!')

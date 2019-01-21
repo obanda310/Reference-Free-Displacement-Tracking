@@ -49,22 +49,28 @@ for i = 1:size(planesGroups,1)
         rVq(1,1:4) = 0;
     end
     
+    averageZ = round(mean(r(AllFeatures,3)),2);
     %% Heatmap of Z displacements
     
-    res = 1;
+    res = 2.12/0.1625;
     [xq,yq] = meshgrid(xyScale:res*xyScale:size(imageBinary,2)*xyScale, xyScale:res*xyScale:size(imageBinary,1)*xyScale);
     vq = griddata(rVq(:,1),rVq(:,2),rVq(:,3),xq,yq,'cubic');
     xq2 = linspace(0,size(imageBinary,2)*xyScale,size(vq,2));
     yq2 = linspace(0,size(imageBinary,1)*xyScale,size(vq,1));
     
     if cutoff ~= 0
-        vq = vq.*imageBinary.*Borders;
+        vq = vq.*(imresize(imageBinary.*Borders,size(vq))>0);
     end
     %     disp(num2str(max(max((vq)))))
     %     disp(num2str(min(min((vq)))))
     MaximumHeatMap = imagesc(xq2,yq2,vq);
     vqFinal(:,:,i) = single(vq);
     imageHeat = MaximumHeatMap.CData;%.*(imageBinary==0);
+    if method == 3
+        imageHeat = imresize(imageHeat,size(imageBinary),'bicubic');
+    else
+        imageHeat = imresize(imageHeat,size(imageBinary),'nearest');
+    end
     imageHeat(imageHeat>0) = 32768+(abs(imageHeat(imageHeat>0))*scaleD);
     imageHeat(imageHeat<0) = 32768 - (abs(imageHeat(imageHeat<0))*scaleD);
     imageHeat(imageHeat==0) = 32768;
@@ -77,7 +83,7 @@ for i = 1:size(planesGroups,1)
     hold on
     imshow(imageHeatColor);
     
-    savefile = [filePath strcat('HeatMaps\3D\PlanesHeatMapZ_Method_',num2str(method),'_Plane_',num2str(i),'_NoiseCutoff_',num2str(cutoff),'.tif')];
+    savefile = [filePath strcat('HeatMaps\3D\PlanesHeatMapZ_Method_',num2str(method),'_Plane_',num2str(averageZ),'_NoiseCutoff_',num2str(cutoff),'.tif')];
     export_fig(maxHeatMap,savefile,'-native');
     
     %% Heat map of Shear displacement
@@ -86,13 +92,18 @@ for i = 1:size(planesGroups,1)
     yq2 = linspace(0,size(imageBinary,1)*xyScale,size(vq,1));
     
     if method ~=0
-        vq = vq.*imageBinary.*Borders;
+        vq = vq.*(imresize(imageBinary.*Borders,size(vq))>0);
     end
     %     disp(num2str(max(max((vq)))))
     %     disp(num2str(min(min((vq)))))
     MaximumHeatMap = imagesc(xq2,yq2,vq);
     vqFinalXY(:,:,i) = single(vq);
     imageHeat = MaximumHeatMap.CData;%.*(imageBinary==0);
+    if method == 3
+        imageHeat = imresize(imageHeat,size(imageBinary),'bicubic');
+    else
+        imageHeat = imresize(imageHeat,size(imageBinary),'nearest');
+    end
     imageHeat(imageHeat>0) = imageHeat(imageHeat>0)*scaleXY;
     imageHeat(isnan(imageHeat)) = 0;
     imageHeat = uint16(imageHeat);
@@ -103,7 +114,7 @@ for i = 1:size(planesGroups,1)
     hold on
     imshow(imageHeatColor);
     
-    savefile = [filePath strcat('HeatMaps\3D\PlanesHeatMapXY_Method_',num2str(method),'_Plane_',num2str(i),'_NoiseCutoff_',num2str(cutoff),'.tif')];
+    savefile = [filePath strcat('HeatMaps\3D\PlanesHeatMapXY_Method_',num2str(method),'_Plane_',num2str(averageZ),'_NoiseCutoff_',num2str(cutoff),'.tif')];
     export_fig(maxHeatMap,savefile,'-native');
     
 end

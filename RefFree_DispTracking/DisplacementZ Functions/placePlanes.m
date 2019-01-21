@@ -1,5 +1,6 @@
 function [planesLoc2,planesLocFiltList] = placePlanes(r,plane,Surface2)
-if Surface2~=0
+%%    
+if isempty(Surface2)~=1
     
     for j = 1:size(plane.final,2)
         for i = 1:nnz(plane.final(:,j))
@@ -12,11 +13,16 @@ else
         for i = 1:nnz(plane.final(:,j))
             planesLoc(i,j) = max(r.Z) - r.Z(plane.final(i,j));
         end
-    end
-    
+    end    
 end
+
+
 planesLoc(planesLoc==0)=nan;
 planesLoc2 = mean(planesLoc,'omitnan');
+if min(planesLoc2) < 0
+    planesLoc2 = planesLoc2 + abs(min(planesLoc2));
+end
+
 planesLocFilt = find(planesLoc2>4.5);
 planesLocFiltList = plane.final(:,planesLocFilt(1,1));
 if size(planesLocFilt,2)>1
