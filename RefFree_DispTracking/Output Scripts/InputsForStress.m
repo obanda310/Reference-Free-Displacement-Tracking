@@ -1,9 +1,9 @@
-function [u,surface,normals,dm] = InputsForStress(directory)
-if nargin == 1
-    cd(directory);
-end
-close all
-clear all
+% function [u,surface,normals,dm] = InputsForStress(directory)
+% if nargin == 1
+%     cd(directory);
+% end
+% close all
+% clear all
 %% Create X, Y, Z meshes for reference position(surface), displacements, and
 % surface normals
 load('3Ddata.mat')

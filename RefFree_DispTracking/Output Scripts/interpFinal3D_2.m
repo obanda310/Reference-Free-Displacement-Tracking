@@ -1,5 +1,6 @@
 %% Put Surface, Normal, and Empty Detections together and interpolate
-function [output] = interpFinal3D(directory)
+%This version tries to use data from dispSurface.m
+function [output] = interpFinal3D_2(directory)
 
 if nargin ==1
     cd(directory);
@@ -8,47 +9,50 @@ close all
 
 %%
 load('3Ddata.mat')
-% load('empties.mat')
-%load('SurfaceData.mat')
+%load('empties.mat') % May add this data in future versions.
+load('SurfaceData.mat')
 % tic
 % %Create the full Lists
-% 
-% 
-% fullData = cat(1,m3.refSC,em3.refSC,dZerosXY(:,1:3));
-% fullData(:,4:6) = cat(1,m3.refSC+m3.dispFilt,em3.refSC+em3.dispFilt,dZerosXY(:,1:3)+dZerosXY(:,4:6));
-% fullData(isnan(fullData(:,1)),:) = [];
-% 
-% fullData2 = cat(1,m3.refSC,em3.refSC,dZerosZ(:,1:3));
-% fullData2(:,4:6) = cat(1,m3.refSC+m3.dispFilt,em3.refSC+em3.dispFilt,dZerosZ(:,1:3)+dZerosZ(:,4:6));
-% fullData2(isnan(fullData2(:,3)),:) = [];
 
 %This data set will try to project values from the uppermost plane to the
 %surface of the hydrogel.
 fullData3 = m3.ref;
 fullData3(:,4:6) = m3.ref+m3.disp;
+% eData = em3.ref;
+% eData(:,4:6) = em3.ref+em3.disp;
 
-%% Noise Cutoffs
-xVals = shear.ltdX(:,shear.noCellTraj);
-xVals(xVals == 0) = NaN;
-xCO = std(xVals(:),'omitnan');
+%If using surfaceData
+%surfaceData(:,[3 6]) = NaN;
+fullData3 = cat(1,fullData3,surfaceData); %,surfaceData ,eData
+%planesLoc2 = cat(2,planesLoc2,0);
 
-yVals = shear.ltdY(:,shear.noCellTraj);
-yVals(xVals == 0) = NaN;
-yCO = std(yVals(:),'omitnan');
-
-zCO = m3.noiseCutoff/2;
-
+%% Noise Cutoffs (Metrics from dispShear and disp3D)
+% xVals = shear.ltdX(:,shear.noCellTraj);
+% xVals(xVals == 0) = NaN;
+% xCO = std(xVals(:),'omitnan');
+% 
+% yVals = shear.ltdY(:,shear.noCellTraj);
+% yVals(xVals == 0) = NaN;
+% yCO = std(yVals(:),'omitnan');
+% 
+% zCO = m3.noiseCutoff/2;
 %% Rigid Body Transform (Translation followed by Rotation)
 % This part of the code should make the surface of the gel be at the Z=0
 % plane
 
+%Works by creating a small plane parallel to Z=0, and then determines what
+%transforms are necessary to level the plane to the to the surface approximated in
+%disp3D.mat. (i.e. the hydrogel surface)
+
 clear corner
+
+%Create Z=0 plane
 corner(1,1:2) = [0,0];
 corner(2,1:2) = [1,0];
 corner(3,1:2) = [0,1];
 corner(4,1:2) = [1,1];
 
-
+%Create gel surface parallel plane
 corner(1,3) = feval(Surface2,[0,0]);
 corner(2,3) = feval(Surface2,[1,0]);
 corner(3,3) = feval(Surface2,[0,1]);
@@ -56,7 +60,8 @@ corner(4,3) = feval(Surface2,[1,1]);
 
 translateZ = corner(1,3);
 corner(:,3) = corner(:,3) - translateZ;
-% Generate Angles
+
+% Determine angles between planes
 Ya = -atan(corner(2,3));
 Xa = atan(corner(3,3));
 Za = 0;
@@ -77,145 +82,62 @@ corner2 = pointCloud(corner);
 tform = affine3d(EulerA);
 corner3 = pctransform(corner2,tform);
 
-%% Translate and rotate all of the data
+%% Translate and Rotate all of the data
 disp('Zeroing coordinates to Surface')
-% [fD,fDp] = ZeroSurfacePlane(fullData,translateZ,tform);
-% [fDz,fDzp] = ZeroSurfacePlane(fullData2,translateZ,tform);
-
-
-%%
-
 
 [fD3,fD3p,fD3d] = ZeroSurfacePlane(fullData3,translateZ,tform);
-topPlane = find(planesLoc2 == min(planesLoc2));
-fD3(plane.final(1:nnz(plane.final(:,topPlane)),topPlane),3) = 0;
 for i = 1:size(plane.final,2)
     fD3(plane.final(1:nnz(plane.final(:,i)),i),4) = i;
-    if i ~= topPlane
-       fD3(plane.final(1:nnz(plane.final(:,i)),i),3) = (planesLoc2(1,i)*-1)+min(planesLoc2); 
-    
 end
-end
+
+
 
 fD3p = fD3(:,1:3)+fD3d;
-fD3p(r.ND,:) =fD3(r.ND,1:3);
-fD3d(r.ND,:) =0;
+fD3p(r.ND,:) = fD3(r.ND,1:3);
+%fD3d(r.ND,:) =0;
 %scatter3(fD3p(:,1),fD3p(:,2),fD3p(:,3))
-figure
-hold on
-for i = 1:max(fD3(:,4))
-quiver3(fD3(fD3(:,4)==i,1),fD3(fD3(:,4)==i,2),fD3(fD3(:,4)==i,3),fD3d(fD3(:,4)==i,1),fD3d(fD3(:,4)==i,2),fD3d(fD3(:,4)==i,3))
-end
-
 
 fD3delete = unique(cat(1,find(isnan(fD3(:,1))),find(isnan(fD3(:,2))),find(isnan(fD3(:,3))),find(isnan(fD3d(:,1))),find(isnan(fD3d(:,2))),find(isnan(fD3d(:,3)))));
 fD3(fD3delete,:) = [];
 fD3p(fD3delete,:) = [];
 fD3d(fD3delete,:) = [];
-
+%fD3d(fD3(:,4)==0,3) = NaN; % Remove normal surface data (it has lower quality)
+%%
 figure
 quiver3(fD3(:,1),fD3(:,2),fD3(:,3),fD3d(:,1),fD3d(:,2),fD3d(:,3))
-%% 2-D Interp for Shear displacements
-clear vqXi vqYi vqZi vqXi2 vqYi2 vqZi2 fDf fDftemp
-dm2 = 2.12;%raw.dataKey(9,1)*2;
-[xq,yq] = meshgrid(raw.dataKey(9,1):dm2:size(image.Black,2)*raw.dataKey(9,1),raw.dataKey(9,1):dm2:size(image.Black,1)*raw.dataKey(9,1));
+%% If not using surface data, shift data up.
+% clear bottomoftop
+% planesLoc2(planesLoc2==0) = [];
+% topPlane = find(planesLoc2 == min(planesLoc2));
+% bottomoftop = min(fD3(fD3(:,4)==topPlane,3));
+% if max(fD3(:,3))<0
+% fD3(:,3) = fD3(:,3)-bottomoftop(1);
+% end
 
-for i = 1:max(fD3(:,4))
-    
-    disp('Interpolating dXs')
-    vqXi = griddata(fD3(fD3(:,4)==i,1),fD3(fD3(:,4)==i,2),fD3d(fD3(:,4)==i,1),xq,yq,'v4');
-    vqXi(isnan(vqXi)) = 0;
-    figure
-    imshow(vqXi,[])
-    vqXi2(:,:,i) = vqXi;
-    
-    disp('Interpolating dYs')
-    vqYi = griddata(fD3(fD3(:,4)==i,1),fD3(fD3(:,4)==i,2),fD3d(fD3(:,4)==i,2),xq,yq,'v4');
-    vqYi(isnan(vqYi)) = 0;
-    figure
-    imshow(vqYi,[])
-    vqYi2(:,:,i) = vqYi;
-    
-    disp('Interpolating dZs')
-    vqZi = griddata(fD3(fD3(:,4)==i,1),fD3(fD3(:,4)==i,2),fD3d(fD3(:,4)==i,3),xq,yq,'v4');
-    vqZi(isnan(vqYi)) = 0;
-    figure
-    imshow(vqZi,[])
-    vqZi2(:,:,i) = vqZi;
-    zq = ones(size(xq))*max(fD3(fD3(:,4)==i,3));
-    
-    clear fDftemp
-    fDftemp(:,1,i) = xq(:);
-    fDftemp(:,2,i) = yq(:);
-    fDftemp(:,3,i) = zq(:);
-    fDftemp(:,4,i) = vqXi(:);
-    fDftemp(:,5,i) = vqYi(:);
-    fDftemp(:,6,i) = vqZi(:);
-    
-    if i == 1
-        fDf(:,:) = fDftemp(:,:,1);
-    else
-        fDf = cat(1,fDf,fDftemp(:,:,i));
-    end
-    
-end
-disp('Done 2D interp')
-%% Add Surface Data to lists
-% zq = zeros(size(xq));
-% clear fDftemp
-%     fDftemp(:,1) = xq(:);
-%     fDftemp(:,2) = yq(:);
-%     fDftemp(:,3) = zq(:);
-%     fDftemp(:,4) = vqXt(:);
-%     fDftemp(:,5) = vqYt(:);
-%     fDftemp(:,6) = vqZt(:);
-% fDf = cat(1,fDftemp(:,:),fDf);
-
-%% Filter out noisy data
-% fDf(abs(fDf(:,4))<xCO,4) = 0;
-% fDf(abs(fDf(:,5))<yCO,5) = 0;
-% fDf(abs(fDf(:,6))<zCO,6) = 0;
-% 
-% fDf(abs(fDf(:,4))>xCO & abs(fDf(:,4))<xCO*2,:) = [];
-% fDf(abs(fDf(:,5))>yCO & abs(fDf(:,5))<yCO*2,:) = [];
-% fDf(abs(fDf(:,6))>zCO & abs(fDf(:,6))<zCO*2,:) = [];
 %%
-%save('3Ddata.mat')
+save('3Ddata.mat')
 %% Newer Interp scheme 10/31/2018 (Griddata Version)
 tic
 dm2 = 2.12;%raw.dataKey(9,1);
 [xq,yq,zq] = meshgrid(min(fD3(:,1)):dm2:max(fD3(:,1)),min(fD3(:,2)):dm2:max(fD3(:,2)),min(fD3(:,3))+2:dm2:0);
 disp('Interpolating dXs')
-vqX = griddata(fDf(:,1),fDf(:,2),fDf(:,3),fDf(:,4),xq,yq,zq);
+vqX = griddata(fD3(:,1),fD3(:,2),fD3(:,3),fD3d(:,1),xq,yq,zq);
 vqX(isnan(vqX)) = 0;
 toc
 disp('Interpolating dYs')
-vqY = griddata(fDf(:,1),fDf(:,2),fDf(:,3),fDf(:,5),xq,yq,zq);
+vqY = griddata(fD3(:,1),fD3(:,2),fD3(:,3),fD3d(:,2),xq,yq,zq);
 vqY(isnan(vqY)) = 0;
 toc
 disp('Interpolating dZs')
-vqZ = griddata(fDf(:,1),fDf(:,2),fDf(:,3),fDf(:,6),xq,yq,zq);
+vqZ = griddata(fD3(:,1),fD3(:,2),fD3(:,3),fD3d(:,3),xq,yq,zq);
 vqZ(isnan(vqZ)) = 0;
 toc
-%% Newer Interp scheme 10/31/2018 (Scattered Interpolant Version)
-% tic
-% disp('Interpolating dXs')
-% Fx = scatteredInterpolant(fD3(:,1),fD3(:,2),fD3(:,3),fD3d(:,1),'natural');
-% u2 = Fx(xq,yq,zq);
-% toc
-% 
-% disp('Interpolating dYs')
-% Fy = scatteredInterpolant(fDf(:,1),fDf(:,2),fDf(:,3),fDf(:,5),xq,yq,zq);
-% vqY(isnan(vqY)) = 0;
-% toc
-% disp('Interpolating dZs')
-% Fz = scatteredInterpolant(fDf(:,1),fDf(:,2),fDf(:,3),fDf(:,6),xq,yq,zq);
-% vqZ(isnan(vqZ)) = 0;
-% toc
+
 %%
   u{1}{1} = vqX * (1*10^-6);
   u{1}{2} = vqY * (1*10^-6);
-  u{1}{3} = vqZ * (1*10^-6); 
+  u{1}{3} = vqZ * (1*10^-6)*-1; 
+  %u{1}{3}(:,:,end) = u{1}{3}(:,:,end-1);
  %%
 %  u{1}{1} = vqX;
 %  u{1}{2} = vqY;
@@ -249,45 +171,66 @@ properties = [12000,.2];
 [surface, normals] = calculateSurfaceUi(surface(1), normals(1), u);
 save('Inputs2.mat','u','surface','normals','model','properties','dm3')  
 
+
+%%
+figure
+sXd = surface{2}{1}(:) -surface{1}{1}(:);
+sYd = surface{2}{2}(:) -surface{1}{2}(:);
+sZd = surface{2}{3}(:) -surface{1}{3}(:);
+quiver3(surface{1}{1}(:),surface{1}{2}(:),surface{1}{3}(:),sXd(:),sYd(:),sZd(:),0)
+%%
+figure
+quiver3(surface{2}{1}(:),surface{2}{2}(:),surface{2}{3}(:),normals{2}{1}(:)/100000,normals{2}{2}(:)/100000,normals{2}{3}(:)/5000000,0)
+%%
 try
 [Fij, Sij, Eij, Uhat, ti, tiPN] = fun3DTFM(u,dm3,surface,normals,model,properties);
 save('TractionOutputs.mat','Fij', 'Sij', 'Eij','Uhat','ti','tiPN')
 catch
     disp('Failed Traction Coversion Function!')
 end
+%% Set a noise floor on Shear and Normal Tractions
+tShear = imresize(tiPN{1}{1},size(image.Black));
+tSFilter = tShear.*(image.ADil==0);
+tSNoise = tShear.*(image.ADil~=0);
+tSNoiseCO = mean(tSNoise(tSNoise(:)~=0)) + 2* std(tSNoise(tSNoise(:)~=0))
+tNormal = imresize(tiPN{1}{2},size(image.Black));
+tNFilter = tNormal.*(image.ADil==0);
+tNNoise = tNormal.*(image.ADil~=0);
+tNNoiseCO = mean(tNNoise(tNNoise(:)~=0)) + 2* std(tNNoise(tNNoise(:)~=0))
 %%
+mapFilter = single(cat(3,image.ADil,image.ADil,image.ADil)==0);
 
 mkdir('HeatMaps','Traction')
 savepath = 'HeatMaps\Traction\';
 figure
-maxT = max(ti{1}{3}(:));
+maxT = 500;
 imshow(ti{1}{1},[])
-[mapX] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{1},'*blues','Xtractions',savepath,maxT);
+[mapX] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{1},'*blues','Xtractions',savepath,maxT,0);
 
 figure
-maxT = max(ti{1}{3}(:));
+maxT = 500;
 imshow(ti{1}{2},[])
-[mapY] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{2},'*blues','Ytractions',savepath,maxT);
+[mapY] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{2},'*blues','Ytractions',savepath,maxT,0);
 
 figure
-maxT = max(ti{1}{4}(:));
+maxT = 1100;
 imshow(tiPN{1}{1},[])
-[mapY] = Auxheatmap(size(image.Black,1),size(image.Black,2),tiPN{1}{1},'*spectral','ShearTractions',savepath,maxT);
+[mapShear] = Auxheatmap(size(image.Black,1),size(image.Black,2),tiPN{1}{1},'*spectral','ShearTractions',savepath,maxT,0);
 
 figure
-maxT = max(ti{1}{3}(:));
+maxT = 500;
 imshow(ti{1}{3},[])
-[mapZ] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{3},'*blues','Ztractions',savepath,maxT);
+[mapZ] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{3},'*blues','Ztractions',savepath,maxT,0);
 
 figure
-maxT = max(ti{1}{4}(:));
+maxT = 1100;
 imshow(tiPN{1}{2},[])
-[mapZ] = Auxheatmap(size(image.Black,1),size(image.Black,2),tiPN{1}{2},'*spectral','NormalTractions',savepath,maxT);
+[mapNormal] = Auxheatmap(size(image.Black,1),size(image.Black,2),tiPN{1}{2},'*spectral','NormalTractions',savepath,maxT,0);
 
 figure
-maxT = max(ti{1}{4}(:));
+maxT = 1100;
 imshow(ti{1}{4},[])
-[mapM] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{4},'*spectral','MagnitudeTractions',savepath,maxT);
+[mapM] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{4},'*spectral','MagnitudeTractions',savepath,maxT,0);
 
 %%
 figure
@@ -324,8 +267,21 @@ output(1,7) = U;
 output(1,8) = Utop;
 save('TractionStats.mat','sumShearOld','sumShear','sumNormalOld','sumNormal','U','Utop','NormalForce','ShearForce','TotalForce')
 
+%% Write Inputs to Stackfile
+for i = 1:size(u{1}{1},3)
+    tempImage = uint8((u{1}{1}(:,:,i)+-1*min(min(u{1}{1}(:))))/max(max(u{1}{1}(:)))*100);
+    imwrite(imresize(tempImage,size(image.Black),'nearest'),'xs.tif','WriteMode','append')
+    tempImage = uint8((u{1}{2}(:,:,i)+-1*min(min(u{1}{2}(:))))/max(max(u{1}{2}(:)))*100);
+    imwrite(imresize(tempImage,size(image.Black),'nearest'),'ys.tif','WriteMode','append')
+    tempImage = uint8((u{1}{3}(:,:,i)+-1*min(min(u{1}{3}(:))))/max(max(u{1}{3}(:)))*100);
+    imwrite(imresize(tempImage,size(image.Black),'nearest'),'zs.tif','WriteMode','append')
+
+end
+
  end
 %% Functions
+
+
 
 function [fD4,fD4p,fD4d] = ZeroSurfacePlane(fullData,translateZ,tform)
 % Translate Fulldata so that the corner falls on (0,0) then rotate
