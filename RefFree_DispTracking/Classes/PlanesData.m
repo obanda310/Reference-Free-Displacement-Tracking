@@ -193,49 +193,38 @@ classdef PlanesData
         
         
         function [obj,r] = cleanPlanes(obj,raw3D)
+            
+            %The goal of this function is to remove objects that are
+            %members of planes with very few members. This should clean
+            %outputs be removing "noise" or unreliable detections.
             r = raw3D.r;
             count =1;
             obj.final = 0;
             
-            for i = 1:size(obj.raw,2)
-            planeSizes(i) = nnz(obj.raw(:,i));
-            end
-            
-            %Determine average plane location
-            for i = 1:size(obj.raw,2)
-                planesLoc(i) = mean(mean(r(obj.raw(1:nnz(obj.raw(:,i)),i),3)));
-            end
-            
-            clear planesGroups
-            for i = 1:size(planesLoc,2)
-                clear differences
-                differences = planesLoc - planesLoc(1,i);
-                planesGroups(i,1:size(find(abs(differences)<2),2)) = find(abs(differences)<2)';
-            end
-            planesGroups = unique(planesGroups,'rows');
+            [planesLoc2,planesGroups,planeSizes] = updateSizes(obj,r)   
             
             for i = 1:size(planesGroups,1)
-            planesLoc2(i) = mean(planesLoc(planesGroups(i,1:nnz(planesGroups(i,:)))));
-            end                   
-            
-            for i = 1:size(planesGroups,1)
-                planeIdx = planesGroups(i,1:nnz(planesGroups(i,:)));
-                if  nnz(obj.raw(:,planeIdx))<(max(planeSizes))/2 && (planesLoc2(i) == max(planesLoc2) || planesLoc2(i) == min(planesLoc2))
+                if i <= size(planesGroups,1)
+                planeIdx = planesGroups(i,1:nnz(planesGroups(i,:))); % assign group member planes a number
+                %if current grouped planes are (either the top or bottom
+                %plane, and have less than half the members of the largest
+                %planes), delete all members.
+                if  (nnz(obj.raw(:,planeIdx))<(max(planeSizes))/2) && (planesLoc2(i) == max(planesLoc2) || planesLoc2(i) == min(planesLoc2))
                     for j = 1:nnz(planeIdx)
-                        for k = 1:nnz(obj.raw(:,planeIdx(j)))
+                        for k = 1:nnz(obj.raw(:,planeIdx(j)))                            
                             r(obj.raw(k,planeIdx(j)),:) =[];
                             obj.raw((obj.raw>obj.raw(k,planeIdx(j)))) = obj.raw((obj.raw>obj.raw(k,planeIdx(j))))-1;
-                            obj.final((obj.final>obj.raw(k,planeIdx(j)))) = obj.final((obj.final>obj.raw(k,planeIdx(j))))-1;
+                            obj.final((obj.final>obj.raw(k,planeIdx(j)))) = obj.final((obj.final>obj.raw(k,planeIdx(j))))-1;                                                      
                         end
                     end
-                    
+                %OR if current group has less than 50 members, delete all members.
                 else
                     for j = 1:nnz(planeIdx)
                         if planeSizes(planeIdx(j)) < 50
-                            for k = 1:nnz(obj.raw(:,planeIdx(j)))
+                            for k = 1:nnz(obj.raw(:,planeIdx(j)))                                
                                 r(obj.raw(k,planeIdx(j)),:) =[];
                                 obj.raw((obj.raw>obj.raw(k,planeIdx(j)))) = obj.raw((obj.raw>obj.raw(k,planeIdx(j))))-1;
-                                obj.final((obj.final>obj.raw(k,planeIdx(j)))) = obj.final((obj.final>obj.raw(k,planeIdx(j))))-1;
+                                obj.final((obj.final>obj.raw(k,planeIdx(j)))) = obj.final((obj.final>obj.raw(k,planeIdx(j))))-1;                                                                
                             end
                         else
                             obj.final(1:nnz(obj.raw(:,planeIdx(j))),count) = obj.raw(1:nnz(obj.raw(:,planeIdx(j))),planeIdx(j));
@@ -243,9 +232,69 @@ classdef PlanesData
                         end
                     end
                 end
+                end
+            [planesLoc2,planesGroups,planeSizes] = updateSizes(obj,r)
             end
             
             obj.final = unique(obj.final','rows')';
+            
+            function [planesLoc2,planesGroups,planeSizes] = updateSizes(obj,r)
+                
+                for m = 1:size(obj.raw,2)
+                    planeSizes(m) = nnz(obj.raw(:,m));
+                end
+                
+                %Determine average plane location
+                size(obj.raw,2)
+                for m = 1:size(obj.raw,2)
+                    clear temp
+                    temp = obj.raw(1:nnz(obj.raw(:,m)),m)
+                    planesLoc(m) = mean(mean(r(temp,3)));
+                end
+                
+                %Group planes which are close in Z. This should alleviate
+                %discrepencies occuring due to cells spanning two or more
+                %sections of patterned regions.
+                clear planesGroups
+                for m = 1:size(planesLoc,2)
+                    clear differences
+                    differences = planesLoc - planesLoc(1,m);
+                    planesGroups(m,1:size(find(abs(differences)<2),2)) = find(abs(differences)<2)';
+                end
+                planesGroups = unique(planesGroups,'rows');
+                
+                for m = 1:size(planesGroups)
+                    planesGroupsSize(m,1) = nnz(planesGroups(m,:));
+                end
+                %find planes that are members of more than 1 group and remove
+                %them from the smaller groups
+                Ui = unique(planesGroups(:));
+                U = Ui(1<histc(planesGroups(:),unique(planesGroups(:))))
+                for m = 1:size(U,1)
+                    clear U2 bigGroup
+                    for n = 1:size(planesGroups,1)
+                        U2(n) = ismember(U(m),planesGroups(n,:));
+                    end
+                    if nnz(U2)>0
+                    bigGroup = max(planesGroupsSize(U2));
+                    
+                    for n = 1:size(planesGroups,1)
+                        if planesGroupsSize(n,1) ~= bigGroup && U2(n) == 1
+                            clear tempGroup
+                            tempGroup = planesGroups(n,1:planesGroupsSize(n,1));
+                            tempGroup(tempGroup==U(m)) = [];
+                            tempGroup(1,planesGroupsSize(n,1)) = 0;
+                            planesGroups(n,1:planesGroupsSize(n,1)) = tempGroup(1,1:planesGroupsSize(n,1));
+                        end
+                    end
+                    end
+                end
+                
+                %Repeat average Z plane location with merged planes
+                for m = 1:size(planesGroups,1)
+                    planesLoc2(m) = mean(planesLoc(planesGroups(m,1:nnz(planesGroups(m,:)))));
+                end
+            end
         end
     end
 end
