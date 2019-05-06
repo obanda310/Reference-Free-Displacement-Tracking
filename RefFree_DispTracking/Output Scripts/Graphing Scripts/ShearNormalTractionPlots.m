@@ -16,8 +16,8 @@ colOptions{2,2} = 'white';
 green = [.2 .7 .2];
 singles =load('5%wt Gels ShearNormalStats.mat','vqT');
 singlesT = load('5%wt Gels TractionStats.mat','TractionStats');
-singles.vqT([29 37 42 48 50],:) = [];
-singlesT.TractionStats([29 37 42 48 50],:) = [];
+singles.vqT([29 37 42 45 50],:) = [];
+singlesT.TractionStats([29 37 42 45 50],:) = [];
 %singles =load('ShearNormalStatsCluster.mat','vqT');
  
 bleb =load('ShearNormalStatsBleb.mat','vqT');
@@ -26,6 +26,8 @@ blebT = load('Bleb TractionStats.mat','TractionStats');
 spread =load('ShearNormalStatsSpread.mat','vqT');
 spreadT = load('Spread TractionStats.mat','TractionStats');
 
+
+uScale = 1000;
 %% Correlation Coefficient
 sTot = cat(1,singlesT.TractionStats(:,10),blebT.TractionStats(:,10),spreadT.TractionStats(:,10));
 nTot = cat(1,singlesT.TractionStats(:,9),blebT.TractionStats(:,9),spreadT.TractionStats(:,9));
@@ -35,13 +37,16 @@ aTot = cat(1,singles.vqT(:,5),bleb.vqT(:,5),spread.vqT(:,5));
 [rhoNormal,pN] = corr(aTot,nTot);
 [rhoSN,pSN] = corr(nTot,sTot);
 
-rhoShear2 = rhoShear^2;
-rhoNormal2 = rhoNormal^2;
-rhoSN2 = rhoSN^2;
+
 
 lmAS = fitlm(aTot,sTot,'Intercept',false)
 lmAN = fitlm(aTot,nTot,'Intercept',false)
 lmNS = fitlm(nTot,sTot,'Intercept',false)
+
+rhoShear2 = lmAS.Rsquared.Ordinary;
+rhoNormal2 = lmAN.Rsquared.Ordinary;
+rhoSN2 = lmNS.Rsquared.Ordinary;
+
 anova(lmNS,'summary')
 
 
@@ -56,16 +61,15 @@ for i = 1:size(colOptions,2)
     sheararea = figure;
     
     %Plot Data
-    scatter(singles.vqT(:,5),singlesT.TractionStats(:,10),50,'square',bcolor,'markerfacecolor',fcolor)
+    scatter(singles.vqT(:,5),singlesT.TractionStats(:,10)/uScale,50,'square',bcolor,'markerfacecolor',fcolor)
     hold on
     try
-    scatter(spread.vqT(:,5),spreadT.TractionStats(:,10),50,'square',bcolor,'markerfacecolor','red')
-    scatter(bleb.vqT(:,5),blebT.TractionStats(:,10),50,'square',bcolor,'markerfacecolor',green)
-    scatter(clusters.vqT(:,5),clustersT.TractionStats(:,10),50,'square',bcolor,'markerfacecolor','y')
+    scatter(spread.vqT(:,5),spreadT.TractionStats(:,10)/uScale,50,'square',bcolor,'markerfacecolor','red')
+    scatter(bleb.vqT(:,5),blebT.TractionStats(:,10)/uScale,50,'square',bcolor,'markerfacecolor',green)
     catch
     end
     
-    plot([0:ceil(max(aTot)/1000)*1000],(lmAS.Coefficients{1,1})*[0:ceil(max(aTot)/1000)*1000],'LineStyle','--','Color',fcolor,'HandleVisibility','off','LineWidth',2)
+    plot([0:ceil(max(aTot)/1000)*1000],(lmAS.Coefficients{1,1})*[0:ceil(max(aTot)/1000)*1000]/uScale,'LineStyle','--','Color',fcolor,'HandleVisibility','off','LineWidth',2)
 %     text(30,.967,['R^2: ' sprintf('%.2f',lmAS.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18)
 %     text(30,.867,['p: ' sprintf('%.2e',lmAS.Coefficients{2,4})],'color',fcolor,'fontsize',18)
     
@@ -73,11 +77,11 @@ for i = 1:size(colOptions,2)
     set(gca,'Color',bcolor,'LineWidth',2)
     %Axes, Text, Legends
     xlim([0 ceil(max(aTot)/1000)*1000])
-    ylim([0 ceil(max(sTot)/750)*750])
+    ylim([0 (ceil(max(sTot)/500)*500)/1000])
     set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
     ytickformat('%.1f')
     xt = 'Cell Area (\mum^{2})';% input('enter the xaxis label','s');
-    yt = '\Sigma |Shear| (pN)'; %input('enter the yaxis label','s');
+    yt = '\Sigma |Shear| (\muN)'; %input('enter the yaxis label','s');
     tt = 'Line-Profile Displacements';%input('enter the title','s');
     le = 'Single'; %input('enter the legend','s');
     le2 = 'Time-Lapse 1';
@@ -103,27 +107,26 @@ for i = 1:size(colOptions,2)
     
     
     %Plot Data
-    scatter(singles.vqT(:,5),singlesT.TractionStats(:,9),50,'square',bcolor,'markerfacecolor',fcolor)
+    scatter(singles.vqT(:,5),singlesT.TractionStats(:,9)/uScale,50,'square',bcolor,'markerfacecolor',fcolor)
     hold on
     try
-    scatter(spread.vqT(:,5),spreadT.TractionStats(:,9),50,'square',bcolor,'markerfacecolor','red')
-    scatter(bleb.vqT(:,5),blebT.TractionStats(:,9),50,'square',bcolor,'markerfacecolor',green)
-    scatter(clusters.vqT(:,5),clustersT.TractionStats(:,9)/max(clusters.TractionStats(:,9)),50,'square',bcolor,'markerfacecolor','y')
+    scatter(spread.vqT(:,5),spreadT.TractionStats(:,9)/uScale,50,'square',bcolor,'markerfacecolor','red')
+    scatter(bleb.vqT(:,5),blebT.TractionStats(:,9)/uScale,50,'square',bcolor,'markerfacecolor',green)
     catch
     end
     
-    plot([0:ceil(max(aTot)/1000)*1000],lmAN.Coefficients{1,1}*[0:ceil(max(aTot)/1000)*1000],'LineStyle','--','Color',fcolor,'LineWidth',2)
+    plot([0:ceil(max(aTot)/1000)*1000],lmAN.Coefficients{1,1}*[0:ceil(max(aTot)/1000)*1000]/uScale,'LineStyle','--','Color',fcolor,'LineWidth',2)
 %     text(30,.967,['R^2: ' sprintf('%.2f',lmAN.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18,'HorizontalAlignment','left')
 %     text(30,.867,['p: ' sprintf('%.2e',lmAN.Coefficients{2,4})],'color',fcolor,'fontsize',18,'HorizontalAlignment','left')
 %     
     xlim([0 ceil(max(aTot)/500)*500])
-    ylim([0 ceil(max(nTot)/750)*750])
+    ylim([0 (ceil(max(sTot)/500)*500)/1000])
     set(gca,'Color',bcolor,'LineWidth',2)
     %Axes, Text, Legends
     set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
     ytickformat('%.1f')
     xt = 'Cell Area (\mum^{2})';% input('enter the xaxis label','s');
-    yt = '\Sigma |Normal| (pN)'; %input('enter the yaxis label','s');
+    yt = '\Sigma |Normal| (\muN)'; %input('enter the yaxis label','s');
     tt = 'Line-Profile Displacements';%input('enter the title','s');
     le = 'Single'; %input('enter the legend','s');
     le2 = 'Time-Lapse 1';
@@ -154,7 +157,6 @@ for i = 1:size(colOptions,2)
     try
     scatter(spreadT.TractionStats(:,9)/max(singlesT.TractionStats(:,9)),spreadT.TractionStats(:,10)/max(singlesT.TractionStats(:,9)),50,'square',bcolor,'markerfacecolor','red')
     scatter(blebT.TractionStats(:,9)/max(singlesT.TractionStats(:,9)),blebT.TractionStats(:,10)/max(singlesT.TractionStats(:,9)),50,'square',bcolor,'markerfacecolor',green)
-    scatter(clusters.TractionStats(:,9)/max(singlesT.TractionStats(:,9)),clusters.TractionStats(:,10)/max(singlesT.TractionStats(:,9)),50,'square',bcolor,'markerfacecolor','y')
     catch
     end
     
@@ -195,26 +197,25 @@ for i = 1:size(colOptions,2)
     
     
     %Plot Data
-    scatter(singlesT.TractionStats(:,9),singlesT.TractionStats(:,10),50,'square',bcolor,'markerfacecolor',fcolor)
+    scatter(singlesT.TractionStats(:,9)/uScale,singlesT.TractionStats(:,10)/uScale,50,'square',bcolor,'markerfacecolor',fcolor)
     hold on
     try
-    scatter(spreadT.TractionStats(:,9),spreadT.TractionStats(:,10),50,'square',bcolor,'markerfacecolor','red')
-    scatter(blebT.TractionStats(:,9),blebT.TractionStats(:,10),50,'square',bcolor,'markerfacecolor',green)
-    scatter(clusters.TractionStats(:,9),clusters.TractionStats(:,10),50,'square',bcolor,'markerfacecolor','y')
+    scatter(spreadT.TractionStats(:,9)/uScale,spreadT.TractionStats(:,10)/uScale,50,'square',bcolor,'markerfacecolor','red')
+    scatter(blebT.TractionStats(:,9)/uScale,blebT.TractionStats(:,10)/uScale,50,'square',bcolor,'markerfacecolor',green)
     catch
     end
     
     plot([0:3000],lmNS.Coefficients{1,1}*[0:3000],'LineStyle','--','Color',fcolor,'LineWidth',2)
     
-    xlim([0 ceil(max(nTot)/500)*500])
-    ylim([0 ceil(max(sTot)/500)*500])
+    xlim([0 (ceil(max(nTot)/500)*500)/1000])
+    ylim([0 (ceil(max(sTot)/500)*500)/1000])
     
     set(gca,'Color',bcolor,'LineWidth',2)
     %Axes, Text, Legends
     set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'YMinorTick','on')
     ytickformat('%.1f')
-    xt = '\Sigma |Normal| (pN)';% input('enter the xaxis label','s');
-    yt = '\Sigma |Shear| (pN)'; %input('enter the yaxis label','s');
+    xt = '\Sigma |Normal| (\muN)';% input('enter the xaxis label','s');
+    yt = '\Sigma |Shear| (\muN)'; %input('enter the yaxis label','s');
     tt = 'Line-Profile Displacements';%input('enter the title','s');
     le = 'Single'; %input('enter the legend','s');
     le2 = 'Time-Lapse 1';

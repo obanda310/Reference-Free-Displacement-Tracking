@@ -8,7 +8,7 @@ AxisTitleFontSize = 28;
 LegendFontSize = 20;
 bar(meanDisplacements(1,1:3),'FaceColor',[.35 .35 .35])
 hold on
-errorbar(meanDisplacements(1,1:3),meanDisplacements(2,1:3),'.','color',[0 0 0],'MarkerSize',1)
+errorbar(meanDisplacements(1,1:3),meanDisplacements(2,1:3),'.','color',[0 0 0],'MarkerSize',1,'LineWidth',2,'CapSize',10)
 
 xt = 'Dimension';% input('enter the xaxis label','s');
 yt = {'Center-to-Center'; 'Distance (\mum)'}; %input('enter the yaxis label','s');

@@ -17,7 +17,8 @@ green = [.2 .7 .2];
 
 singles =load('Cluster ShearNormalStats.mat','vqT');
 singles2 = load('5%wt Gels ShearNormalStats.mat','vqT');
-
+singles.vqT([4 6 8 11],:) = [];
+singles2.vqT([29 37 42 45 50],:) = [];
 %% Correlation Coefficient
 sTot = singles.vqT(:,1);
 nTot = singles.vqT(:,2);

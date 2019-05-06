@@ -16,7 +16,7 @@ colOptions{2,2} = 'white';
 green = [.2 .7 .2];
 singles =load('5%wt Gels ShearNormalStats.mat','vqT');
 %singles =load('ShearNormalStatsCluster.mat','vqT');
-singles.vqT([42],:) = [];
+singles.vqT([29 37 42 45 50],:) = [];
 bleb =load('Bleb ShearNormalStats.mat','vqT');
 spread =load('Spread ShearNormalStats.mat','vqT');
 
@@ -29,16 +29,14 @@ aTot = cat(1,singles.vqT(:,5),bleb.vqT(:,5),spread.vqT(:,5));
 [rhoNormal,pN] = corr(aTot,nTot/max(singles.vqT(:,2)));
 [rhoSN,pSN] = corr(nTot,sTot);
 
-rhoShear2 = rhoShear^2;
-rhoNormal2 = rhoNormal^2;
-rhoSN2 = rhoSN^2;
-
 lmAS = fitlm(aTot,sTot/max(singles.vqT(:,1)),'Intercept',false)
 lmAN = fitlm(aTot,nTot/max(singles.vqT(:,2)),'Intercept',false)
 lmNS = fitlm(nTot,sTot,'Intercept',false)
 anova(lmNS,'summary')
 
-
+rhoShear2 = lmAS.Rsquared.Ordinary;
+rhoNormal2 = lmAN.Rsquared.Ordinary;
+rhoSN2 = lmNS.Rsquared.Ordinary;
 %%
 for i = 1:size(colOptions,2)
     
@@ -59,7 +57,7 @@ for i = 1:size(colOptions,2)
     catch
     end
     
-    plot([0:ceil(max(aTot)/1000)*1000],lmAS.Coefficients{2,1}*[0:ceil(max(aTot)/1000)*1000]+(lmAS.Coefficients{1,1}/max(singles.vqT(:,1))),'LineStyle','--','Color',fcolor,'HandleVisibility','off','LineWidth',2)
+    plot([0:ceil(max(aTot)/1000)*1000],lmAS.Coefficients{1,1}*[0:ceil(max(aTot)/1000)*1000],'LineStyle','--','Color',fcolor,'HandleVisibility','off','LineWidth',2)
 %     text(30,.967,['R^2: ' sprintf('%.2f',lmAS.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18)
 %     text(30,.867,['p: ' sprintf('%.2e',lmAS.Coefficients{2,4})],'color',fcolor,'fontsize',18)
     
@@ -105,7 +103,7 @@ for i = 1:size(colOptions,2)
     catch
     end
     
-    plot([0:ceil(max(aTot)/1000)*1000],lmAN.Coefficients{2,1}*[0:ceil(max(aTot)/1000)*1000]+(lmAN.Coefficients{1,1}/max(singles.vqT(:,2))),'LineStyle','--','Color',fcolor,'LineWidth',2)
+    plot([0:ceil(max(aTot)/1000)*1000],lmAN.Coefficients{1,1}*[0:ceil(max(aTot)/1000)*1000],'LineStyle','--','Color',fcolor,'LineWidth',2)
 %     text(30,.967,['R^2: ' sprintf('%.2f',lmAN.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18,'HorizontalAlignment','left')
 %     text(30,.867,['p: ' sprintf('%.2e',lmAN.Coefficients{2,4})],'color',fcolor,'fontsize',18,'HorizontalAlignment','left')
 %     
@@ -150,7 +148,7 @@ for i = 1:size(colOptions,2)
     catch
     end
     
-    plot([0:1],lmNS.Coefficients{2,1}*[0:1]+(lmNS.Coefficients{1,1}/max(singles.vqT(:,2))),'LineStyle','--','Color',fcolor,'LineWidth',2)
+    plot([0:1],lmNS.Coefficients{1,1}*[0:1],'LineStyle','--','Color',fcolor,'LineWidth',2)
 %     text(.01,2.9,['R^2: ' sprintf('%.2f',lmNS.Rsquared.Ordinary(1,1))],'color',fcolor,'fontsize',18)
 %     text(.01,2.6,['p: ' sprintf('%.2e',lmNS.Coefficients{2,4})],'color',fcolor,'fontsize',18)
 %     text(.01,2.3,['X-coef.: ' sprintf('%.2f',lmNS.Coefficients{2,1})],'color',fcolor,'fontsize',18)
