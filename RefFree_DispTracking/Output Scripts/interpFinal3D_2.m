@@ -166,7 +166,7 @@ normals{1}{3} = ones(size(surface{1}{1}));
 %%
 
 model = 'linearelastic';
-properties = [12000,.2];
+properties = [3900,.2];
 %%
 [surface, normals] = calculateSurfaceUi(surface(1), normals(1), u);
 save('Inputs2.mat','u','surface','normals','model','properties','dm3')  
@@ -197,40 +197,51 @@ tNormal = imresize(tiPN{1}{2},size(image.Black));
 tNFilter = tNormal.*(image.ADil==0);
 tNNoise = tNormal.*(image.ADil~=0);
 tNNoiseCO = mean(tNNoise(tNNoise(:)~=0)) + 2* std(tNNoise(tNNoise(:)~=0))
+%% Noise floor v2
+%%
+filtI = double(imresize(image.ADil~=0,[size(tiPN{1}{1})]));
+filtI(filtI==0) = NaN;
+figure
+imshow(tiPN{1}{1}.*filtI,[])
+
+COShear = 2*std((tiPN{1}{1}(:).*filtI(:)),'omitnan');
+CONorm = 2*std((tiPN{1}{2}(:).*filtI(:)),'omitnan');
+COTotal = 2*std((ti{1}{4}(:).*filtI(:)),'omitnan');
+
 %%
 mapFilter = single(cat(3,image.ADil,image.ADil,image.ADil)==0);
 
 mkdir('HeatMaps','Traction')
 savepath = 'HeatMaps\Traction\';
 figure
-maxT = 500;
+maxT = 175;
 imshow(ti{1}{1},[])
-[mapX] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{1},'*blues','Xtractions',savepath,maxT,0);
+[mapX] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{1},'*blues','Xtractions',savepath,maxT,0,image.ADil);
 
 figure
-maxT = 500;
+maxT = 175;
 imshow(ti{1}{2},[])
-[mapY] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{2},'*blues','Ytractions',savepath,maxT,0);
+[mapY] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{2},'*blues','Ytractions',savepath,maxT,0,image.ADil);
 
 figure
-maxT = 1100;
+maxT = 300;
 imshow(tiPN{1}{1},[])
-[mapShear] = Auxheatmap(size(image.Black,1),size(image.Black,2),tiPN{1}{1},'*spectral','ShearTractions',savepath,maxT,0);
+[mapShear] = Auxheatmap(size(image.Black,1),size(image.Black,2),tiPN{1}{1},'*spectral','ShearTractions',savepath,maxT,COShear,image.ADil);
 
 figure
-maxT = 500;
+maxT = 175;
 imshow(ti{1}{3},[])
-[mapZ] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{3},'*blues','Ztractions',savepath,maxT,0);
+[mapZ] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{3},'*blues','Ztractions',savepath,maxT,CONorm,image.ADil);
 
 figure
-maxT = 1100;
+maxT = 300;
 imshow(tiPN{1}{2},[])
-[mapNormal] = Auxheatmap(size(image.Black,1),size(image.Black,2),tiPN{1}{2},'*spectral','NormalTractions',savepath,maxT,0);
+[mapNormal] = Auxheatmap(size(image.Black,1),size(image.Black,2),tiPN{1}{2},'*spectral','NormalTractions',savepath,maxT,CONorm,image.ADil);
 
 figure
-maxT = 1100;
+maxT = 300;
 imshow(ti{1}{4},[])
-[mapM] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{4},'*spectral','MagnitudeTractions',savepath,maxT,0);
+[mapM] = Auxheatmap(size(image.Black,1),size(image.Black,2),ti{1}{4},'*spectral','MagnitudeTractions',savepath,maxT,COTotal,image.ADil);
 
 %%
 figure
@@ -238,31 +249,42 @@ Uhat2 = sum(Uhat{1},3);
 maxT = max(Uhat2(:));
 imshow(ti{1}{4},[])
 Uhat2(Uhat2<1) =0 ;
-[mapM] = Auxheatmap(size(image.Black,1),size(image.Black,2),Uhat2,'*spectral','StrainEnergy',savepath,maxT);
+[mapM] = Auxheatmap(size(image.Black,1),size(image.Black,2),Uhat2,'*spectral','StrainEnergy',savepath,maxT,0,image.ADil);
 
 figure
 Uhat3(:,:) = Uhat{1}(:,:,end);
 maxT = max(Uhat3(:));
 imshow(Uhat3,[])
 Uhat3(Uhat3<1) =0 ;
-[mapM] = Auxheatmap(size(image.Black,1),size(image.Black,2),Uhat3,'*spectral','StrainEnergyTopOnly',savepath,maxT);
+[mapM] = Auxheatmap(size(image.Black,1),size(image.Black,2),Uhat3,'*spectral','StrainEnergyTopOnly',savepath,maxT,0,image.ADil);
+
 %%
+filtDataShear = tiPN{1}{1}.*(tiPN{1}{1}>COShear);
+filtDataNorm = tiPN{1}{2}.*(tiPN{1}{2}>CONorm);
+filtDataTotal = ti{1}{4}.*(ti{1}{4}>COTotal);
+
 sumShearOld = sum(abs(ti{1}{1}(:))) + sum(abs(ti{1}{2}(:)));
 sumShear = sum(abs(tiPN{1}{1}(:)));
+sumShearFilt = sum(abs(filtDataShear(:)));
 sumNormalOld = sum(abs(ti{1}{3}(:)));
 sumNormal = sum(abs(tiPN{1}{2}(:)));
+sumNormalFilt = sum(abs(filtDataNorm(:)));
 sumTotal = sum(ti{1}{4}(:));
+sumTotalFilt = sum(filtDataTotal(:));
 NormalForce = (sumNormal*(dm3^2));
 ShearForce = (sumShear*(dm3^2));
 TotalForce = (sumTotal*(dm3^2));
+NormalForceFilt = (sumNormalFilt*(dm3^2));
+ShearForceFilt = (sumShearFilt*(dm3^2));
+TotalForceFilt = (sumTotalFilt*(dm3^2));
 U = sum(Uhat2(:));
 Utop = sum(Uhat3(:));
-output(1,1) = sumNormal;
-output(1,2) = sumShear;
-output(1,3) = sumTotal;
-output(1,4) = NormalForce;
-output(1,5) = ShearForce;
-output(1,6) = TotalForce;
+output(1,1) = NormalForce;
+output(1,2) = ShearForce;
+output(1,3) = TotalForce;
+output(1,4) = NormalForceFilt;
+output(1,5) = ShearForceFilt;
+output(1,6) = TotalForceFilt;
 output(1,7) = U;
 output(1,8) = Utop;
 save('TractionStats.mat','sumShearOld','sumShear','sumNormalOld','sumNormal','U','Utop','NormalForce','ShearForce','TotalForce')

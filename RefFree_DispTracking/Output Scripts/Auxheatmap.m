@@ -1,11 +1,12 @@
-function [heatmap] = Auxheatmap(xqMax,yqMax,vqIni,LUT,filename,savePath,maxD,CO)
+function [heatmap] = Auxheatmap(xqMax,yqMax,vqIni,LUT,filename,savePath,maxD,CO,filtMask)
 if nargin == 6
 maxD = max(abs(vq(:)));
 end
 xq = 1:1:xqMax;
 yq = 1:1:yqMax;
 vq = imresize(vqIni,[xqMax yqMax]);
-vq(abs(vq)<CO) = 0;
+vqfilt = imresize(filtMask,[xqMax yqMax]);
+vq(abs(vq)<CO & filtMask) = 0;
 %Check to see if data includes direction or is simply magnitudes
 sidedCheck = min(vqIni(:))<0;
 
