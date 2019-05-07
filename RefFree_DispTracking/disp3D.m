@@ -56,6 +56,8 @@ hold off
 %%
 % Filter planes with too few members (and update r)
 [plane,r] = cleanPlanes(plane,raw3D);
+
+%%
 r = RawData3D(res,raw,r);
 r = TranscribeR(r);
 toc
