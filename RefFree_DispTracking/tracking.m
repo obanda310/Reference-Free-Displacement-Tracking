@@ -5,6 +5,7 @@ if nargin == 1
 else
     auto =0;
 end
+%%
 set(0,'defaultfigurecolor',[1 1 1])
 % Ensures the path to necessary functions is available to the rest of the
 % script
@@ -138,6 +139,7 @@ disp(['Max Jump Distance (Frames): ',num2str(maxJD)])
 %% Linking using trackmem function (kilfoil code)
 disp('Linking Pillars')
 [lub] = trackmem(subpixMaxima3,maxLD,2,1,maxJD);
+lub(1,30) = 0; % increase the size of lub to its final size(otherwise will throw error in perfect case)
 disp('Done Linking Pillars')
 % Cleaning tracks and fixing incorrect matches
 maxAi = 45;
@@ -235,10 +237,7 @@ for j = 1 % number of iterations
                 %---Use trajectory information to determine best match from
                 %neighbor pillars
                 
-                %Index neighbors and neighbor pillars
-                
-                
-                
+                %Index neighbors and neighbor pillars                                                
                 for i = 1:size(nghbrs,1)
                     if size(find(lub(:,7)==nghbrs(i,1) & lub(:,6)<lub(pPilIdx,6) & lub(:,30)~=1,1,'last'),1)>0
                         nghbrs(i,2) = find(lub(:,7)==nghbrs(i,1) & lub(:,6)<lub(pPilIdx,6) & lub(:,30)~=1,1,'last');

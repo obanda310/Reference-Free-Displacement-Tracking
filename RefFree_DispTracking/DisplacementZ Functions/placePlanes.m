@@ -1,29 +1,28 @@
-function [planesLoc2,planesLocFiltList] = placePlanes(r,plane,Surface2)
+function [plane,planesLocFiltList] = placePlanes(r,plane,Surface2)
 %%    
 if isempty(Surface2)~=1
-    
     for j = 1:size(plane.final,2)
         for i = 1:nnz(plane.final(:,j))
-            planesLoc(i,j) = (feval(Surface2,r.X(plane.final(i,j)),r.Y(plane.final(i,j)))) - r.Z(plane.final(i,j));
+            plane.pos(i,j) = (feval(Surface2,r.X(plane.final(i,j)),r.Y(plane.final(i,j)))) - r.Z(plane.final(i,j));
         end
     end
     
 else
     for j = 1:size(plane.final,2)
         for i = 1:nnz(plane.final(:,j))
-            planesLoc(i,j) = max(r.Z) - r.Z(plane.final(i,j));
+            plane.pos(i,j) = max(r.Z) - r.Z(plane.final(i,j));
         end
     end    
 end
 
 
-planesLoc(planesLoc==0)=nan;
-planesLoc2 = mean(planesLoc,'omitnan');
-if min(planesLoc2) < 0
-    planesLoc2 = planesLoc2 + abs(min(planesLoc2));
+plane.pos(plane.pos==0)=nan;
+plane.loc2 = mean(plane.pos,'omitnan');
+if min(plane.loc2) < 0
+    plane.loc2 = plane.loc2 + abs(min(plane.loc2));
 end
 
-planesLocFilt = find(planesLoc2>4.5);
+planesLocFilt = find(plane.loc2>4.5);
 planesLocFiltList = plane.final(:,planesLocFilt(1,1));
 if size(planesLocFilt,2)>1
     for i = 2:size(planesLocFilt,2)

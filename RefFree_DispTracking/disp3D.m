@@ -2,6 +2,7 @@ function disp3D(directory)
 if nargin ==1
     cd(directory);
 end
+%%
 clear all
 close all
 set(0,'defaultfigurecolor',[1 1 1])
@@ -45,7 +46,7 @@ plane = growPlanes(plane,raw3D);
 
 disp(['done Building Planes at ' num2str(toc) ' seconds'])
 
-%%
+%
 % View all detected planes
 figure
 hold on
@@ -53,7 +54,7 @@ for i = 1:size(plane.raw,2)
     scatter3(raw3D.X(plane.raw(1:nnz(plane.raw(:,i)),i)),raw3D.Y(plane.raw(1:nnz(plane.raw(:,i)),i)),raw3D.Z(plane.raw(1:nnz(plane.raw(:,i)),i)))
 end
 hold off
-%%
+%
 % Filter planes with too few members (and update r)
 [plane,r] = cleanPlanes(plane,raw3D);
 
@@ -181,21 +182,22 @@ save('Surface.mat','Surface2')
 disp(['Done Approximating Surface Coordinates at ' num2str(toc)])
 %%
 try
-    [planesLoc2,planesLocFiltList] = placePlanes(r,plane,Surface2);
+    [plane,planesLocFiltList] = placePlanes(r,plane,Surface2);
 catch
-    [planesLoc2,planesLocFiltList] = placePlanes(r,plane,0);
+    [plane,planesLocFiltList] = placePlanes(r,plane,0);
 end
 %% Plot Interpolated Surface and Detections
-% figure
-% xlim([0 max(shear.rawX(:))])
-% ylim([0 max(shear.rawY(:))])
-% zlim([0 size(image.RawStack,3)*raw.dataKey(10,1)])
-% hold on
-% for i = 1:size(plane.final,2)
-%     scatter3(r.r(plane.final(1:nnz(plane.final(:,i)),i),1),r.r(plane.final(1:nnz(plane.final(:,i)),i),2),r.r(plane.final(1:nnz(plane.final(:,i)),i),3))
-% end
-% plot(SurfaceAll)
-% hold off
+figure
+xlim([0 max(shear.rawX(:))])
+ylim([0 max(shear.rawY(:))])
+zlim([0 size(image.RawStack,3)*raw.dataKey(10,1)])
+hold on
+for i = 1:size(plane.final,2)
+    scatter3(r.r(plane.final(1:nnz(plane.final(:,i)),i),1),r.r(plane.final(1:nnz(plane.final(:,i)),i),2),r.r(plane.final(1:nnz(plane.final(:,i)),i),3))
+end
+
+plot(Surface2)
+hold off
 %% Match 3D detections to 2D-based pillars
 [r] = match2D(r,raw,shear,rowsNDCU);
 % figure
@@ -365,38 +367,24 @@ export_fig(colorBarSave,savefile,'-native');
 SE = strel('disk',round(10/.1625));
 imageBinaryCombined = image.imgNBds; %imdilate(image.ADil==0,SE);%+(imageBinary2==0))==0;
 %
-%Determine which 'planes' in plane.final should be the same plane
-clear planesGroups
-for i = 1:size(planesLoc2,2)
-    clear differences
-    differences = planesLoc2 - planesLoc2(1,i);
-    planesGroups(i,1:size(find(abs(differences)<2),2)) = find(abs(differences)<2)';
-end
-planesGroups = unique(planesGroups,'rows');
+
+planesGroups = plane.groups;
 [HeatMapN,vqN] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),0,colorMapZ,colorMapXY,0);
-%[HeatMap,vq1] = heatmapZ(r.r,m1.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m1.noiseCutoff,colorMapZ,colorMapXY,1);
-%[HeatMap2,vq2] = heatmapZ(r.r,m2.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m2.noiseCutoff,colorMapZ,colorMapXY,2);
 %[HeatMap3,vq3] = heatmapZ(r.r,m3.dispFilt,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,3);
 [HeatMap3,vq3] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,3);
 
 
 % Print Data to txt file
 % Calculate Useful parameters
-%[vq1pos,vq1neg,m1.PosTotal, m1.PosMax, m1.NegTotal, m1.NegMax]  = vqStats(vq1,planesGroups);
-%[vq2pos,vq2neg,m2.PosTotal, m2.PosMax, m2.NegTotal, m2.NegMax]  = vqStats(vq2,planesGroups);
 [vq3pos,vq3neg,m3.PosTotal, m3.PosMax, m3.NegTotal, m3.NegMax]  = vqStats(vq3,planesGroups);
 
 % Write to file
 cd HeatMaps
 planesLocTxt = fopen('Average Z location of planes.txt','wt');
 p1Format = 'Plane no. %1.0f is at %.2f microns from the surface \n';
-%p2Format = 'Plane no. %1.0f has an average fit deviation of %.8f microns from Method 1 fit \n';
-%p3Format = 'Plane no. %1.0f has an average fit deviation of %.8f microns from Method 2 fit \n';
 p4Format = 'Plane no. %1.0f has an average fit deviation of %.8f microns from Method 3 fit \n';
 for i = 1:size(planesGroups,1)
-    fprintf(planesLocTxt,p1Format,i,mean(planesLoc2(1,planesGroups(i,(planesGroups(i,:)>0)))));
-    %fprintf(planesLocTxt,p2Format,i,mean(m1.MeanPlanes(1,planesGroups(i,(planesGroups(i,:)>0)))));
-    %fprintf(planesLocTxt,p3Format,i,mean(m2.MeanPlanes(1,planesGroups(i,(planesGroups(i,:)>0)))));
+    fprintf(planesLocTxt,p1Format,i,plane.gloc(i));
     fprintf(planesLocTxt,p4Format,i,mean(m3.MeanPlanes(1,planesGroups(i,(planesGroups(i,:)>0)))));
 end
 fclose(planesLocTxt);
@@ -404,9 +392,7 @@ cd(filePath)
 
 %Comma Delimiter Version
 cd HeatMaps
-%printStats(m1,planesGroups,planesLocTxt,planesLoc2,'1');
-%printStats(m2,planesGroups,planesLocTxt,planesLoc2,'2');
-printStats(m3,planesGroups,planesLocTxt,planesLoc2,'3');
+printStats(m3,planesGroups,planesLocTxt,plane.loc,'3');
 cd(filePath)
 
 

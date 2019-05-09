@@ -5,8 +5,12 @@ classdef PlanesData
         raw
         refined
         final
+        pos
         groups
         loc
+        loc2
+        gloc
+        sizes
         locMean
         locComma
         locFilt
@@ -200,8 +204,10 @@ classdef PlanesData
             r = raw3D.r;
             count =1;
            obj.final = obj.raw;
+           
+          
             
-            [planesLoc2,planesGroups,planeSizes] = updateSizes(obj,r);            
+            [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);            
             
             %-----------------
             %Remove planes with less than 50 members
@@ -225,7 +231,7 @@ classdef PlanesData
             obj.final(:,remove) = [];
             catch
             end
-            [planesLoc2,planesGroups,planeSizes] = updateSizes(obj,r)
+            [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);
             count = 1;
             clear remove
             
@@ -253,12 +259,31 @@ classdef PlanesData
             obj.final(:,remove) = [];
             catch
             end
-            [planesLoc2,planesGroups,planeSizes] = updateSizes(obj,r)
+            [obj] = sortPlanes(obj,r);
+            obj.final(1,1)
+            obj.final(1,2)
+            [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);
             %----------------
+            obj.groups = planesGroups;
+            obj.loc = planesLoc;
+            obj.gloc = planesLoc2;                        
+            obj.sizes = planeSizes;
             
-            obj.final = unique(obj.final','rows')';
+            function [obj] = sortPlanes(obj,r)
+                for m = 1:size(obj.final,2)
+                    clear temp
+                    temp = obj.final(1:nnz(obj.final(:,m)),m);
+                    planesLocIni(m) = mean(mean(r(temp,3)));
+                end                              
+                [~,order] = sort(planesLocIni,'descend')
+                clear temp
+                temp = obj.final;                
+                for m = 1:size(order(:))
+                    obj.final(1:end,m) = temp(1:end,order(m));
+                end
+            end
             
-            function [planesLoc2,planesGroups,planeSizes] = updateSizes(obj,r)
+            function [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r)
                 
                 for m = 1:size(obj.final,2)
                     planeSizes(m) = nnz(obj.final(:,m));
