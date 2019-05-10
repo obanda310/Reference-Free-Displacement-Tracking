@@ -62,7 +62,7 @@ end
 
 %% 3D deformation Scripts
 clear failed3D
-for i = 1:size(dirList,1)
+for i = 5:9 %1:size(dirList,1)
     try
         disp3D(dirList{i,1})
         disp(num2str(i))

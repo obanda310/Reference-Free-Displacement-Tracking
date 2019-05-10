@@ -9,6 +9,10 @@ function [roiMaskStack,roiImgStack,roiBounds,redoCheck] = EditStack(maskStack,or
 % Create GUI figure window
 hFig = figure('Position',[100 100 800 800]);
 
+iLow = 0;
+iHigh = prctile(maskStack(:),95)*2;
+contrast = [iLow iHigh];
+
 % noImgs is the number of images in the input stack
 noImgs = size(maskStack,3);
 % Initialize the bounds of the ROI to be equal to the size of an entire
@@ -38,7 +42,7 @@ handles.axes1 = axes( ...
     'Position',[0 0 1 1]);
 
 % Display 1st frame
-imshow(OutputStack(:,:,1),[])
+imshow(OutputStack(:,:,1),[contrast])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -68,7 +72,7 @@ handles.SliderxListener = addlistener( ...
         OutputStack = getappdata(hFig,'MyMatrix');
         CurrentFrame = round((get(handles.SliderFrame,'Value')));
         set(handles.currentFrameSelect,'String',num2str(CurrentFrame));
-        imshow(OutputStack(:,:,CurrentFrame),[]);
+        imshow(OutputStack(:,:,CurrentFrame),[contrast]);
         guidata(hFig,handles);
     end
 
@@ -83,7 +87,7 @@ handles.SliderxListener = addlistener( ...
         CurrentFrame = round((get(handles.SliderFrame,'Value')));
         set(handles.currentFrameSelect,'String',num2str(CurrentFrame));
         % Display appropriate frame.
-        imshow(OutputStack(:,:,CurrentFrame),[]);
+        imshow(OutputStack(:,:,CurrentFrame),[contrast]);
         guidata(hFig,handles);
     end
 
@@ -275,7 +279,7 @@ handles.cropImgButton = uicontrol( ...
         set(handles.currentFrameSelect,'String',num2str(CurrentFrame));
         setappdata(hFig,'MyMatrix',maskStack);
         OutputStack = getappdata(hFig,'MyMatrix');
-        imshow(OutputStack(:,:,CurrentFrame),[]);
+        imshow(OutputStack(:,:,CurrentFrame),[contrast]);
         guidata(hFig,handles);
     end
 

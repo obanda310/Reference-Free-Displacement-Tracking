@@ -1,3 +1,12 @@
+%2019.05.09 Omar Banda
+
+%This code should operate on the outputs of tracking.m to
+%generate 2D displacement information for a given set of images of
+%photo-patterned markers
+
+%The input 'directory' is included to allow the function to be called
+%repeatedly for automated analysis of many datasets.
+
 function dispShear(directory)
 if nargin == 1
     cd(directory);

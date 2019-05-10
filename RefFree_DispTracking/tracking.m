@@ -1,3 +1,13 @@
+%2019.05.09 Omar Banda
+
+%This code generates positional information on 2D centroids of fiducial
+%markers and links the centroids in the vertical direction.
+
+%This code uses object detection and tracking algorithms from Maria Kilfoil's lab 
+
+%The input 'directory' is included to allow the function to be called
+%repeatedly for automated analysis of many datasets.
+
 function tracking(directory)
 if nargin == 1
     cd(directory);

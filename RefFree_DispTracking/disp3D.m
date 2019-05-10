@@ -1,3 +1,12 @@
+%2019.05.09 Omar Banda
+
+% This code should operate on the outputs of tracking.m and dispShear.m to
+% generate 3D displacement information for a given set of images of
+% photo-patterned markers
+
+% The input 'directory' is included to allow the function to be called
+% repeatedly for automated analysis of many datasets.
+
 function disp3D(directory)
 if nargin ==1
     cd(directory);
@@ -46,7 +55,7 @@ plane = growPlanes(plane,raw3D);
 
 disp(['done Building Planes at ' num2str(toc) ' seconds'])
 
-%
+%%
 % View all detected planes
 figure
 hold on
@@ -54,7 +63,7 @@ for i = 1:size(plane.raw,2)
     scatter3(raw3D.X(plane.raw(1:nnz(plane.raw(:,i)),i)),raw3D.Y(plane.raw(1:nnz(plane.raw(:,i)),i)),raw3D.Z(plane.raw(1:nnz(plane.raw(:,i)),i)))
 end
 hold off
-%
+%%
 % Filter planes with too few members (and update r)
 [plane,r] = cleanPlanes(plane,raw3D);
 
@@ -121,14 +130,22 @@ rowV(1,3) = 0;
 disp(['done Generating Row Slope at ' num2str(toc) ' seconds'])
 
 %% Assign detections to Rows
+tic
 disp('Building Rows')
-[r,rows] = buildRows2(r,rowV,plane.final);
+[r,rows] = buildRows2(r,rowV,plane);
 disp(['done Building Rows at ' num2str(toc) ' seconds'])
+%%
 % figure
 % hold on
 % for i = 1:size(rows,1)
 %     scatter3(r.X(rows(i,1:nnz(rows(i,:)))),r.Y(rows(i,1:nnz(rows(i,:)))),r.Z(rows(i,1:nnz(rows(i,:)))))
 % end
+%%
+figure
+hold on
+for i = 1:size(rows,1)
+    plot3(r.X(rows(i,1:nnz(rows(i,:)))),r.Y(rows(i,1:nnz(rows(i,:)))),r.Z(rows(i,1:nnz(rows(i,:)))))
+end
 
 %% Final Cleaning Step - Removing all single-member row objects 
 % This will help with processing time on row fits and should clean up some
@@ -156,11 +173,12 @@ r = TranscribeR(r);
 r = regionCheck(r,image.ADil,raw);
 
 disp('Rebuilding Rows')
-[r,rows] = buildRows2(r,rowV,plane.final);
+[r,rows] = buildRows2(r,rowV,plane);
 disp(['done rebuilding Rows at ' num2str(toc) ' seconds'])
 
 %% Format rows to include plane information
 [rows,rowPlanes,rowPlanesIdx,rowsNDCU,r] = formatRows(rows,plane,r);
+%%
 % figure
 % hold on
 % for j = 1%1:size(rowPlanes,3)
@@ -169,9 +187,6 @@ disp(['done rebuilding Rows at ' num2str(toc) ' seconds'])
 %         scatter3(r.X(rowPlanes(i,1:n,j)),r.Y(rowPlanes(i,1:n,j)),r.Z(rowPlanes(i,1:n,j)))
 %     end
 % end
-
-
-
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Calculate plane distance from surface
@@ -195,7 +210,6 @@ hold on
 for i = 1:size(plane.final,2)
     scatter3(r.r(plane.final(1:nnz(plane.final(:,i)),i),1),r.r(plane.final(1:nnz(plane.final(:,i)),i),2),r.r(plane.final(1:nnz(plane.final(:,i)),i),3))
 end
-
 plot(Surface2)
 hold off
 %% Match 3D detections to 2D-based pillars
@@ -212,10 +226,6 @@ hold off
 % for i = 1:size(shear.rawX,2)
 % scatter3(shear.rawX(:,i),shear.rawY(:,i),shear.rawZ(:,i),'.')
 % end
-%
-
-
-
 
 %%
 %
@@ -244,8 +254,6 @@ disp(['done Fitting Rows with Independent Slopes - Method 1 at ' num2str(toc) ' 
 %ViewQuiverPlot(m1,r,'m1')
 NoiseHists(m1,planesLocFiltList,r,'1')
 
-
-
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 2nd METHOD FOR MEASURING DISPLACEMENTS V2
@@ -269,8 +277,6 @@ disp(['done Fitting Rows with Row Slope - Method 2 at ' num2str(toc) ' seconds']
 %ViewQuiverPlot(m2,r,'m2')
 NoiseHists(m2,planesLocFiltList,r,'2')
 
-
-
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 3RD METHOD FOR FITTING ROWS (METHOD 1 AND 2 COMBINED)
@@ -291,15 +297,13 @@ image.imgNBds = imageNoiseBounds(r.r,m3,image,shear,raw.dataKey(9,1),m3.noiseCut
 disp(['done Picking Best Case Row Fit - Method 3 at ' num2str(toc) ' seconds'])
 %%
 %ViewMethodRef(m3,r,'m3')
-%Scatter3/Plot3 of Dots/Fits Method 3
+%% Scatter3/Plot3 of Dots/Fits Method 3
 %ViewRowFits(m3,r,rowPlanes,rowPlanesIdx,'m3')
-%Quiver Plot of Displacements Method 3
+%% Quiver Plot of Displacements Method 3
 %ViewQuiverPlot(m3,r,'m3')
 %%
 NoiseHists(m3,planesLocFiltList,r,'3')
-
-
-% %%
+%%
 % figure
 % axis([0 r.s(1,2) 0 r.s(2,2)])
 % hold on
@@ -310,7 +314,6 @@ NoiseHists(m3,planesLocFiltList,r,'3')
 %     end
 %     plot(fitSurface)
 % end
-
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CREATE COLOR MAPS OF DISPLACEMENTS IN Z
@@ -368,7 +371,13 @@ SE = strel('disk',round(10/.1625));
 imageBinaryCombined = image.imgNBds; %imdilate(image.ADil==0,SE);%+(imageBinary2==0))==0;
 %
 
-planesGroups = plane.groups;
+planesGroups = unique(plane.groups,'rows');
+for i = 1:size(planesGroups,1)
+    pGMem(i) = nnz(planesGroups(i,:));
+end
+delete = find(pGMem==0);
+planesGroups(delete,:) = [];
+
 [HeatMapN,vqN] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),0,colorMapZ,colorMapXY,0);
 %[HeatMap3,vq3] = heatmapZ(r.r,m3.dispFilt,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,3);
 [HeatMap3,vq3] = heatmapZ(r.r,m3.disp,plane.final,planesGroups,imageBinaryCombined,image.Borders,raw.dataKey(9,1),m3.noiseCutoff,colorMapZ,colorMapXY,3);
