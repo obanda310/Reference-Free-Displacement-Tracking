@@ -10,6 +10,7 @@ classdef PlanesData
         loc
         loc2
         gloc
+        gloc2
         sizes
         locMean
         locComma
@@ -193,6 +194,7 @@ classdef PlanesData
                     end
                 end
             end
+            obj.raw = unique(obj.raw','rows')';
         end
         
         
@@ -203,62 +205,65 @@ classdef PlanesData
             %outputs be removing "noise" or unreliable detections.
             r = raw3D.r;
             count =1;
-           obj.final = obj.raw;
-           
-          
+            obj.final = obj.raw;
             
-            [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);            
+            
+            
+            [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);
             
             %-----------------
             %Remove planes with less than 50 members
-            for i = 1:size(planesGroups,1)
-                if i <= size(planesGroups,1)
-                    planeIdx = planesGroups(i,1:nnz(planesGroups(i,:))); % assign group member planes a number
-                    %if current group has less than 50 members, delete all members.
-                    for j = 1:nnz(planeIdx)
-                        if planeSizes(planeIdx(j)) < 50
-                            for k = 1:nnz(obj.raw(:,planeIdx(j)))
-                                r(obj.final(k,planeIdx(j)),:) =[]; %clear row in r                                
-                                obj.final((obj.final>obj.final(k,planeIdx(j)))) = obj.final((obj.final>obj.final(k,planeIdx(j))))-1; % repeat for obj.final
-                            end
-                            remove(count) = planeIdx(j);
-                            count = count +1;
-                        end
+            
+            for j = 1:size(obj.final,2)
+                if nnz(obj.final(:,j)) < 50
+                    for k = 1:nnz(obj.raw(:,j))
+                        r(obj.final(k,j),:) =[]; %clear row in r
+                        obj.final((obj.final>obj.final(k,j))) = obj.final((obj.final>obj.final(k,j)))-1; % repeat for obj.final
                     end
-                end                
+                    remove(count) = j;
+                    count = count +1;
+                end
             end
+            
             try
-            obj.final(:,remove) = [];
+                obj.final(:,remove) = [];
             catch
             end
             [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);
             count = 1;
             clear remove
+            %-----------------
+            for i = 1:size(planesGroups,1)
+                planeGSizes(i) = sum(planeSizes(planesGroups(i,1:nnz(planesGroups(i,:)))));
+            end
             
             %-----------------
             %Remove top or bottom plane if there are too few members
             for i = 1:size(planesGroups,1)
-                if i <= size(planesGroups,1)
-                    planeIdx = planesGroups(i,1:nnz(planesGroups(i,:))); % assign group member planes a number
-                    %if current grouped planes are (either the top or bottom
-                    %plane, and have less than half the members of the largest
-                    %planes), delete all members.
-                    if  (nnz(obj.final(:,planeIdx))<(max(planeSizes))/2) && (planesLoc2(i) == max(planesLoc2) || planesLoc2(i) == min(planesLoc2))
-                        for j = 1:nnz(planeIdx)
-                            for k = 1:nnz(obj.final(:,planeIdx(j)))
-                                r(obj.final(k,planeIdx(j)),:) =[];                                
-                                obj.final((obj.final>obj.final(k,planeIdx(j)))) = obj.final((obj.final>obj.final(k,planeIdx(j))))-1;
-                                remove(count) = planeIdx(j);
-                                count = count +1;
-                            end
+                clear planeIdx
+                planeIdx = planesGroups(i,1:nnz(planesGroups(i,:))); % assign group member planes a number
+                %if current grouped planes are (either the top or bottom
+                %plane, and have less than half the members of the largest
+                %planes), delete all members.
+                if  (nnz(obj.final(:,planeIdx))<(max(planeSizes))/2) && (planesLoc2(i) == max(planesLoc2) || planesLoc2(i) == min(planesLoc2))
+                    for j = 1:nnz(planeIdx)
+                        for k = 1:nnz(obj.final(:,planeIdx(j)))
+                            r(obj.final(k,planeIdx(j)),:) =[];
+                            obj.final((obj.final>obj.final(k,planeIdx(j)))) = obj.final((obj.final>obj.final(k,planeIdx(j))))-1;
+                            remove(count) = planeIdx(j);
+                            count = count +1;
                         end
                     end
-                end                
+                end
             end
+            
+            
+            
             try
-            obj.final(:,remove) = [];
+                obj.final(:,remove) = [];
             catch
             end
+            
             [obj] = sortPlanes(obj,r);
             obj.final(1,1)
             obj.final(1,2)
@@ -266,7 +271,7 @@ classdef PlanesData
             %----------------
             obj.groups = planesGroups;
             obj.loc = planesLoc;
-            obj.gloc = planesLoc2;                        
+            obj.gloc = planesLoc2;
             obj.sizes = planeSizes;
             
             function [obj] = sortPlanes(obj,r)
@@ -274,10 +279,10 @@ classdef PlanesData
                     clear temp
                     temp = obj.final(1:nnz(obj.final(:,m)),m);
                     planesLocIni(m) = mean(mean(r(temp,3)));
-                end                              
-                [~,order] = sort(planesLocIni,'descend')
+                end
+                [~,order] = sort(planesLocIni,'descend');
                 clear temp
-                temp = obj.final;                
+                temp = obj.final;
                 for m = 1:size(order(:))
                     obj.final(1:end,m) = temp(1:end,order(m));
                 end
