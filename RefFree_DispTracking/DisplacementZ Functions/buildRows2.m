@@ -1,4 +1,5 @@
-function [r,rows] = buildRows2(r,rowV,planesFinal)
+function [r,rows] = buildRows2(r,rowV,plane)
+%%
 r.row = [];
 
 %Note: Currently if there are seemingly duplicate features (two detections per ellipsoid),
@@ -18,19 +19,19 @@ limit2 = 1; %distance from point (rowV+j)
 
 rlist = find(r.X(:)); %subtract from this list to remove used points
 rowN = 0;
-
+%%
 for j = 1:r.l % run through every object
-    if ismember(j,rlist) %check if current object has already been assign
+    if ismember(j,rlist) %check if current object hasn't already been assign
         rowN = rowN+1;
 
-        [jrow,jplane] = find(planesFinal==j);
-        rlistP = planesFinal(1:nnz(planesFinal(:,jplane)),jplane);
+        [jrow,jplane] = find(plane.final==j);
+        rlistP = plane.final(1:nnz(plane.final(:,jplane)),jplane);
         clear currentRow
         r.row(j) = rowN; %store row number
         currentRow = j; % set as first member in row
         rlist((j==rlist)) = 0; % remove j from list
         clear rLU
-        rLU = intersect(rlist,rlistP);
+        rLU = intersect(rlist,rlistP); %grab all non-assigned objects in the same plane
         rLU(rLU==0,:) = [];
         if size(rLU,1) == 0
             clear rLU
@@ -41,7 +42,9 @@ for j = 1:r.l % run through every object
         %narrow potential row members with limit 1
         for k=1:size(rLU,1)
             if rLU(k,1) >0
-                differences(k,1) = norm(cross(rowV,r.r(rLU(k,1),1:3)-r.r(j,1:3)))/norm(rowV);
+                tempd = zeros(1,3);
+                tempd(1,1:2) = r.r(rLU(k,1),1:2)-r.r(j,1:2);
+                differences(k,1) = norm(cross(rowV,tempd))/norm(rowV);
             else
                 differences(k,1)= 1000;
             end
