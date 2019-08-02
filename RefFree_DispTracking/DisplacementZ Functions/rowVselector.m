@@ -1,6 +1,6 @@
 function [rowV, rowV2, rROI, rROIplane] = rowVselector(r,raw,image)
 try %try to find rowV automatically
-%% Dots in Cropped Region
+    %% Dots in Cropped Region
     clear rNDB neighbors
     %ND is non-deformed
     radXY =  2.5; %microns
@@ -22,19 +22,19 @@ try %try to find rowV automatically
     rROIplane = nborsPlanes(rROIplane,rROI,radXY,radZ);
     rROIplane = growPlanes(rROIplane,rROI);
     
-    %%  
-    %Determine best (most populated) plane for an approximate non-deformed region    
+    %%
+    %Determine best (most populated) plane for an approximate non-deformed region
     for i = 1:size(rROIplane.raw,2)
-    rROIpNNZ(i) = nnz(rROIplane.raw(:,i));
-    rROIpB = find(rROIpNNZ==max(rROIpNNZ),1,'first'); %find most populated
+        rROIpNNZ(i) = nnz(rROIplane.raw(:,i));
+        rROIpB = find(rROIpNNZ==max(rROIpNNZ),1,'first'); %find most populated
     end
     rNDB = rROI.r(rROIplane.raw(:,rROIpB),:);
     
     %Find Center dot (likely to have 4 equidistant neighbors)
     
-        differences(:,1) = rNDB(:,1)-rROIBounds(1,5);
-        differences(:,2) = rNDB(:,2)-rROIBounds(1,6);
-        differences(:,4) = sqrt(differences(:,1).^2 + differences(:,2).^2);
+    differences(:,1) = rNDB(:,1)-rROIBounds(1,5);
+    differences(:,2) = rNDB(:,2)-rROIBounds(1,6);
+    differences(:,4) = sqrt(differences(:,1).^2 + differences(:,2).^2);
     
     best = find(differences(:,4)==min(differences(:,4)));
     %%
@@ -79,17 +79,17 @@ try %try to find rowV automatically
     % % text(lub(nghbrs(i,2),1)-(cntrPt(1,1)-fSizeXmin),lub(nghbrs(i,2),2)-(cntrPt(1,2)-fSizeYmin),lub(nghbrs(i,2),6),trckText,'Color','red')
     %
     %%
-%     m = 15;
-%     figure
-%     scatter3(rNDB(:,1),rNDB(:,2),rNDB(:,3))
-%     hold on
-%     scatter3(rNDB(sortedOrig(1:m,1),1),rNDB(sortedOrig(1:m,1),2),rNDB(sortedOrig(1:m,1),3))
-%     m=10;
-%     scatter3(rNDB(sortedOrig(1:m,1),1),rNDB(sortedOrig(1:m,1),2),rNDB(sortedOrig(1:m,1),3))
-%     m=5;
-%     scatter3(rNDB(sortedOrig(1:m,1),1),rNDB(sortedOrig(1:m,1),2),rNDB(sortedOrig(1:m,1),3))
-%     scatter(0,0,0)
-%      hold off
+    %     m = 15;
+    %     figure
+    %     scatter3(rNDB(:,1),rNDB(:,2),rNDB(:,3))
+    %     hold on
+    %     scatter3(rNDB(sortedOrig(1:m,1),1),rNDB(sortedOrig(1:m,1),2),rNDB(sortedOrig(1:m,1),3))
+    %     m=10;
+    %     scatter3(rNDB(sortedOrig(1:m,1),1),rNDB(sortedOrig(1:m,1),2),rNDB(sortedOrig(1:m,1),3))
+    %     m=5;
+    %     scatter3(rNDB(sortedOrig(1:m,1),1),rNDB(sortedOrig(1:m,1),2),rNDB(sortedOrig(1:m,1),3))
+    %     scatter(0,0,0)
+    %      hold off
     %%
     % Pair off neighbors
     clear differences
@@ -128,28 +128,28 @@ try %try to find rowV automatically
         rowV2 = v1;
     end
 catch %otherwise, allow user to trace rowV
-
-       
+    
+    
 end
 
-    prompt = msgbox('Unable to automatically determine dot orientation! Please draw a line segment in the "horizontal" direction connecting at least two marker centers. When finished, double-click the line segment to save the line.')
-    uiwait(prompt)
-    rowVf = figure;
-    imshow(image.RawStack(:,:,5),[]);  
-    h = imline;
-    wait(h);
-    rowLine = getPosition(h);
-    rowV(1,[2 1]) = rowLine(1,1:2)-rowLine(2,1:2);
-    rowV2 = 0;
-    close
-    
+prompt = msgbox('Unable to automatically determine dot orientation! Please draw a line segment in the "horizontal" direction connecting at least two marker centers. When finished, double-click the line segment to save the line.')
+uiwait(prompt)
+rowVf = figure;
+imshow(image.RawStack(:,:,5),[]);
+h = imline;
+wait(h);
+rowLine = getPosition(h);
+rowV(1,[2 1]) = rowLine(1,1:2)-rowLine(2,1:2);
+rowV2 = 0;
+close
+
 %     %%
 %     clear v1row
 %     v1row = best;
 %     for i = 1:2
 %         count = 1;
 %         dv1 = rNDB(best,1:2);
-%         while (dv1(1,1) < rROIBounds(1,3) && dv1(1,1) > rROIBounds(1,1) && dv1(1,2) < rROIBounds(1,4) && dv1(1,2) > rROIBounds(1,2)) == 1       
+%         while (dv1(1,1) < rROIBounds(1,3) && dv1(1,1) > rROIBounds(1,1) && dv1(1,2) < rROIBounds(1,4) && dv1(1,2) > rROIBounds(1,2)) == 1
 %                 clear differences
 %                 dv1 = dv1 + v1*(-1^i);
 %                 dv11(1:size(rNDB,1),1)=dv1(1,1);
@@ -160,20 +160,20 @@ end
 %                 if dvSortNew(1,1)<3
 %                     v1row = cat(1,v1row,dvSortOrig(1,1));
 %                 end
-% %                 if i == 1 && size(v1row,1)>1       
+% %                 if i == 1 && size(v1row,1)>1
 % %                 v1 = (rNDB(best,1:2) - rNDB(v1row(end,1)))/count;
 % %                 count = count+1
 % %                 end
 %         end
 %     end
-%  %%   
+%  %%
 %     clear v2row
 %     v2row = best;
 %     for i = 1:2
 %         count = 1;
 %         dv2 = rNDB(best,1:2);
 %         while (dv2(1,1) < rROIBounds(1,3) && dv2(1,1) > rROIBounds(1,1) && dv2(1,2) < rROIBounds(1,4) && dv2(1,2) > rROIBounds(1,2)) == 1
-% 
+%
 %                 clear differences
 %                 dv2 = dv2 + v2*(-1^i);
 %                 dv22(1:size(rNDB,1),1)=dv2(1,1);
@@ -184,23 +184,23 @@ end
 %                 if dvSortNew(1,1)<3
 %                     v2row = cat(1,v2row,dvSortOrig(1,1));
 %                 end
-% %                 if i == 1 && size(v2row,1)>1       
+% %                 if i == 1 && size(v2row,1)>1
 % %                 v2 = (rNDB(best,1:2) - rNDB(v2row(end,1)))/count
 % %                 count = count+1;
 % %                 end
-% 
+%
 %         end
 %     end
 %     v1row = unique(v1row);
 %     v2row = unique(v2row);
-%     
+%
 %     [v1A,v1B] = fitLine3D(rNDB(v1row,1),rNDB(v1row,2),rNDB(v1row,3));
 %     [v2A,v2B] = fitLine3D(rNDB(v2row,1),rNDB(v2row,2),rNDB(v2row,3));
-%     
+%
 %     for i=1:size(v1row,1)
 %         v1row(i,2) = norm(cross(v1B-v1A,rNDB(v1row(i,1),1:3)'-v1A))/norm(v1B-v1A);
 %     end
-%     
+%
 %     for i=1:size(v2row,1)
 %         v2row(i,2) = norm(cross(v2B-v2A,rNDB(v2row(i,1),1:3)'-v2A))/norm(v2B-v2A);
 %     end
@@ -216,7 +216,7 @@ end
 %         better = 2;
 %         rowV2 = (v1B-v1A)';
 %     end
-%     
+%
 %     d1 = (v1B-v1A)';
 %     d2 = (v2B-v2A)';
 %     %%
@@ -224,7 +224,7 @@ end
 %     v1A = v1A-(d1'*100);
 %     v2B = v2B+(d2'*100);
 %     v2A = v2A-(d2'*100);
-%     
+%
 %     viewDetections(rROI,raw,[0,0],image.TDots);
 %     hold on
 %     if better == 1
@@ -236,7 +236,7 @@ end
 %     end
 %     hold off
 %     %% Display v1row and v2row
-%     
+%
 % %     figure
 % %     hold on
 % %     scatter3(rNDB(:,1),rNDB(:,2),rNDB(:,3))

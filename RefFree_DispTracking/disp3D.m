@@ -83,23 +83,23 @@ bcolor = 'black';
 AxisFontSize = 24;
 LegendFontSize = 14;
 xt = 'X';% input('enter the xaxis label','s');
-    yt = 'Y'; %input('enter the yaxis label','s');
-    zt = 'Z';
-    label{1} = xlabel(xt);
-    label{2} = ylabel(yt);
-    label{3} = zlabel(zt);
-    set(gca,'YMinorTick','on','color',bcolor)
-    ytickformat('%.1f')
-        le{1} = 'plane 1'; %input('enter the legend','s');
-    le{2} = 'plane 2';
-    ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,1,[0 0])
-    %errorbar(meanDisplacements(1,1:3),meanDisplacements(2,1:3),'.','color',[0 0 0],'MarkerSize',1)
-    axis([0 max(r.X) 0 max(r.Y) 0 ceil(max(r.Z))])
-    legend off
+yt = 'Y'; %input('enter the yaxis label','s');
+zt = 'Z';
+label{1} = xlabel(xt);
+label{2} = ylabel(yt);
+label{3} = zlabel(zt);
+set(gca,'YMinorTick','on','color',bcolor)
+ytickformat('%.1f')
+le{1} = 'plane 1'; %input('enter the legend','s');
+le{2} = 'plane 2';
+ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,1,[0 0])
+%errorbar(meanDisplacements(1,1:3),meanDisplacements(2,1:3),'.','color',[0 0 0],'MarkerSize',1)
+axis([0 max(r.X) 0 max(r.Y) 0 ceil(max(r.Z))])
+legend off
 hold off
 
- savefile = 'XZ Indent.tif';
-    export_fig(pf,savefile,'-native');
+savefile = 'XZ Indent.tif';
+export_fig(pf,savefile,'-native');
 %% Dots in Cell Region
 %Determine which features fall outside of a dilated mask of cell area
 image = DilateBinary(image,50);
@@ -147,11 +147,11 @@ for i = 1:size(rows,1)
     plot3(r.X(rows(i,1:nnz(rows(i,:)))),r.Y(rows(i,1:nnz(rows(i,:)))),r.Z(rows(i,1:nnz(rows(i,:)))))
 end
 
-%% Final Cleaning Step - Removing all single-member row objects 
+%% Final Cleaning Step - Removing all single-member row objects
 % This will help with processing time on row fits and should clean up some
 % noise in poor quality datasets.
 for i = 1:size(rows,1)
-rowsNum(i) = nnz(rows(i,:));
+    rowsNum(i) = nnz(rows(i,:));
 end
 rowspurge = rows((rowsNum==1)',1);
 
@@ -319,7 +319,7 @@ NoiseHists(m3,planesLocFiltList,r,'3')
 % CREATE COLOR MAPS OF DISPLACEMENTS IN Z
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 try
-rmdir HeatMaps\3D s
+    rmdir HeatMaps\3D s
 catch
 end
 

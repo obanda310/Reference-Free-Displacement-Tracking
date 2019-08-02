@@ -1,10 +1,10 @@
 % Open czi file and extract relevant metadata
-function [images,meta] = getImages(file)
+function [images,meta,metadata] = getImages(file)
     %% Import image stack
     if nargin == 1
         filename = file;
         name = file;
-        path = file;
+        path = cd;
     elseif nargin == 0
         % Choose image stack
         [name,path] = uigetfile({'*.tif';'*.czi';'*.lsm'});
@@ -14,25 +14,15 @@ function [images,meta] = getImages(file)
     % Add the functions in the bfmatlab folder and its subfolders to the
     % path available for this code
     addpath(genpath('bfmatlab'));
-    
+    %% Read File with bfmatlab and store in 3D matrix
+    clear file images
     % Read into matlab
     file = bfopen(filename);
-    % Get image dimensions from first image in file
-    [imgRows, imgCols] = size(file{1}{1,1});
-    % Images are stored in the first cell in the file cell array
-    imageData = file{1,1};
-    % Get number of images (z-slices) from file 
-    noImgs = size(imageData,1);
-    % Preallocate 3D image matrix
-    images = zeros(imgRows,imgCols,noImgs);
     % Store images in one 3D image matrix (instead of file cell array)
-    for i = 1:noImgs
-        % Column 1 in imageData contains the image grayscale intensity 
-        % matrices; row index i corresponds to position in z-stack
-        images(:,:,i) = imageData{i,1};
-    end
+    images = cat(3,file{1,1}{:,1});
+    
     %% Read metadata
-    if nargout > 1;
+    if nargout > 1
     % Metadata are stored in the second cell in the file cell array
     metadata = file{1,2};
     % Need to use ".get" command to access metadata since the data is
@@ -49,6 +39,12 @@ function [images,meta] = getImages(file)
     meta.scalingZ         = str2double(metadata.get('Global Scaling|Distance|Value #3'));
     meta.sizeX            = size(images,2);
     meta.sizeY            = size(images,1);
+    try
+    meta.OrigSizeX = str2double(metadata.get('Global Information|Image|SizeX #1'));
+    meta.OrigSizeY = str2double(metadata.get('Global Information|Image|SizeY #1'));
+    catch
+        disp('Original Size Not Available! DoubleCheck Pixel Scaling')
+    end
     meta.sizeZ            = str2double(metadata.get('Global Information|Image|SizeZ #1'));
     %date                  = metadata.get('Global Information|Image|AcquisitionDateAndTime #1');
     %date = date(1:10);

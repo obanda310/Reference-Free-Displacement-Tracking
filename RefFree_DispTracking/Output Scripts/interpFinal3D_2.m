@@ -10,7 +10,7 @@ close all
 %%
 load('3Ddata.mat')
 %load('empties.mat') % May add this data in future versions.
-load('SurfaceData.mat')
+%load('SurfaceData.mat')
 % tic
 % %Create the full Lists
 
@@ -23,7 +23,7 @@ fullData3(:,4:6) = m3.ref+m3.disp;
 
 %If using surfaceData
 %surfaceData(:,[3 6]) = NaN;
-fullData3 = cat(1,fullData3,surfaceData); %,surfaceData ,eData
+%fullData3 = cat(1,fullData3,surfaceData); %,surfaceData ,eData
 %planesLoc2 = cat(2,planesLoc2,0);
 
 %% Noise Cutoffs (Metrics from dispShear and disp3D)
