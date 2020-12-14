@@ -1,11 +1,13 @@
 classdef RawData
-    properties       
+    properties
+        pSpaceXY
+        pSpaceZ
         data
         dataKey 
     end
         methods
-            function obj = RawData(autoChk)
-            [obj.data,obj.dataKey] = InputSelector(autoChk);    
+            function obj = RawData(metadata,autoChk)
+            [obj.dataKey] = InputSelector(metadata,autoChk);    
             end
             
             function obj = rawPx2um(obj)

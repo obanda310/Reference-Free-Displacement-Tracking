@@ -196,11 +196,15 @@ classdef ShearData
             clear imageArea2
             imageArea2 = zeros(size(image.Area,1)+100,size(image.Area,2)+100);
             imageArea2(51:size(image.Area,1)+50,51:size(image.Area,2)+50) = image.Area;
-            for i = 1:obj.numTraj
-                if obj.gtLastdXY(i) > (1)
-                    imageArea2((round(obj.rawY1(i)/raw.dataKey(9,1))):(round(obj.rawY1(i)/raw.dataKey(9,1))+100),(round(obj.rawX1(i)/raw.dataKey(9,1))):(round(obj.rawX1(i)/raw.dataKey(9,1))+100))=0;
-                end
-            end
+            
+            %Add areas of high deformation to the binary mask of cell to
+            %ignore these areas for tilt correction
+%             for i = 1:obj.numTraj
+%                 if obj.gtLastdXY(i) > (1)
+%                     imageArea2((round(obj.rawY1(i)/raw.dataKey(9,1))):(round(obj.rawY1(i)/raw.dataKey(9,1))+100),(round(obj.rawX1(i)/raw.dataKey(9,1))):(round(obj.rawX1(i)/raw.dataKey(9,1))+100))=0;
+%                 end
+%             end
+            
             imageArea2 = imcrop(imageArea2,[51,51,size(image.Area,2)-1,size(image.Area,1)-1]);
             obj.noCellTraj = 0;
             for i = 1:obj.numTraj
@@ -225,6 +229,8 @@ classdef ShearData
             bins = 0:.025:3;
             errorHist = figure;
             hold on
+            disp('obj.noCellTraj')
+            obj.noCellTraj
             histogram(obj.gtdXY(:,obj.noCellTraj),bins,'normalization','probability')
             histogram(obj.rawdXY(:,obj.noCellTraj),bins,'normalization','probability')
             set(gca,'fontsize',AxisFontSize)

@@ -45,5 +45,5 @@ for i = 1:size(rows,1)
     rowsNDC(i,find(rowsNDC(i,:)==0)) = max(rowsNDC(i,:));
     rowsNDCU(i,1:size(unique(rowsNDC(i,:)),2)) = unique(rowsNDC(i,:));
 end
-
+r.row = r.row';
 end

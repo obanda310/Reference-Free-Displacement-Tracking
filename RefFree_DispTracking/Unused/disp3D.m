@@ -56,50 +56,15 @@ plane = growPlanes(plane,raw3D);
 disp(['done Building Planes at ' num2str(toc) ' seconds'])
 
 %%
-% View all detected planes
-figure
-hold on
-for i = 1:size(plane.raw,2)
-    scatter3(raw3D.X(plane.raw(1:nnz(plane.raw(:,i)),i)),raw3D.Y(plane.raw(1:nnz(plane.raw(:,i)),i)),raw3D.Z(plane.raw(1:nnz(plane.raw(:,i)),i)))
-end
-hold off
+ViewAllPlanes(plane,raw3D)
 %%
 % Filter planes with too few members (and update r)
 [plane,r] = cleanPlanes(plane,raw3D);
-
-%%
 r = RawData3D(res,raw,r);
 r = TranscribeR(r);
 toc
-%%
-%View Filtered Planes
-pf = figure;
-hold on
-for i = 1:size(plane.final,2)
-    scatter3(r.X(plane.final(1:nnz(plane.final(:,i)),i)),r.Y(plane.final(1:nnz(plane.final(:,i)),i)),r.Z(plane.final(1:nnz(plane.final(:,i)),i)))
-end
-fcolor = 'white';
-bcolor = 'black';
-AxisFontSize = 24;
-LegendFontSize = 14;
-xt = 'X';% input('enter the xaxis label','s');
-yt = 'Y'; %input('enter the yaxis label','s');
-zt = 'Z';
-label{1} = xlabel(xt);
-label{2} = ylabel(yt);
-label{3} = zlabel(zt);
-set(gca,'YMinorTick','on','color',bcolor)
-ytickformat('%.1f')
-le{1} = 'plane 1'; %input('enter the legend','s');
-le{2} = 'plane 2';
-ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,1,[0 0])
-%errorbar(meanDisplacements(1,1:3),meanDisplacements(2,1:3),'.','color',[0 0 0],'MarkerSize',1)
-axis([0 max(r.X) 0 max(r.Y) 0 ceil(max(r.Z))])
-legend off
-hold off
-
-savefile = 'XZ Indent.tif';
-export_fig(pf,savefile,'-native');
+%% View Filtered planes
+ViewFilteredPlanes(plane,r)
 %% Dots in Cell Region
 %Determine which features fall outside of a dilated mask of cell area
 image = DilateBinary(image,50);
@@ -116,10 +81,11 @@ if size(files,1)>=1
     loc=find(check);
 else
     loc= zeros(1,1);
+    loc(:,1) = [];
 end
 disp('Generating Row Slope')
 image = FindNDSquare(image);
-if size(loc,2)>0
+if size(loc,2)>0 
     load('rowV.mat')
     disp('Found a previous row slope!')
 else

@@ -9,7 +9,7 @@ ppOptions =  [{'none'}    {[7]}    {[11]}]  ;
 end
 if ismember(1,ppOptions{1})==1
     images = uint16(removeLarge2(images,(metadata.scalingX*1000000)/0.1625));
-    rawFile = [metadata.filename,'Raw2.tif']; %metadata.filepath,
+    rawFile = [metadata.filename,' Raw.tif']; %metadata.filepath,
     if exist(rawFile,'file')
         delete(rawFile)
     end
@@ -20,7 +20,7 @@ if ismember(1,ppOptions{1})==1
     end
 else
     images = imresize(images,(metadata.scalingX*1000000)/0.1625);
-    rawFile = [metadata.filename,'Raw2.tif']; %metadata.filepath,
+    rawFile = [metadata.filename,' Raw.tif']; %metadata.filepath,
     if exist(rawFile,'file')
         delete(rawFile)
     end

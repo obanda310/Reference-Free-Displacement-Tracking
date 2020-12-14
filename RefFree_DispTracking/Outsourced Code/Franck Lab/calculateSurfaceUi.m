@@ -81,7 +81,6 @@ for i = 1:maxTime
     n{i+1} = calculateNormals(s{i+1});
     
 end
-save('whatisui.mat','ui')
 end
 
 function s = mapSurface(s,ui,s0)

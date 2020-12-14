@@ -8,14 +8,15 @@
 %The input 'directory' is included to allow the function to be called
 %repeatedly for automated analysis of many datasets.
 
-function tracking(directory)
-if nargin == 1
-    cd(directory);
-    auto = 1;
-else
-    auto =0;
-end
+% function tracking(directory)
+% if nargin == 1
+%     cd(directory);
+%     auto = 1;
+% else
+%     auto =0;
+% end
 %%
+auto = 0;
 set(0,'defaultfigurecolor',[1 1 1])
 % Ensures the path to necessary functions is available to the rest of the
 % script

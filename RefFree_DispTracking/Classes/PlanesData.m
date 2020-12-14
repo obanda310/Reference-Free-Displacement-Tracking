@@ -29,7 +29,7 @@ classdef PlanesData
                 count = 0;
                 
                 %Find Dense regions through Z
-                for i = 1:size(centers,2);
+                for i = 1:size(centers,2)
                     j = i-count;
                     if j<size(centers,2)
                         if centers(1,j+1) - centers(1,j) == 1
@@ -77,7 +77,6 @@ classdef PlanesData
             
             clear obj.nbors
             disp('Finding Neighbors')
-            radXY = radXY;
             for i = 1:size(raw3D.X,1)
                 %iteratitvely finds all markers in close proximity to
                 %marker(i) using input search window
@@ -100,7 +99,6 @@ classdef PlanesData
             %%
             clear obj.nbors
             disp('Finding Neighbors')
-            radXY = radXY*2;
             for j = 1:size(obj.preplanes,2)
                 pptemp = obj.preplanes(1:nnz(obj.preplanes(:,j)),j);
                 dTemp = raw3D.r(pptemp,1:3);
@@ -146,9 +144,9 @@ classdef PlanesData
             planes = obj.nbors(1,1:nnz(obj.nbors(1,:)))';
             progressbar('Growing Planes')
             j=1; %designates starting at plane 1
-            
+            progressbar(1/raw3D.l)
+            progress = size(planes,1);
             while working == 1
-                progressbar(size(find(planes(:)),1)/ss)
                 newlist = intersect(searched,planes);
                 if size(newlist,2)>0
                     for i = 1:size(newlist,1)
@@ -169,6 +167,8 @@ classdef PlanesData
                 planes = unique(cat(1,planes,new));
                 sAfter = size(planes,1);
                 if sBefore == sAfter
+                    progress = progress + size(planes,1);
+                    progressbar(progress/raw3D.l)
                     %if j == 1
                     obj.raw(1:size(planes,1),j) = planes(:,1);
                     j=j+1;
@@ -193,6 +193,7 @@ classdef PlanesData
                         
                     end
                 end
+                
             end
             obj.raw = unique(obj.raw','rows')';
         end
@@ -205,15 +206,10 @@ classdef PlanesData
             %outputs be removing "noise" or unreliable detections.
             r = raw3D.r;
             count =1;
-            obj.final = obj.raw;
-            
-            
-            
-            [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);
-            
+            obj.final = obj.raw;                                    
+            [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);            
             %-----------------
             %Remove planes with less than 50 members
-            
             for j = 1:size(obj.final,2)
                 if nnz(obj.final(:,j)) < 50
                     for k = 1:nnz(obj.raw(:,j))
@@ -229,50 +225,50 @@ classdef PlanesData
                 obj.final(:,remove) = [];
             catch
             end
-            [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);
-            count = 1;
-            clear remove
-            %-----------------
-            for i = 1:size(planesGroups,1)
-                planeGSizes(i) = sum(planeSizes(planesGroups(i,1:nnz(planesGroups(i,:)))));
-            end
             
-            %-----------------
-            %Remove top or bottom plane if there are too few members
-            for i = 1:size(planesGroups,1)
-                clear planeIdx
-                planeIdx = planesGroups(i,1:nnz(planesGroups(i,:))); % assign group member planes a number
-                %if current grouped planes are (either the top or bottom
-                %plane, and have less than half the members of the largest
-                %planes), delete all members.
-                if  (nnz(obj.final(:,planeIdx))<(max(planeSizes))/2) && (planesLoc2(i) == max(planesLoc2) || planesLoc2(i) == min(planesLoc2))
-                    for j = 1:nnz(planeIdx)
-                        for k = 1:nnz(obj.final(:,planeIdx(j)))
-                            r(obj.final(k,planeIdx(j)),:) =[];
-                            obj.final((obj.final>obj.final(k,planeIdx(j)))) = obj.final((obj.final>obj.final(k,planeIdx(j))))-1;
-                            remove(count) = planeIdx(j);
-                            count = count +1;
+            
+            [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);
+            [obj,r] = trimPlanes(obj,planesGroups,planeSizes,planesLoc2,r);           
+            [obj] = sortPlanes(obj,r);
+            [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);
+            [obj,r] = trimPlanes(obj,planesGroups,planeSizes,planesLoc2,r);
+            [obj] = sortPlanes(obj,r);
+            [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);
+            
+            
+            for i =1:size(obj.final,2)
+                for j =1:size(obj.final,2)
+                    if j > i
+                        dupes = intersect(obj.final(:,i),obj.final(:,j));
+                        if nnz(dupes) > 0
+                            for k = 1:size(dupes,1)
+                                currentZ = r(dupes(k),3);
+                                planej = planesLoc(1,j);
+                                planei = planesLoc(1,i);
+                                distj = abs(planej-currentZ);                                
+                                disti = abs(planei-currentZ);
+                                if distj<disti
+                                    tempidx = find(obj.final(:,i)==dupes(k),1,'first');
+                                    obj.final(tempidx:end-1,i) = obj.final(tempidx+1:end,i);
+                                else                                    
+                                    tempidx = find(obj.final(:,j)==dupes(k),1,'first');
+                                    obj.final(tempidx:end-1,j) = obj.final(tempidx+1:end,j);
+                                end
+                            end
                         end
                     end
                 end
             end
             
             
-            
-            try
-                obj.final(:,remove) = [];
-            catch
-            end
-            
-            [obj] = sortPlanes(obj,r);
-            obj.final(1,1)
-            obj.final(1,2)
-            [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r);
             %----------------
+            
             obj.groups = planesGroups;
             obj.loc = planesLoc;
             obj.gloc = planesLoc2;
             obj.sizes = planeSizes;
+            
+            
             
             function [obj] = sortPlanes(obj,r)
                 for m = 1:size(obj.final,2)
@@ -287,7 +283,46 @@ classdef PlanesData
                     obj.final(1:end,m) = temp(1:end,order(m));
                 end
             end
-            
+            %%
+            function [obj,r] = trimPlanes(obj,pgs,ps,pl2,r)              
+                ct = 1;
+                clear rem
+                %-----------------
+                %Remove top or bottom plane if there are too few members                
+                for m = 1:size(pgs,1)
+                    clear planeIdx
+                    planeIdx = pgs(m,1:nnz(pgs(m,:))); % assign group member planes a number
+                    %if current grouped planes are (either the top or bottom
+                    %plane, and have less than half the members of the largest
+                    %planes), delete all members.
+                    % ALSO, delete entire plane if it is too low (could have
+                    % inaccurate centroids due to clipping)
+                    if  ((nnz(obj.final(:,planeIdx))<(max(ps))/2) && (pl2(m) == max(pl2) || pl2(m) == min(pl2))) || pl2(m)<1.5
+                        for n = 1:nnz(planeIdx)
+                            for o = 1:nnz(obj.final(:,planeIdx(n)))
+                                r(obj.final(o,planeIdx(n)),:) =[];
+                                obj.final((obj.final>obj.final(o,planeIdx(n)))) = obj.final((obj.final>obj.final(o,planeIdx(n))))-1;
+                                rem(ct) = planeIdx(n);
+                                ct = ct +1;
+                            end
+                        end
+                    end
+                end
+                
+                % If objects have been marked for removal, remove them
+                try
+                    obj.final(:,rem) = [];
+                catch
+                end
+                
+                %remove duplicates
+                for i2 =1:size(obj.final,2)
+                    tempPlane = unique(obj.final(1:nnz(obj.final(:,i2)),i2));
+                    obj.final(:,i2) = 0;
+                    obj.final(1:size(tempPlane,1),i2) = tempPlane;
+                end
+            end
+            %%
             function [planesLoc2,planesLoc,planesGroups,planeSizes] = updateSizes(obj,r)
                 
                 for m = 1:size(obj.final,2)
@@ -302,15 +337,54 @@ classdef PlanesData
                     planesLoc(m) = mean(mean(r(temp,3)));
                 end
                 
-                %Group planes which are close in Z. This should alleviate
-                %discrepencies occuring due to cells spanning two or more
-                %sections of patterned regions.
+                %Group planes which are close in Z, and which do not
+                %overlap in XY. These groups should alleviate issues
+                %occuring due to cells spanning two or more sections of
+                %patterned regions.
                 clear planesGroups
                 for m = 1:size(planesLoc,2)
-                    clear differences
-                    differences = planesLoc - planesLoc(1,m);
-                    planesGroups(m,1:size(find(abs(differences)<2),2)) = find(abs(differences)<2)';
+                    meanLoc(m,1) = mean(r(obj.final(1:nnz(obj.final(:,m)),m),1));
+                    meanLoc(m,2) = mean(r(obj.final(1:nnz(obj.final(:,m)),m),2));                    
+                    differences(m,:) = planesLoc - planesLoc(1,m);                    
+                    %planesGroups(m,1:size(find(abs(differences)<2),2)) = find(abs(differences)<3)';
                 end
+                zCheck = abs(differences)<5;
+                for m = 1:size(planesLoc,2)
+                    for n = 1:size(planesLoc,2)
+                        if m~=n
+                            [~,dist] = dsearchn([r(obj.final(1:nnz(obj.final(:,m)),m),1), r(obj.final(1:nnz(obj.final(:,m)),m),2)],meanLoc(n,1:2));
+                            [~,dist2] = dsearchn([r(obj.final(1:nnz(obj.final(:,n)),n),1), r(obj.final(1:nnz(obj.final(:,n)),n),2)],meanLoc(m,1:2));
+                            if dist>4 && dist2>4
+                                xyCheck(m,n) = 1;
+                            else
+                                xyCheck(m,n) = 0;
+                            end
+                        end    
+                    end
+                end
+                
+                xyCheck = xyCheck>0;
+                fCheck = zCheck & xyCheck;
+                usedPlanes = ones(size(planesLoc));
+                pgCount = 0;
+                for m =1:size(fCheck,1)
+                    if usedPlanes(m)>0
+                        pgCount = pgCount+1;
+                        planesGroups(pgCount,1) = m;
+                        fCheck(:,m) = 0; %clear column 'm' so it is no matched again later
+                        matchIdx = find(fCheck(m,:)>0);
+                        n=1;
+                        while size(matchIdx,2)>0                        
+                            planesGroups(pgCount,n+1) = matchIdx(1); %add plane to group
+                            n = n+1; %increase plane group member count
+                            fCheck(m,:) = fCheck(m,:).*fCheck(matchIdx(1),:); %apply the added plane's restrictions to the origin plane
+                            fCheck(matchIdx(1),:) = 0; %clear rows of added planes so they are not double counted
+                            fCheck(:,matchIdx(1)) = 0; %clear cols of added planes so they are not double counted
+                            usedPlanes(matchIdx(1)) = 0;
+                            matchIdx = find(fCheck(m,:)>0);
+                        end
+                    end
+                end                
                 planesGroups = unique(planesGroups,'rows');
                 
                 for m = 1:size(planesGroups)
@@ -345,6 +419,50 @@ classdef PlanesData
                     planesLoc2(m) = mean(planesLoc(planesGroups(m,1:nnz(planesGroups(m,:)))));
                 end
             end
+        end
+        %%
+        function ViewAllPlanes(obj,raw3D)
+            % View all detected planes
+            figure
+            hold on
+            for i = 1:size(obj.raw,2)
+                scatter3(raw3D.X(obj.raw(1:nnz(obj.raw(:,i)),i)),raw3D.Y(obj.raw(1:nnz(obj.raw(:,i)),i)),raw3D.Z(obj.raw(1:nnz(obj.raw(:,i)),i)))
+            end
+            hold off
+        end
+        %%
+        function ViewFilteredPlanes(obj,r)
+            %View Filtered Planes
+            pf = figure;
+            hold on
+            for i = 1:size(obj.final,2)
+                scatter3(r.X(obj.final(1:nnz(obj.final(:,i)),i)),r.Y(obj.final(1:nnz(obj.final(:,i)),i)),r.Z(obj.final(1:nnz(obj.final(:,i)),i)))
+             end
+%             bcolor = 'white';
+%             fcolor = 'black';
+            
+            bcolor = 'black';
+            fcolor = 'white';
+            AxisFontSize = 12;
+            LegendFontSize = 14;
+            xt = 'X \mum';% input('enter the xaxis label','s');
+            yt = 'Y \mum'; %input('enter the yaxis label','s');
+            zt = 'Z \mum';
+            label{1} = xlabel(xt);
+            label{2} = ylabel(yt);
+            label{3} = zlabel(zt);
+            set(gca,'YMinorTick','on','color',bcolor)
+            ytickformat('%.1f')
+            le{1} = 'plane 1'; %input('enter the legend','s');
+            le{2} = 'plane 2';
+            ColorScheme(fcolor,bcolor,label,le,AxisFontSize,LegendFontSize,1,[0 0])
+            %errorbar(meanDisplacements(1,1:3),meanDisplacements(2,1:3),'.','color',[0 0 0],'MarkerSize',1)
+            axis([0 max(r.X) 0 max(r.Y) 0 ceil(max(r.Z))])
+            legend off
+            hold off
+            view(45,15)
+            savefile = 'XZ Indent.tif';
+            export_fig(pf,savefile,'-native');
         end
     end
 end

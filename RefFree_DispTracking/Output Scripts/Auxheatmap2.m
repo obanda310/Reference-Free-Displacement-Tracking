@@ -1,24 +1,34 @@
-function [heatmap] = Auxheatmap(xqMax,yqMax,vqIni,LUT,filename,savePath,maxD,minD,CO,filtMask,flipY)
+
+function [heatmap] = Auxheatmap2(xqMax,yqMax,vqIni,LUT,filename,savePath,maxD,minD,CO,filtMask,flipY)
 if nargin == 6
     maxD = max(abs(vqIni(:)));
 end
 xq = 1:1:xqMax;
 yq = 1:1:yqMax;
 vq = imresize(vqIni,[xqMax yqMax]);
+vqfilt = imresize(filtMask,[xqMax yqMax]);
+vq(abs(vq)<CO & vqfilt) = 0;
 
 if flipY == 1
     vq = flipud(vq);
 end
-
-vqfilt = imresize(filtMask,[xqMax yqMax]);
-if CO>0
-vq(abs(vq)<CO & vqfilt) = 0;
-end
-
-
 %Check to see if data includes direction or is simply magnitudes
 sidedCheck = min(vqIni(:))<0;
 
+%Build heat map accordingly
+if sidedCheck == 1
+    %doublesided
+    scaleD = 32768/maxD;
+    map = brewermap(65535,LUT);
+    hm = imagesc(xq,yq,vq);
+    hm2 = hm.CData;
+    hm2(hm2>0) = 32768+(abs(hm2(hm2>0))*scaleD);
+    hm2(hm2<0) = 32768 - (abs(hm2(hm2<0))*scaleD);
+    hm2(hm2==0) = 32768;
+    hm2(isnan(hm2)) = 32768;
+    hm2 = uint16(hm2);
+else
+    
     %singlesided
     vq = (vq-minD)/(maxD-minD);
     scaleD = 65535;
@@ -31,10 +41,12 @@ sidedCheck = min(vqIni(:))<0;
     hm2 =(hm2*scaleD);
     hm2(isnan(hm2)) = 0;
     hm2 = uint16(hm2);
-
+end
 imageHeatColor = single(ind2rgb(hm2,map));
 heatmap(:,:,:) = imageHeatColor;
-
+for i = 1:size(imageHeatColor,3)
+    imageHeatColor(:,:,i) = imageHeatColor(:,:,i).*double(filtMask==0);
+end
 
 maxHeatMap = figure;
 hold on

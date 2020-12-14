@@ -1,6 +1,6 @@
 function [xyzFinal,rowP] = transLine3D(rowV,rowP,ub)
 options = optimset('Display', 'off') ;
-rowV = double(rowV)';
+rowV = double(rowV);
 rowP = double(rowP);
 x0 = rowV(1,1);
 y0 = rowV(2,1);

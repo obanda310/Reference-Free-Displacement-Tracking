@@ -4,10 +4,10 @@ if AzEle(1,1) ~=360
 end
 set(gcf,'color',bcolor)
 set(gca,'Color',bcolor)
-set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'ZColor',fcolor)
+set(gca,'fontsize',AxisFontSize,'XColor',fcolor,'YColor',fcolor,'ZColor',fcolor,'fontname','times')
 
 for j = 1:size(label,2)
-    set(label{j}, 'fontweight','bold','fontsize',28,'color',fcolor);
+    set(label{j},'fontsize',14,'color',fcolor);
 end
 if strcmp(le{1},'0')~=1
     for j = 1:size(le,2)

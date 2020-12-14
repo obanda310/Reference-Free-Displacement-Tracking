@@ -5,6 +5,8 @@ classdef ImageData
         Fluor
         Area
         Borders
+        Proj
+        MaskStack
         ROIstack
         RawStack
         TDots
@@ -20,7 +22,7 @@ classdef ImageData
             if isa((autoChk),'ImageData')==1
                 obj = autoChk;
             else
-                obj.Black = loadSpecific('black.tif','*.tif','Select a Black Image of the Correct Dimensions');
+                obj.Black = loadSpecific('*Black.tif','*.tif','Select a Black Image of the Correct Dimensions');
                 %Open Transmitted Image
                 if autoChk == 0
                     w = questdlg('Use a Transmitted image for overlays?',...
@@ -30,7 +32,7 @@ classdef ImageData
                     w = 'Yes';
                 end
                 if strcmp(w,'Yes') == 1
-                    obj.Trans = loadSpecific('Transmitted Cell Image.tif','*.tif','Select Transmitted Image for Overlay');
+                    obj.Trans = loadSpecific('*Transmitted Cell Image.tif','*.tif','Select Transmitted Image for Overlay');
                 else
                     obj.Trans = obj.Black;
                 end
@@ -44,7 +46,7 @@ classdef ImageData
                     w = 'No';
                 end
                 if strcmp(w,'Yes') == 1
-                    obj.Fluor = loadSpecific('Fluorescent Cell Image.tif','*.tif','Select Fluorescent Image for Overlay');
+                    obj.Fluor = loadSpecific('*Fluorescent Cell Image.tif','*.tif','Select Fluorescent Image for Overlay');
                 else
                     obj.Fluor = obj.Black;
                 end
@@ -83,13 +85,36 @@ classdef ImageData
                 
             end
         end
-        
+        %---------------------------------------
+        function obj = maskStack(obj,autoChk)
+            %Open processed image stack of markers
+            files = dir('*.tif'); %Check Directory for default filenames
+            for k = 1:length(files)
+                current=files(k).name;
+                if size(current,2)>12
+                    check(k)=strcmp(current(end-12:end),'Processed.tif');
+                else
+                    check(k) = 0;
+                end
+            end
+            loc=find(check);
+            if size(loc,1)==1 && autoChk ==1
+                obj.MaskStack = getImages(files(loc(1)).name);
+            else
+                obj.MaskStack = getImages();
+            end
+        end
+        %---------------------------------------
         function obj = roiStack(obj,autoChk)
             %Open processed image stack of markers
             files = dir('*.tif'); %Check Directory for default filenames
             for k = 1:length(files)
                 current=files(k).name;
-                check(k)=strcmp(current(end-6:end),'roi.tif');
+                if size(current,2)>6
+                    check(k)=strcmp(current(end-6:end),'ROI.tif');
+                else
+                    check(k) = 0;
+                end
             end
             loc=find(check);
             if size(loc,1)==1 && autoChk ==1
@@ -98,7 +123,7 @@ classdef ImageData
                 obj.ROIstack = getImages();
             end
         end
-        
+        %---------------------------------------
         function obj = rawStack(obj,autoChk)
             %Load the raw fluorecent stack of markers
             matFiles = dir('*.mat');
@@ -116,24 +141,21 @@ classdef ImageData
             if size(tifFiles,1)>=1
                 for k = 1:length(tifFiles)
                     current=tifFiles(k).name;
-                    if size(current,2)>7
-                        check2(k) = strcmp(current(end-7:end),'Raw2.tif');
+                    if size(current,2)>6
+                        check2(k) = strcmp(current(end-6:end),'Raw.tif');
                     else
                         check2(k) = 0;
                     end
                 end
                 
             end
-                loc=find(check2);
-                
+            loc=find(check2);
             try
-                
-
                 if size(loc,1)==1 && autoChk ==1
                     disp(tifFiles(loc(1)).name)
                     obj.RawStack = getImages(tifFiles(loc(1)).name);
                 end
-            catch  
+            catch
                 if size(find(check),2) >0 %&& autoChk ==1
                     load('StackName.mat','StackName')
                     obj.RawStack = single(getImages(StackName));
@@ -141,8 +163,8 @@ classdef ImageData
                     obj.RawStack = single(getImages());
                 end
             end
-                %disp(loc)
-             %   obj.RawStack = single(getImages());
+            %disp(loc)
+            %   obj.RawStack = single(getImages());
             %end
             if size(obj.RawStack,1) ~= size(obj.Black,1)
                 for i = 1:size(obj.RawStack,3)
@@ -154,7 +176,7 @@ classdef ImageData
         end
         
         function obj = TransDots(obj)
-            sumImages = uint16(squeeze(max(permute(obj.RawStack, [3,2,1]))));
+            sumImages = uint16(squeeze(max(obj.RawStack,[],3)));
             sumImgScale = double(max(max(sumImages)))/(65536);
             sumImages = uint16(sumImages/sumImgScale);
             transImgScale = 65536/mean(prctile(obj.Trans,95));
@@ -184,6 +206,35 @@ classdef ImageData
             obj.SquareBounds(1,3) = col+length;
             obj.SquareBounds(1,4) = row+length;
             
+        end
+        
+        function obj = Projection(obj)
+            % Find frames with pillars in them based on intensity
+            % percentiles.
+            for i = 1:size(obj.MaskStack,3)
+                temp = obj.MaskStack(:,:,i);
+                Prctiles(i) = prctile(temp(:),99);
+            end
+                lastFrame = find(Prctiles>50,1,'last');
+            clear temp
+            
+            % Viewing Pillars as a Frame Weighted Z-Projection
+            %Frames are thresholded and projected through-Z. Pixels appearing in later
+            %frames appear brightest.
+            for i = 1:lastFrame
+                temp = obj.MaskStack(:,:,i);
+                low = mean(mean(temp(temp>0)));               
+                high = prctile(temp(:),99);
+                temp(temp>0) = high*(100);
+                temp = (temp/high)*(i^3/lastFrame^3);                
+                roiMasks2(:,:,i) = temp;
+            end
+            obj.Proj = max(roiMasks2,[],3);
+            pillarView = figure;
+            imshow(obj.Proj,[])
+            filePath = cd;
+            savefile = [filePath '\Tracking_pillarView.tif'];
+            export_fig(pillarView,savefile,'-native');
         end
     end
 end

@@ -3,8 +3,8 @@ function [Surface2,SurfaceAll,Zeros] = findSurface2(shear,image,raw)
 RawStack = permute(image.RawStack,[2,1,3]);
 originalTest = image.RawStack(:,:,end);
 
-oMean = median(originalTest(:));
-oStd = std(originalTest(originalTest(:)<prctile(originalTest(:),80)));
+oMean = single(median(originalTest(:)));
+oStd = std(single(originalTest(originalTest(:)<prctile(originalTest(:),80))));
 
 intCutoff = oMean+2*oStd;
 
@@ -36,7 +36,7 @@ for i = 1:size(shear.Int,2)
     end
 end
 %%
-Int3 = Int2;
+Int3 = Int2
 Int3(Int3<0) = 0;
 for i = 1:size(Int3,2)
     IntInd(i) = find(Int3(:,i),1,'last');

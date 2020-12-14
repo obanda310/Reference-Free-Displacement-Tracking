@@ -153,9 +153,9 @@ classdef Experiment
                 % the same name as the original image stack, but with "roi"
                 % appended to the end of the name
                 roiFile = ...
-                    [obj.metadata.filename,'roi.tif']; %obj.metadata.filepath,
+                    [obj.metadata.filename,' ROI.tif']; %obj.metadata.filepath,
                 maskFile = ...
-                    [obj.metadata.filename,'masks.tif']; %obj.metadata.filepath,
+                    [obj.metadata.filename,' Processed.tif']; %obj.metadata.filepath,
                 % If a file already exists with the name we just specified
                 % (i.e. if an ROI has been selected before), that file is
                 % deleted. This is necessary because the file will not simply
@@ -194,7 +194,7 @@ classdef Experiment
                 % convention to that used in saving the ROI stack.
                 if isnan(obj.cellImg) == 0
                     roiCell = imcrop(obj.cellImg,[roiBounds(1,1),roiBounds(1,2),roiBounds(1,3),roiBounds(1,4)]);
-                    cellFile = [obj.metadata.filename,'Transmitted Cell Image.tif']; %obj.metadata.filepath,
+                    cellFile = [obj.metadata.filename,' Transmitted Cell Image.tif']; %obj.metadata.filepath,
                     imwrite(imresize(roiCell,scaleFactor),cellFile,'tif');
                 else
                     roiCell = 'No Input Selected';
@@ -204,7 +204,7 @@ classdef Experiment
                 % naming convention to that used in saving the ROI stack.
                 if isnan(obj.fluorImg) == 0
                     roiFluor = imcrop(obj.fluorImg,[roiBounds(1,1),roiBounds(1,2),roiBounds(1,3),roiBounds(1,4)]);
-                    fluorFile = [obj.metadata.filename,'Fluorescent Cell Image.tif']; %obj.metadata.filepath,
+                    fluorFile = [obj.metadata.filename,' Fluorescent Cell Image.tif']; %obj.metadata.filepath,
                     imwrite(imresize(roiFluor,scaleFactor),fluorFile,'tif');
                 end
                 
@@ -213,8 +213,13 @@ classdef Experiment
                 % is useful in the trajectories.m function for figure
                 % generation purposes
                 bkImg = uint16(zeros(roiBounds(4),roiBounds(3)));
-                blackFile = [obj.metadata.filename,'black.tif']; %obj.metadata.filepath,
+                blackFile = [obj.metadata.filename,' Black.tif']; %obj.metadata.filepath,
                 imwrite(bkImg,blackFile,'tif');
+                
+                % Save scaling information  
+                autoChk = 1;
+                raw = RawData(obj.metadata,autoChk);                
+                save('Matlab Data Files\DataRaw.mat','raw')
             end
             disp('Done Saving Processed Images')
         end

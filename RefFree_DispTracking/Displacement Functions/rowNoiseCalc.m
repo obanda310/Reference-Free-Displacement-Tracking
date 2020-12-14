@@ -1,16 +1,16 @@
-function [noiseMean1,noiseStd1,noiseCutoff1,rDisp1Filt,rDisp1PF] = rowNoiseCalc(r,image,shear,m,planesLocFiltList,rNDC,scale)
+function [noiseMean1,noiseStd1,noiseCutoff1,rDisp1Filt,rDisp1PF] = rowNoiseCalc(r,image,m,planesLocFiltList,rNDC,scale)
 %% Filter out noise in Displacements Method 2
 noiseMean1 = mean(abs(m.disp(intersect(planesLocFiltList(:,1),rNDC),3)));
 noiseStd1 = std((m.disp(intersect(planesLocFiltList(:,1),rNDC),3)));
 noiseCutoff1 = 2*noiseStd1;
 
-image.imgNBds = imageNoiseBounds(r,m,image,shear,scale,noiseCutoff1);
+image.imgNBds = imageNoiseBounds(r,m,image,scale);
 
 % Use noiseCutoff to filter data
 rDisp1Filt = m.disp;
 for i = 1:size(r,1)
 %     try
-        if abs(rDisp1Filt(i,3))<noiseCutoff1 && image.imgNBds(round(r(i,2)/scale),round(r(i,1)/scale)) > 0
+        if abs(rDisp1Filt(i,3))<noiseCutoff1 && image.imgNBds(round(r(i,1)/scale),round(r(i,2)/scale)) > 0
             rDisp1Filt(i,3) = NaN;
         elseif abs(rDisp1Filt(i,3))<noiseCutoff1
             rDisp1Filt(i,3) = 0;

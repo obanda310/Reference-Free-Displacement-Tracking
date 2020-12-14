@@ -7,10 +7,10 @@
 %The input 'directory' is included to allow the function to be called
 %repeatedly for automated analysis of many datasets.
 
-function dispShear(directory)
-if nargin == 1
-    cd(directory);
-end
+% function dispShear(directory)
+% if nargin == 1
+%     cd(directory);
+% end
 tic
 mkdir('Shear Mat Files')
 filePath = cd;

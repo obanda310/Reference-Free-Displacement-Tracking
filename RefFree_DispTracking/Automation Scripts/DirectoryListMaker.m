@@ -19,13 +19,30 @@ else
     dirList = cat(1,dirList,AddPath)
 end
 save(fullListName,'dirList')
+%% Run this section to add all folders with specific part in name from current directory
+AddPath = cd;
+clear files thisPath
+files = dir('*Group*');
+for i = 1:size(files,1)
+    thisPath{i,1} = [AddPath '\' files(i).name];
+end
+if size(dirList,1) == 0
+    dirList = thisPath;
+elseif dirList{1,1} == 0
+    dirList = thisPath;
+else
+    dirList = cat(1,dirList,thisPath);
+end
+save(fullListName,'dirList')
+
 %% Run this section to remove the last entry
 dirList(end,:) = []
 
 
 %% Run This Section to remove a specific entry
-remove = [2]; %choose which one to remove here
+remove = [3]; %choose which one to remove here
 dirList(remove,:) = []
+save(fullListName,'dirList')
 %%
 [ListName,ListPath] = uiputfile('*.*','Open a list of Directories','List of Directories.mat');
 fullListName = strcat(ListPath,ListName);

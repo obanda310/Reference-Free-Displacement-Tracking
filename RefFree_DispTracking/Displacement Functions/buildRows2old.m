@@ -19,7 +19,7 @@ limit2 = 1; %distance from point (rowV+j)
 
 rlist = find(r.X(:)); %subtract from this list to remove used points
 rowN = 0;
-%%
+%
 for j = 1:r.l % run through every object
     if ismember(j,rlist) %check if current object hasn't already been assign
         rowN = rowN+1;
