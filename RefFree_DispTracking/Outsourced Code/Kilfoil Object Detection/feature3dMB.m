@@ -1,4 +1,4 @@
-function [r]=feature3dMB(image, diameter,masksz, xyzmax,inputv, sep, masscut, threshold)
+function [r]=feature3dMB(image, diameter,masksz, xyzmax,inputv, sep, masscut, threshold, percentile)
 %this program is written by Yongxiang Gao and Maria Kilfoil based on IDL
 %code written by John C. Crocker and David G. Grier.
 %varargin should contain input for [ separation, masscut, threshold], and
@@ -112,6 +112,8 @@ function [r]=feature3dMB(image, diameter,masksz, xyzmax,inputv, sep, masscut, th
 % Image should consist of smooth well separated peaks on a zero
 % or near zero background, with diameter set somewhat larger
 % than the diameter of the peak!
+
+% New version 2020 12 14
 if inputv(1)==1; separation=sep; end
 if inputv(2)==0 ; masscut = 0; else; masscut=masscut; end
 if (inputv(3)==1)
@@ -142,7 +144,7 @@ nx = nx + extent(1);
 ny = ny + extent(2);
 nz = nz + extent(3); 
 % 	Find the local maxima in the filtered image
-loc = llmx3dMB(a,sep,fix((extent/2)));
+loc = llmx3dMB(a,sep,fix((extent/2)),percentile);
 if loc(1)== -1 
 disp('No features found!');		
 loc(1)=-1;
