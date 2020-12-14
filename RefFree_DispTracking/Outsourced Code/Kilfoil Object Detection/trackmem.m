@@ -17,7 +17,7 @@ function [lub] = trackmem(xyzs,maxdisp,dim,goodenough,memory)
 % The spatial dimension dim of the data is specified by the user.
 
 
-tic   % starts the clock, if monitoring runtime
+%tic   % starts the clock, if monitoring runtime
 dd = length(xyzs(1,:));                
 t = (xyzs(:,dd))';  
 

@@ -1,4 +1,4 @@
-function r=llmx3dMB(a, sep, pad)
+function r=llmx3dMB(a, sep, pad, percentile)
 % a 3d-happy version of DGGs 'local max', which does NOT use
 % the dilation algorithm.  NB: the data MUST be padded, or it
 % can crash!! Best of all, 'sep' is a float 3-vector. 'sep' is
@@ -7,6 +7,8 @@ function r=llmx3dMB(a, sep, pad)
 % padding size to save it a little work.
 % Translated by Yongxiang Gao in 2005 from IDL code developped by John
 % Crocker and David Grier
+
+%percentile = 0.2;
 
 allmin = min(a(:));
 allmax = max(a(:));
@@ -28,7 +30,7 @@ imask = find(bmask > 0) + bignum -(nx*ny*(fix(extent(3)/2)))-(nx*fix((extent(2)/
 % let's try Eric's hash table concept.
 % set percentile to 0. if you want ever voxel to be a potential maximum
 % set it to 0.8 or so if you have lots of tiny spikes, to run faster
-percentile = 0.7;
+
 hash = ones(nx,ny,nz,'uint8');
 ww = find(a(:,:,pad(3)+1:nz-pad(3)) > allmin) + (nx*ny*pad(3)); %seems no problem before this compared to IDL
 nww=length(ww);   
